@@ -1,0 +1,21 @@
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  base: './',
+  server: { strictPort: true },
+  test: {
+    environment: 'node',
+    // Let jsdom provide browser storage instead of Node's experimental Web Storage.
+    execArgv: ['--no-experimental-webstorage'],
+    include: ['tests/**/*.test.{ts,tsx}'],
+    setupFiles: ['tests/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: 'test-results/coverage',
+      include: ['src/domain/**', 'src/application/**', 'src/adapters/**', 'src/engine/**'],
+      thresholds: { statements: 85, branches: 75, functions: 90, lines: 85 },
+    },
+  },
+});

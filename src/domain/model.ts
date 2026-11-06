@@ -1,0 +1,78 @@
+/**
+ * The board model (ADR 0002). A board is a flat map of stickies keyed by a random ID; every
+ * property is its own field and order is a number, so concurrent edits of different fields
+ * or stickies never collide and the model maps one-to-one onto a CRDT map later.
+ */
+
+/** Sticky kinds of the event storming notation, from Big Picture to Design Level. */
+export const STICKY_KINDS = [
+  'event',
+  'command',
+  'actor',
+  'policy',
+  'aggregate',
+  'readModel',
+  'externalSystem',
+  'hotspot',
+] as const;
+export type StickyKind = (typeof STICKY_KINDS)[number];
+
+export const STICKY_COLORS = [
+  'yellow',
+  'orange',
+  'blue',
+  'green',
+  'purple',
+  'pink',
+  'red',
+  'gold',
+] as const;
+export type StickyColor = (typeof STICKY_COLORS)[number];
+
+/** Event storming is a palette preset; color and meaning remain independent fields. */
+export const KIND_COLORS: Record<StickyKind, StickyColor> = {
+  event: 'orange',
+  command: 'blue',
+  actor: 'yellow',
+  policy: 'purple',
+  aggregate: 'gold',
+  readModel: 'green',
+  externalSystem: 'pink',
+  hotspot: 'red',
+};
+
+export interface StickyAppearance {
+  color: StickyColor;
+  kind: StickyKind | null;
+}
+
+export interface Sticky extends StickyAppearance {
+  id: string;
+  text: string;
+  /** Top-left corner in board coordinates. */
+  x: number;
+  y: number;
+  /** Stacking order: higher draws on top. Ties fall back to the ID. */
+  z: number;
+}
+export type StickyField = Exclude<keyof Sticky, 'id'>;
+export const STICKY_FIELDS: readonly StickyField[] = ['kind', 'color', 'text', 'x', 'y', 'z'];
+
+export interface Board {
+  stickies: Readonly<Record<string, Sticky>>;
+}
+
+export const emptyBoard = (): Board => ({ stickies: {} });
+
+export const isStickyKind = (value: unknown): value is StickyKind =>
+  typeof value === 'string' && (STICKY_KINDS as readonly string[]).includes(value);
+
+export const isStickyColor = (value: unknown): value is StickyColor =>
+  typeof value === 'string' && (STICKY_COLORS as readonly string[]).includes(value);
+
+/** Stickies from bottom to top. */
+export const stackOrder = (board: Board): Sticky[] =>
+  Object.values(board.stickies).sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
+
+export const topZ = (board: Board): number =>
+  Object.values(board.stickies).reduce((max, sticky) => Math.max(max, sticky.z), 0);

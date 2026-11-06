@@ -1,0 +1,90 @@
+@import './styles/toolbar.css';
+@import './styles/board.css';
+
+:root {
+  --bg: #f6f5f1;
+  --grid: #deddd6;
+  --surface: #fffefa;
+  --text: #292e2b;
+  --muted: #737970;
+  --border: #e2e3db;
+  --accent: #344b3e;
+  --focus: #4f7c61;
+  --selected: #eaf0e8;
+  --shadow: 0 4px 20px rgb(31 42 28 / 5%);
+  color-scheme: light;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Apple SD Gothic Neo',
+    'Noto Sans KR',
+    sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b211d;
+    --grid: #333b33;
+    --surface: #252c26;
+    --text: #e5e9e2;
+    --muted: #a4aea0;
+    --border: #3b443a;
+    --accent: #c8dfbc;
+    --focus: #b1ce9d;
+    --selected: #3b4b36;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+button,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+button svg {
+  flex-shrink: 0;
+}
+.app {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 204px minmax(0, 1fr);
+  min-height: 0;
+  background-image: radial-gradient(var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+@media (max-width: 600px) {
+  .workspace {
+    grid-template-columns: 108px minmax(0, 1fr);
+  }
+}
