@@ -47,7 +47,7 @@ describe('bulk entry and clipboard', () => {
     const user = userEvent.setup();
     const store = memoryStore(
       boardOf(
-        sticky('a', { bold: true, color: 'teal', tags: ['todo'], groupId: 'original' }),
+        sticky('a', { bold: true, color: 'teal', groupId: 'original' }),
         sticky('b', { x: 200, groupId: 'original' }),
       ),
     );
@@ -60,7 +60,7 @@ describe('bulk entry and clipboard', () => {
     expect(fireEvent.paste(board, { clipboardData: data })).toBe(false);
     const copies = Object.values(store.board.stickies).filter((s) => !['a', 'b'].includes(s.id));
     expect(copies).toHaveLength(2);
-    expect(copies[0]).toMatchObject({ bold: true, color: 'teal', tags: ['todo'] });
+    expect(copies[0]).toMatchObject({ bold: true, color: 'teal' });
     expect(copies[0].groupId).toBe(copies[1].groupId);
     expect(copies[0].groupId).not.toBe('original');
     await user.dblClick(screen.getAllByRole('button', { name: '도메인 이벤트: a' })[1]);

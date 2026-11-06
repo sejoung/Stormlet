@@ -7,6 +7,24 @@ import { boardOf, sticky } from '../../support/boards';
 afterEach(() => localStorage.clear());
 
 describe('LocalBoardStore', () => {
+  it('persists names across reloads and synchronizes name changes from another tab', () => {
+    const store = new LocalBoardStore();
+    store.apply([{ op: 'title', value: '새 보드' }]);
+    store.apply([{ op: 'add', sticky: sticky('a') }]);
+    const reopened = new LocalBoardStore();
+    expect(reopened.load().title).toBe('새 보드');
+    const listener = vi.fn();
+    const unsubscribe = store.subscribe(listener);
+    localStorage.setItem(
+      BOARD_KEY,
+      serializeBoard({ title: '다른 탭의 이름', ...boardOf(sticky('a')) }),
+    );
+    window.dispatchEvent(new StorageEvent('storage', { key: BOARD_KEY }));
+    expect(listener).toHaveBeenCalledExactlyOnceWith([{ op: 'title', value: '다른 탭의 이름' }]);
+    unsubscribe();
+    store.dispose();
+    reopened.dispose();
+  });
   it('starts empty, saves applied patches and loads them again', () => {
     const store = new LocalBoardStore();
     expect(store.load()).toEqual({ stickies: {} });

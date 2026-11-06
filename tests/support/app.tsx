@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import { emptyBoard, type Board } from '../../src/domain/model';
 import { applyPatches, type Patch } from '../../src/domain/patch';
@@ -35,17 +35,4 @@ export const boardBounds = () => {
   const board = screen.getByRole('application', { name: '포스트잇 보드' });
   vi.spyOn(board, 'getBoundingClientRect').mockReturnValue(new DOMRect(200, 80, 1000, 700));
   return board;
-};
-
-export const startDrag = (name: string, x = 800, y = 400) => {
-  const swatch = screen.getByRole('button', { name });
-  fireEvent.pointerDown(swatch, { button: 0, pointerId: 1, clientX: 80, clientY: 180 });
-  fireEvent.pointerMove(swatch, { pointerId: 1, clientX: x, clientY: y });
-  return swatch;
-};
-
-export const drop = (swatch: HTMLElement, x = 800, y = 400) => {
-  fireEvent.pointerUp(swatch, { pointerId: 1, clientX: x, clientY: y });
-  // Captured pointer sequences produce a click on the original palette button in browsers.
-  fireEvent.click(swatch);
 };

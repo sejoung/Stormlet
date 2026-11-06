@@ -13,11 +13,9 @@ import {
   sendToBack,
   moveStickies,
   resizeStickies,
-  setAppearance,
   setColor,
   setText,
 } from '../../../src/domain/commands';
-import { normalizeTags } from '../../../src/domain/note-details';
 import { applyPatches, diffBoards } from '../../../src/domain/patch';
 import { boardOf, frozen, sticky } from '../../support/boards';
 
@@ -26,7 +24,7 @@ describe('note actions', () => {
     const before = frozen(boardOf(sticky('a')));
     const applied = applyPatches(
       before,
-      updateNotes(before, ['a', 'missing'], { bold: true, tags: ['実験'], groupId: 'group-1' }),
+      updateNotes(before, ['a', 'missing'], { bold: true, groupId: 'group-1' }),
     );
     expect(applied.board.stickies.a.bold).toBe(true);
     expect(applyPatches(applied.board, applied.inverse).board).toStrictEqual(before);
@@ -41,7 +39,6 @@ describe('note actions', () => {
     expect(moveStickies(board, [{ id: 'a', x: 100, y: 100 }])).toEqual([]);
     expect(resizeStickies(board, ['a'], { width: 200, height: 200 })).toEqual([]);
     expect(setColor(board, ['a'], 'blue')).toEqual([]);
-    expect(setAppearance(board, ['a'], { color: 'green', kind: null })).toEqual([]);
     expect(deleteStickies(board, ['a'])).toEqual([]);
     expect(bringToFront(boardOf(board.stickies.a, sticky('b', { z: 2 })), ['a'])).toEqual([]);
     expect(sendToBack(boardOf(board.stickies.a, sticky('b', { z: 0 })), ['a'])).toEqual([]);
@@ -57,7 +54,6 @@ describe('note actions', () => {
         sticky('a', {
           groupId: 'g',
           bold: true,
-          tags: ['todo'],
           locked: true,
           reactions: [{ emoji: '👍', people: ['A'] }],
         }),
@@ -74,16 +70,13 @@ describe('note actions', () => {
       () => `copy-${++n}`,
       10.2,
       19.6,
-      'B',
     );
     const next = applyPatches(board, clone.patches).board;
     const [a, b, c] = clone.ids.map((id) => next.stickies[id]);
     expect(a).toMatchObject({
       x: 10,
       y: 20,
-      author: 'B',
       bold: true,
-      tags: ['todo'],
       locked: false,
       reactions: [],
       z: 4,
@@ -160,13 +153,5 @@ describe('note actions', () => {
     expect(next.stickies.c.x).toBe(0);
     expect(next.stickies.locked).toEqual(board.stickies.locked);
     expect(arrangeNotes(board, ['a', 'b'], 'grid')).toEqual([]);
-  });
-
-  it('normalizes, deduplicates and bounds tags', () => {
-    expect(normalizeTags('실험, 실험， 다음\n ')).toEqual(['실험', '다음']);
-    expect(normalizeTags('x'.repeat(50))[0]).toHaveLength(30);
-    expect(normalizeTags(Array.from({ length: 10 }, (_, i) => String(i)).join(','))).toHaveLength(
-      8,
-    );
   });
 });

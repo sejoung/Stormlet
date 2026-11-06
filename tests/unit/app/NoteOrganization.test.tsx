@@ -38,7 +38,7 @@ describe('note organization', () => {
 
   it('duplicates by Alt-drag without changing the original and can undo the clone in one step', async () => {
     const user = userEvent.setup();
-    const store = memoryStore(boardOf(sticky('a', { x: 40, y: 40, tags: ['실험'] })));
+    const store = memoryStore(boardOf(sticky('a', { x: 40, y: 40 })));
     render(<App store={store} newId={ids()} />);
     const board = boardBounds();
     fireEvent.pointerDown(note('a'), { button: 0, altKey: true, clientX: 260, clientY: 140 });
@@ -50,7 +50,6 @@ describe('note organization', () => {
       text: 'a',
       x: 240,
       y: 80,
-      tags: ['실험'],
       locked: false,
     });
     await user.keyboard('{Control>}z{/Control}');

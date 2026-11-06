@@ -1,0 +1,20 @@
+import type { Board } from './model';
+
+export const DEFAULT_BOARD_TITLE = '나의 아이디어 보드';
+export const MAX_BOARD_TITLE_LENGTH = 80;
+
+export const normalizeBoardTitle = (value: string): string =>
+  value
+    .replace(/\s+/g, ' ')
+    .replace(/\p{Cc}/gu, '')
+    .trim()
+    .slice(0, MAX_BOARD_TITLE_LENGTH) || DEFAULT_BOARD_TITLE;
+
+export const boardTitle = (board: Board): string => board.title ?? DEFAULT_BOARD_TITLE;
+
+/** Keep the visible title intact while removing characters forbidden in download names. */
+export const boardFileStem = (title: string): string =>
+  normalizeBoardTitle(title)
+    .replace(/\.stormlet$/i, '')
+    .replace(/[<>:"/\\|?*]/g, '-')
+    .replace(/^[. ]+|[. ]+$/g, '') || DEFAULT_BOARD_TITLE;

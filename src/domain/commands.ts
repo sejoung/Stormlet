@@ -43,18 +43,6 @@ export const setColor = (board: Board, ids: readonly string[], color: StickyColo
     .filter((id) => own(board.stickies, id) && !board.stickies[id].locked)
     .map((id) => ({ op: 'set', id, field: 'color', value: color }));
 
-export const setAppearance = (
-  board: Board,
-  ids: readonly string[],
-  appearance: StickyAppearance,
-): Patch[] =>
-  ids
-    .filter((id) => own(board.stickies, id) && !board.stickies[id].locked)
-    .flatMap((id): Patch[] => [
-      { op: 'set', id, field: 'color', value: appearance.color },
-      { op: 'set', id, field: 'kind', value: appearance.kind },
-    ]);
-
 export const deleteStickies = (board: Board, ids: readonly string[]): Patch[] =>
   ids
     .filter((id) => own(board.stickies, id) && !board.stickies[id].locked)

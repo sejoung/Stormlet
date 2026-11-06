@@ -3,7 +3,6 @@ import { own } from '../../domain/ids';
 import { stackOrder, type Board } from '../../domain/model';
 import type { Move } from '../../domain/commands';
 import { clampStickySize, type StickySize } from '../../domain/sticky-size';
-import { centeredAt, STICKY_HEIGHT, STICKY_WIDTH } from '../../engine/sticky-metrics';
 import { groupSelection } from '../../domain/note-actions';
 import { snapOffset, type Guides } from '../../engine/snapping';
 import {
@@ -14,7 +13,6 @@ import {
   type Point,
   type View,
 } from '../../engine/viewport';
-import type { PaletteDraft } from '../toolbar/StickyPalette';
 import { COLOR_STYLES, type BoardTool } from './kinds';
 import { StickyNote } from './StickyNote';
 
@@ -24,11 +22,10 @@ interface Props {
   selection: ReadonlySet<string>;
   editing: string | null;
   seed?: string;
-  person: string;
+  reactor: string;
   matches: ReadonlySet<string> | null;
   element: RefObject<HTMLDivElement | null>;
   tool: BoardTool;
-  draft: PaletteDraft | null;
   onViewChange(view: View): void;
   onSelect(ids: string[]): void;
   onMove(moves: Move[]): void;
@@ -256,21 +253,6 @@ export function BoardCanvas(props: Props) {
   };
 
   const dragging = gesture?.type === 'drag' ? gesture : null;
-  const rect = props.draft ? element.current?.getBoundingClientRect() : null;
-  const draft =
-    props.draft &&
-    rect &&
-    props.draft.point.x >= rect.left &&
-    props.draft.point.x < rect.right &&
-    props.draft.point.y >= rect.top &&
-    props.draft.point.y < rect.bottom
-      ? props.draft
-      : null;
-  const previewAt = draft
-    ? centeredAt(
-        toBoardPoint(view, { x: draft.point.x - rect!.left, y: draft.point.y - rect!.top }),
-      )
-    : null;
   return (
     <div
       ref={element}
@@ -300,7 +282,7 @@ export function BoardCanvas(props: Props) {
             selected={selection.has(sticky.id)}
             editing={editing === sticky.id}
             seed={props.seed}
-            person={props.person}
+            reactor={props.reactor}
             dimmed={!!props.matches && !props.matches.has(sticky.id)}
             onReact={props.onReact}
             offset={
@@ -356,22 +338,6 @@ export function BoardCanvas(props: Props) {
               width: (element.current?.clientWidth ?? 0) / view.zoom,
             }}
           />
-        )}
-        {draft && previewAt && (
-          <div
-            className="sticky sticky-preview"
-            aria-hidden="true"
-            style={{
-              left: previewAt.x,
-              top: previewAt.y,
-              width: STICKY_WIDTH,
-              height: STICKY_HEIGHT,
-              background: COLOR_STYLES[draft.appearance.color].paper,
-              color: COLOR_STYLES[draft.appearance.color].ink,
-            }}
-          >
-            놓아서 붙이기
-          </div>
         )}
       </div>
     </div>

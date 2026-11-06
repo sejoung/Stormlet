@@ -13,7 +13,6 @@ const paths = {
   group: 'M3 3h7v7H3V3Zm11 11h7v7h-7v-7ZM14 3h7v7M3 14v7h7',
   grid: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
   align: 'M4 3v18M8 6h12M8 12h8M8 18h12',
-  tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 4h.01',
   emoji: 'M8 14s1 3 4 3 4-3 4-3M8 8h.01M16 8h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   close: 'm6 6 12 12M6 18 18 6',

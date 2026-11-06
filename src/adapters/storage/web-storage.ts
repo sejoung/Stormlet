@@ -18,3 +18,13 @@ export function writeItem(key: string, value: string): void {
     // The current session keeps its in-memory state.
   }
 }
+
+/** A stable local key lets reactions toggle without a profile. */
+export function reactionIdentity(): string {
+  const key = 'stormlet.reactor';
+  const previous = readItem(key);
+  if (previous) return previous;
+  const identity = crypto.randomUUID();
+  writeItem(key, identity);
+  return identity;
+}

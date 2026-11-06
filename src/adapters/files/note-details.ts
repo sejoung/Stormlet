@@ -8,20 +8,11 @@ export function readDetails(item: Record<string, unknown>): NoteDetails {
     if (!valid(item[key])) throw new Error(`Invalid ${key}.`);
     result[key] = item[key];
   };
-  for (const key of ['bold', 'italic', 'underline', 'autoFont', 'showAuthor', 'locked'] as const)
+  for (const key of ['bold', 'italic', 'underline', 'autoFont', 'locked'] as const)
     accept(key, (v) => typeof v === 'boolean');
   accept('textAlign', (v) => ['left', 'center', 'right'].includes(v as string));
   accept('fontSize', (v) => typeof v === 'number' && Number.isFinite(v) && v >= 8 && v <= 144);
-  accept('author', (v) => typeof v === 'string' && v.length <= 50);
   accept('groupId', (v) => v === null || (typeof v === 'string' && /^[\w-]{1,128}$/.test(v)));
-  accept(
-    'tags',
-    (v) =>
-      Array.isArray(v) &&
-      v.length <= 8 &&
-      new Set(v).size === v.length &&
-      v.every((tag) => typeof tag === 'string' && tag.length > 0 && tag.length <= 30),
-  );
   accept(
     'reactions',
     (v) =>

@@ -2,53 +2,14 @@
   .board-help {
     display: none;
   }
-}
-@media (max-width: 600px) {
-  .empty-hint {
-    padding-left: 0;
-    top: 48%;
-    margin-left: 30px;
-    width: calc(100% - 110px);
-  }
-  .empty-note {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 24px;
-    font-size: 12px;
-  }
-  .empty-hint h1 {
-    font-size: 22px;
-    line-height: 1.4;
-  }
-  .empty-hint p {
-    font-size: 12px;
-  }
-  .board-footer {
-    left: auto;
-    right: 12px;
-    bottom: 12px;
-  }
-}
-
-@media (max-width: 1100px) {
-  .board-caption {
-    display: none;
-  }
   .toolbar {
     gap: 10px 12px;
   }
+  .local-badge {
+    display: none;
+  }
 }
 @media (max-width: 760px) {
-  .profile-name input {
-    display: none;
-  }
-  .profile-name {
-    margin-left: 2px;
-    padding-left: 6px;
-  }
-  .preset-picker > span {
-    display: none;
-  }
   .actions button svg {
     width: 16px;
   }
@@ -72,16 +33,17 @@
   .actions {
     gap: 1px;
   }
-  .preset-picker select {
-    max-width: 125px;
+  .board-caption {
+    padding-left: 8px;
+    margin-left: 0;
   }
 }
 @media (max-width: 600px) {
-  .toolbar {
-    flex-wrap: wrap;
+  .brand strong {
+    display: none;
   }
-  .preset-picker {
-    margin-left: auto;
+  .board-caption {
+    max-width: none;
   }
   .actions {
     flex-basis: 100%;
@@ -90,51 +52,37 @@
   .tool-panel {
     left: 10px;
     top: 125px;
-    width: 62px;
-    padding: 6px;
     max-height: calc(100% - 200px);
-  }
-  .interact-tool {
-    justify-content: center;
-    padding: 9px;
-  }
-  .interact-tool > span,
-  .palette-heading,
-  .palette-hint,
-  .palette-footnote {
-    display: none;
-  }
-  .palette {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    margin-top: 14px;
-    padding: 3px;
-  }
-  .palette.has-roles {
-    grid-template-columns: 1fr;
-  }
-  .palette-number,
-  .palette-label {
-    display: none;
-  }
-  .add-center {
-    flex-direction: column;
-    font-size: 8px;
-    padding: 5px 2px;
   }
   .toolbar-divider {
     margin: 0 3px;
   }
-}
-
-@media (max-width: 600px) {
   .workspace .canvas-area {
     top: 124px;
-    left: 82px;
+    left: 78px;
   }
   .empty-hint {
     padding-left: 0;
+    top: 48%;
     margin-left: 0;
     width: 90%;
+  }
+  .empty-note {
+    width: 70px;
+    height: 70px;
+    margin-bottom: 24px;
+    font-size: 12px;
+  }
+  .empty-hint h1 {
+    font-size: 22px;
+    line-height: 1.4;
+  }
+  .empty-hint p {
+    font-size: 12px;
+  }
+  .board-footer {
+    left: auto;
+    right: 12px;
+    bottom: 12px;
   }
 }

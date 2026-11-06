@@ -28,7 +28,6 @@ export function cloneNotes(
   newId: () => string,
   dx: number,
   dy: number,
-  author: string,
 ): { patches: Patch[]; ids: string[] } {
   const groups = new Map<string, string>();
   const top = topZ(board);
@@ -40,7 +39,6 @@ export function cloneNotes(
       x: Math.round(note.x + dx),
       y: Math.round(note.y + dy),
       z: top + index + 1,
-      author,
       locked: false,
       groupId: note.groupId ? groups.get(note.groupId)! : null,
       reactions: [],

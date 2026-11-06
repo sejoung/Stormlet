@@ -14,20 +14,7 @@ export interface NoteDetails {
   textAlign?: TextAlign;
   autoFont?: boolean;
   fontSize?: number;
-  tags?: readonly string[];
-  author?: string;
-  showAuthor?: boolean;
   groupId?: string | null;
   locked?: boolean;
   reactions?: readonly Reaction[];
 }
-
-export const normalizeTags = (text: string): string[] =>
-  [
-    ...new Set(
-      text
-        .split(/[,，\n]/)
-        .map((tag) => tag.trim().slice(0, 30))
-        .filter(Boolean),
-    ),
-  ].slice(0, 8);

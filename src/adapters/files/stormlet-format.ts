@@ -9,13 +9,14 @@ import {
   STICKY_FIELDS,
 } from '../../domain/model';
 import { readDetails } from './note-details';
+import { normalizeBoardTitle } from '../../domain/board-title';
 
 /**
  * The `.stormlet` file: readable JSON with stickies listed bottom to top. Unknown fields
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-export const FORMAT_VERSION = 4;
+export const FORMAT_VERSION = 5;
 export const FILE_EXTENSION = '.stormlet';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };
@@ -26,6 +27,7 @@ interface StormletFile {
   format: typeof FORMAT;
   version: number;
   stickies: Sticky[];
+  title?: string;
 }
 
 export function serializeBoard(board: Board): string {
@@ -39,7 +41,12 @@ export function serializeBoard(board: Board): string {
             .map((key) => [key, sticky[key as keyof Sticky]]),
         ) as unknown as Sticky,
     );
-  const file: StormletFile = { format: FORMAT, version: FORMAT_VERSION, stickies };
+  const file: StormletFile = {
+    format: FORMAT,
+    version: FORMAT_VERSION,
+    ...(board.title === undefined ? {} : { title: board.title }),
+    stickies,
+  };
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 
@@ -93,9 +100,18 @@ export function parseBoard(content: string): Board {
   const file = (data ?? {}) as Partial<StormletFile>;
   if (file.format !== FORMAT) throw new FormatError('The file is not a Stormlet board.');
   const version = file.version;
-  if (version !== 1 && version !== 2 && version !== 3 && version !== FORMAT_VERSION)
+  if (
+    version !== 1 &&
+    version !== 2 &&
+    version !== 3 &&
+    version !== 4 &&
+    version !== FORMAT_VERSION
+  )
     throw new FormatError('The file version is not supported by this Stormlet.');
   if (!Array.isArray(file.stickies)) throw new FormatError('The file has no stickies.');
+  const title = version >= 5 ? file.title : undefined;
+  if (title !== undefined && (typeof title !== 'string' || normalizeBoardTitle(title) !== title))
+    throw new FormatError('The board title is malformed.');
   const stickies: Record<string, Sticky> = {};
   file.stickies.forEach((value, index) => {
     const sticky = readSticky(value, index, version);
@@ -103,5 +119,5 @@ export function parseBoard(content: string): Board {
       throw new FormatError(`Sticky ID ${sticky.id} appears twice.`);
     stickies[sticky.id] = sticky;
   });
-  return { stickies };
+  return { ...(title === undefined ? {} : { title }), stickies };
 }

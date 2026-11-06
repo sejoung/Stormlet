@@ -6,7 +6,6 @@ import {
   moveStickies,
   resizeStickies,
   sendToBack,
-  setAppearance,
   setColor,
   setText,
   type Move,
@@ -14,22 +13,23 @@ import {
 import type { StickySize } from '../domain/sticky-size';
 import { StickyContextMenu } from '../components/board/StickyContextMenu';
 import { own } from '../domain/ids';
-import type { StickyAppearance } from '../domain/model';
+import { DEFAULT_STICKY_APPEARANCE } from '../domain/model';
+import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
 import { diffBoards } from '../domain/patch';
 import type { BoardStore } from '../domain/store';
 import { centeredAt } from '../engine/sticky-metrics';
 import { INITIAL_VIEW, toBoardPoint, zoomAround, type Point, type View } from '../engine/viewport';
 import { BoardCanvas } from '../components/board/BoardCanvas';
-import { paletteEntries, type BoardTool, type PaletteMode } from '../components/board/kinds';
+import type { BoardTool } from '../components/board/kinds';
 import { Toolbar } from '../components/toolbar/Toolbar';
-import { StickyPalette, type PaletteDraft } from '../components/toolbar/StickyPalette';
+import { CreationToolbar } from '../components/toolbar/CreationToolbar';
 import { downloadText, readFileText } from '../adapters/files/download';
 import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
 import { useBoardSession } from './useBoardSession';
 import { useShortcuts } from './useShortcuts';
 import { useNoteActions } from './useNoteActions';
 import { useClipboard } from './useClipboard';
-import { readItem, writeItem } from '../adapters/storage/web-storage';
+import { reactionIdentity } from '../adapters/storage/web-storage';
 import { fitView } from '../engine/fit-view';
 import { SelectionToolbar } from '../components/selection/SelectionToolbar';
 import { BulkDialog } from '../components/dialogs/BulkDialog';
@@ -48,19 +48,11 @@ export function App({ store, newId }: Props) {
   const { board } = session;
   const boardElement = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>(INITIAL_VIEW);
-  const [mode, setMode] = useState<PaletteMode>('free');
-  const [appearance, setCurrentAppearance] = useState<StickyAppearance>({
-    color: 'yellow',
-    kind: null,
-  });
   const [tool, setTool] = useState<BoardTool>('interact');
-  const [draft, setDraft] = useState<PaletteDraft | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [seed, setSeed] = useState<string | undefined>();
-  const [author, setAuthor] = useState(
-    () => readItem('stormlet.author')?.trim().slice(0, 50) || '나',
-  );
+  const [reactor] = useState(reactionIdentity);
   const [dialog, setDialog] = useState<'bulk' | 'help' | null>(null);
   const closeDialog = useCallback(() => setDialog(null), []);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -73,7 +65,6 @@ export function App({ store, newId }: Props) {
     const timer = window.setTimeout(() => setStatus(null), 5000);
     return () => window.clearTimeout(timer);
   }, [status]);
-  const entries = useMemo(() => paletteEntries(mode), [mode]);
   const selection = useMemo(
     () => new Set(picked.filter((id) => own(board.stickies, id))),
     [picked, board],
@@ -82,9 +73,7 @@ export function App({ store, newId }: Props) {
   const selectedNotes = activeIds.map((id) => board.stickies[id]);
   const matches = query.trim()
     ? Object.values(board.stickies).filter((note) =>
-        `${note.text} ${note.tags?.join(' ') ?? ''} ${note.author ?? ''}`
-          .toLocaleLowerCase()
-          .includes(query.trim().toLocaleLowerCase()),
+        note.text.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
       )
     : Object.values(board.stickies);
   const center = (): Point => {
@@ -94,8 +83,7 @@ export function App({ store, newId }: Props) {
   const actions = useNoteActions({
     board,
     ids: activeIds,
-    author,
-    appearance,
+    reactor,
     newId,
     edit,
     onSelect: setPicked,
@@ -126,39 +114,12 @@ export function App({ store, newId }: Props) {
     setEditing(id);
   };
 
-  const onPick = useCallback(
-    (next: StickyAppearance) => {
-      setCurrentAppearance(next);
-      if (selection.size)
-        edit((current) =>
-          mode === 'free'
-            ? setColor(current, [...selection], next.color)
-            : setAppearance(current, [...selection], next),
-        );
-      else setTool('sticky');
-    },
-    [selection, edit, mode],
-  );
-
-  const onAdd = (at: Point, next = appearance) => {
+  const onAdd = (at: Point) => {
     const id = newId();
-    edit((current) => addSticky(current, { id, ...next, ...centeredAt(at), author }));
+    edit((current) => addSticky(current, { id, ...DEFAULT_STICKY_APPEARANCE, ...centeredAt(at) }));
     setPicked([id]);
     startEdit(id);
     setTool('interact');
-  };
-
-  const onDrop = ({ point, appearance: next }: PaletteDraft) => {
-    const rect = boardElement.current!.getBoundingClientRect();
-    if (
-      point.x < rect.left ||
-      point.x >= rect.right ||
-      point.y < rect.top ||
-      point.y >= rect.bottom
-    )
-      return;
-    setCurrentAppearance(next);
-    onAdd(toBoardPoint(view, { x: point.x - rect.left, y: point.y - rect.top }), next);
   };
 
   const onMove = useCallback(
@@ -182,12 +143,9 @@ export function App({ store, newId }: Props) {
   const onCommitText = useCallback(
     (id: string, text: string) => {
       setEditing(null);
-      edit((current) => [
-        ...setText(current, id, text),
-        ...(current.stickies[id]?.text !== text ? updateNotes(current, [id], { author }) : []),
-      ]);
+      edit((current) => setText(current, id, text));
     },
-    [edit, author],
+    [edit],
   );
   const flushEditor = () => {
     const editor = boardElement.current?.querySelector<HTMLTextAreaElement>('.sticky-editor');
@@ -195,13 +153,15 @@ export function App({ store, newId }: Props) {
   };
   const save = () => {
     flushEditor();
-    downloadText(`board${FILE_EXTENSION}`, serializeBoard(store.load()));
+    const current = store.load();
+    downloadText(`${boardFileStem(boardTitle(current))}${FILE_EXTENSION}`, serializeBoard(current));
   };
 
   const onOpen = async (file: File) => {
     try {
       const opened = parseBoard(await readFileText(file));
-      edit((current) => diffBoards(current, opened));
+      const title = opened.title ?? normalizeBoardTitle(file.name.replace(/\.stormlet$/i, ''));
+      edit((current) => diffBoards(current, { ...opened, title }));
       setPicked([]);
       setEditing(null);
       setMenu(null);
@@ -215,7 +175,6 @@ export function App({ store, newId }: Props) {
     onUndo: undo,
     onRedo: redo,
     onDelete: remove,
-    onPalette: (index: number) => onPick(entries[index]),
     onTool: setTool,
     onDuplicate: (offset, directional) => actions.duplicate(activeIds, offset, directional),
     onSelectAll: () =>
@@ -236,43 +195,32 @@ export function App({ store, newId }: Props) {
     onEscape: () => {
       setPicked([]);
       setTool('interact');
-      setDraft(null);
     },
   });
 
   return (
     <div className="app">
       <Toolbar
-        mode={mode}
+        title={boardTitle(board)}
+        onRename={(value) =>
+          edit((current) => {
+            const title = normalizeBoardTitle(value);
+            return title === boardTitle(current) ? [] : [{ op: 'title', value: title }];
+          })
+        }
         canUndo={session.undo.length > 0}
         canRedo={session.redo.length > 0}
         status={status}
-        author={author}
-        onAuthor={(value) => {
-          const name = value.trim().slice(0, 50) || '나';
-          setAuthor(name);
-          writeItem('stormlet.author', name);
-        }}
         onSearch={() => setSearchOpen((open) => !open)}
-        onMode={(next) => {
-          setMode(next);
-          setCurrentAppearance(paletteEntries(next)[0]);
-          setTool('interact');
-        }}
         onUndo={undo}
         onRedo={redo}
         onOpen={onOpen}
         onSave={save}
       />
       <main className="workspace">
-        <StickyPalette
-          entries={entries}
-          appearance={appearance}
+        <CreationToolbar
           tool={tool}
           onTool={setTool}
-          onPick={onPick}
-          onDraft={setDraft}
-          onDrop={onDrop}
           onAddCenter={() => onAdd(toBoardPoint(view, center()))}
           onBulk={() => setDialog('bulk')}
         />
@@ -283,11 +231,10 @@ export function App({ store, newId }: Props) {
             selection={selection}
             editing={editing}
             seed={seed}
-            person={author}
+            reactor={reactor}
             matches={query.trim() ? new Set(matches.map((s) => s.id)) : null}
             element={boardElement}
             tool={tool}
-            draft={draft}
             onViewChange={setView}
             onSelect={setPicked}
             onMove={onMove}

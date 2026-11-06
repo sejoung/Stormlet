@@ -1,17 +1,6 @@
-import {
-  KIND_COLORS,
-  STICKY_COLORS,
-  STICKY_KINDS,
-  type StickyAppearance,
-  type StickyColor,
-  type StickyKind,
-} from '../../domain/model';
+import type { StickyColor, StickyKind } from '../../domain/model';
 
-export type PaletteMode = 'free' | 'eventStorming';
 export type BoardTool = 'interact' | 'sticky' | 'hand';
-export interface PaletteEntry extends StickyAppearance {
-  label: string;
-}
 
 export const COLOR_STYLES: Record<StickyColor, { label: string; paper: string; ink: string }> = {
   yellow: { label: '노란색', paper: '#fff3a3', ink: '#2e2a07' },
@@ -42,12 +31,3 @@ export const KIND_LABELS: Record<StickyKind, string> = {
   externalSystem: '외부 시스템',
   hotspot: '핫스팟',
 };
-
-export const paletteEntries = (mode: PaletteMode): PaletteEntry[] =>
-  mode === 'free'
-    ? STICKY_COLORS.map((color) => ({
-        color,
-        kind: null,
-        label: `${COLOR_STYLES[color].label} 포스트잇`,
-      }))
-    : STICKY_KINDS.map((kind) => ({ kind, color: KIND_COLORS[kind], label: KIND_LABELS[kind] }));

@@ -4,7 +4,6 @@ import {
   bringToFront,
   deleteStickies,
   moveStickies,
-  setAppearance,
   setColor,
   setText,
   sendToBack,
@@ -52,16 +51,16 @@ describe('commands', () => {
     expect(patches).toHaveLength(2);
   });
 
-  it('sets text and kind, and deletes, only for existing stickies', () => {
+  it('sets text and color, and deletes, only for existing stickies', () => {
     const board = frozen(boardOf(sticky('a'), sticky('b')));
     expect(setText(board, 'gone', 'x')).toEqual([]);
     const next = run(board, [
       ...setText(board, 'a', 'Payment failed'),
-      ...setAppearance(board, ['a', 'b', 'gone'], { kind: 'hotspot', color: 'red' }),
+      ...setColor(board, ['a', 'b', 'gone'], 'red'),
       ...deleteStickies(board, ['b', 'gone']),
     ]);
     expect(next.stickies).toEqual({
-      a: { ...board.stickies.a, text: 'Payment failed', kind: 'hotspot', color: 'red' },
+      a: { ...board.stickies.a, text: 'Payment failed', kind: 'event', color: 'red' },
     });
   });
 

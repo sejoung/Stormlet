@@ -107,27 +107,22 @@ describe('note editing experience', () => {
     expect(store.board.stickies.s1.locked).toBe(false);
   });
 
-  it('adds tags, author labels and reversible reactions, and finds notes by tag', async () => {
+  it('toggles reactions without a profile and searches note text', async () => {
     const user = userEvent.setup();
-    const store = memoryStore(boardOf(sticky('a', { author: '작성자' })));
+    const store = memoryStore(boardOf(sticky('a', { text: '실험할 아이디어' })));
     render(<App store={store} newId={ids()} />);
     boardBounds();
     await user.click(note());
-    await user.click(screen.getByRole('button', { name: '태그 편집' }));
-    await user.type(screen.getByLabelText('태그 · 쉼표로 구분, 최대 8개'), '아이디어, 실험, 실험');
-    await user.click(screen.getByRole('button', { name: '적용' }));
-    expect(store.board.stickies.a.tags).toEqual(['아이디어', '실험']);
     await user.click(screen.getByRole('button', { name: '반응 추가' }));
-    await user.click(screen.getByRole('checkbox', { name: '작성자 표시' }));
+    expect(screen.queryByRole('button', { name: '태그 편집' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: '작성자 표시' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '👍 반응' }));
-    expect(screen.getByText('작성자')).toBeInTheDocument();
     expect(store.board.stickies.a.reactions?.[0].people).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: '👍 반응 1개' }));
     expect(store.board.stickies.a.reactions).toEqual([]);
     await user.click(screen.getByRole('button', { name: '메모 검색' }));
-    await user.type(screen.getByRole('searchbox'), '실험');
+    await user.type(screen.getByRole('searchbox', { name: '메모 내용 검색' }), '실험');
     expect(screen.getByText('1개의 메모를 찾았어요')).toBeInTheDocument();
-    expect(screen.getByText('#아이디어 #실험')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '검색 닫기' }));
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });

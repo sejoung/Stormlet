@@ -7,9 +7,22 @@ import {
 import { boardOf, sticky } from '../../support/boards';
 
 const file = (details: Record<string, unknown>) =>
-  JSON.stringify({ format: 'stormlet', version: 4, stickies: [{ ...sticky('a'), ...details }] });
+  JSON.stringify({ format: 'stormlet', version: 5, stickies: [{ ...sticky('a'), ...details }] });
 
 describe('extended note persistence', () => {
+  it('reads old boards while dropping removed author and tag metadata', () => {
+    const legacy = JSON.stringify({
+      format: 'stormlet',
+      version: 4,
+      stickies: [{ ...sticky('a'), author: '이전 작성자', showAuthor: true, tags: ['이전 태그'] }],
+    });
+    const board = parseBoard(legacy);
+    expect(board).toStrictEqual(boardOf(sticky('a')));
+    const saved = JSON.parse(serializeBoard(board)).stickies[0];
+    expect(saved).not.toHaveProperty('author');
+    expect(saved).not.toHaveProperty('showAuthor');
+    expect(saved).not.toHaveProperty('tags');
+  });
   it('round-trips every new field and strips unknown imported fields', () => {
     const board = boardOf(
       sticky('a', {
@@ -20,16 +33,13 @@ describe('extended note persistence', () => {
         textAlign: 'right',
         autoFont: false,
         fontSize: 32,
-        tags: ['실험', '다음 할 일'],
-        author: '작성자',
-        showAuthor: true,
         groupId: 'group-1',
         locked: true,
         reactions: [{ emoji: '👍', people: ['A', 'B'] }],
       }),
     );
     const json = serializeBoard(board);
-    expect(JSON.parse(json).version).toBe(4);
+    expect(JSON.parse(json).version).toBe(5);
     expect(parseBoard(json)).toStrictEqual(board);
     expect(parseBoard(file({ unknown: '<script>', groupId: null })).stickies.a).not.toHaveProperty(
       'unknown',
@@ -42,17 +52,11 @@ describe('extended note persistence', () => {
     { underline: null },
     { autoFont: [] },
     { locked: 1 },
-    { showAuthor: 'true' },
     { textAlign: 'justify' },
     { fontSize: 0 },
     { fontSize: 145 },
-    { author: 'x'.repeat(51) },
     { groupId: {} },
     { groupId: 'bad group' },
-    { tags: ['same', 'same'] },
-    { tags: Array(9).fill('x') },
-    { tags: [''] },
-    { tags: [99] },
     { reactions: [null] },
     { reactions: [{ emoji: '👍', people: 'A' }] },
     { reactions: [{ emoji: '👍', people: ['A', 'A'] }] },
@@ -67,7 +71,7 @@ describe('extended note persistence', () => {
     expect(() => parseBoard(file(details))).toThrow(FormatError);
   });
 
-  it('keeps a version 3 board unchanged and writes it as version 4', () => {
+  it('keeps a version 3 board unchanged and writes it as version 5', () => {
     const note = sticky('a', { width: 260, height: 180 });
     const before = JSON.stringify({ format: 'stormlet', version: 3, stickies: [note] });
     const board = parseBoard(before);

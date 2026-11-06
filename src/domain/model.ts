@@ -40,7 +40,7 @@ export const STICKY_COLORS = [
 ] as const;
 export type StickyColor = (typeof STICKY_COLORS)[number];
 
-/** Event storming is a palette preset; color and meaning remain independent fields. */
+/** Legacy event storming kinds retain their original colors when imported. */
 export const KIND_COLORS: Record<StickyKind, StickyColor> = {
   event: 'orange',
   command: 'blue',
@@ -56,6 +56,10 @@ export interface StickyAppearance {
   color: StickyColor;
   kind: StickyKind | null;
 }
+export const DEFAULT_STICKY_APPEARANCE: Readonly<StickyAppearance> = {
+  color: 'yellow',
+  kind: null,
+};
 
 export interface Sticky extends StickyAppearance, StickySize, NoteDetails {
   id: string;
@@ -82,15 +86,13 @@ export const STICKY_FIELDS: readonly StickyField[] = [
   'textAlign',
   'autoFont',
   'fontSize',
-  'tags',
-  'author',
-  'showAuthor',
   'groupId',
   'locked',
   'reactions',
 ];
 
 export interface Board {
+  title?: string;
   stickies: Readonly<Record<string, Sticky>>;
 }
 

@@ -6,7 +6,13 @@ import {
   updateNotes,
   type Arrangement,
 } from '../domain/note-actions';
-import { stackOrder, topZ, type Board, type Sticky, type StickyAppearance } from '../domain/model';
+import {
+  stackOrder,
+  topZ,
+  type Board,
+  type Sticky,
+  DEFAULT_STICKY_APPEARANCE,
+} from '../domain/model';
 import type { NoteDetails } from '../domain/note-details';
 import type { Patch } from '../domain/patch';
 import type { Point } from '../engine/viewport';
@@ -15,8 +21,7 @@ import type { TextCell } from '../engine/paste';
 interface Options {
   board: Board;
   ids: string[];
-  author: string;
-  appearance: StickyAppearance;
+  reactor: string;
   newId(): string;
   edit(change: (board: Board) => Patch[]): void;
   onSelect(ids: string[]): void;
@@ -25,7 +30,7 @@ interface Options {
 }
 
 export function useNoteActions(options: Options) {
-  const { board, ids, author, appearance, newId, edit, onSelect } = options;
+  const { board, ids, reactor, newId, edit, onSelect } = options;
   const format = (details: NoteDetails) => edit((current) => updateNotes(current, ids, details));
   const duplicate = (sourceIds = ids, offset: Point = { x: 24, y: 24 }, directional = false) => {
     let created: string[] = [];
@@ -42,7 +47,6 @@ export function useNoteActions(options: Options) {
         newId,
         directional ? offset.x * (width + 24) : offset.x,
         directional ? offset.y * (height + 24) : offset.y,
-        author,
       );
       created = next.ids;
       return next.patches;
@@ -56,7 +60,7 @@ export function useNoteActions(options: Options) {
       top = Math.min(...notes.map((s) => s.y));
     let created: string[] = [];
     edit((current) => {
-      const next = cloneNotes(current, notes, newId, at.x - left, at.y - top, author);
+      const next = cloneNotes(current, notes, newId, at.x - left, at.y - top);
       created = next.ids;
       return next.patches;
     });
@@ -76,10 +80,9 @@ export function useNoteActions(options: Options) {
         op: 'add',
         sticky: {
           id: cell.id,
-          ...appearance,
+          ...DEFAULT_STICKY_APPEARANCE,
           ...DEFAULT_STICKY_SIZE,
           text: cell.text,
-          author,
           x: Math.round(
             at.x + (sheet ? cell.column : index % columns) * (DEFAULT_STICKY_SIZE.width + 24),
           ),
@@ -106,7 +109,7 @@ export function useNoteActions(options: Options) {
     group,
     arrange: (action: Arrangement) => edit((current) => arrangeNotes(current, ids, action)),
     react: (emoji: string, target = ids) =>
-      edit((current) => reactToNotes(current, target, emoji, author)),
+      edit((current) => reactToNotes(current, target, emoji, reactor)),
     lock: () => format({ locked: !ids.some((id) => board.stickies[id]?.locked) }),
     toggleFormat: (field: 'bold' | 'italic' | 'underline') =>
       format({ [field]: !board.stickies[ids[0]]?.[field] }),

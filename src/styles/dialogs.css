@@ -202,12 +202,6 @@
   overflow-wrap: anywhere;
   font-size: 12px;
 }
-.search-results small {
-  display: block;
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 10px;
-}
 @media (max-width: 600px) {
   .board-modal {
     padding: 20px;

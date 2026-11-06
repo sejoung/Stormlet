@@ -76,7 +76,7 @@
   background: var(--surface);
   z-index: 2;
 }
-.note-details {
+.note-reactions {
   position: absolute;
   left: 0;
   top: calc(100% + 8px);
@@ -84,33 +84,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font:
     normal 10px/1.4 system-ui,
     sans-serif;
-  text-decoration: none;
   color: var(--muted);
-}
-.note-author {
-  display: block;
-  width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.note-tags,
-.note-reactions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.note-tags span {
-  max-width: 100%;
-  padding: 2px 5px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 3px;
-  overflow-wrap: anywhere;
 }
 .note-reactions button {
   padding: 3px 6px;
@@ -145,7 +123,7 @@
   white-space: nowrap;
   pointer-events: none;
 }
-.sticky.is-editing .note-details {
+.sticky.is-editing .note-reactions {
   visibility: hidden;
 }
 .sticky-content {
@@ -236,7 +214,7 @@
 .workspace .canvas-area {
   position: absolute;
   top: 88px;
-  left: 204px;
+  left: 92px;
   right: 0;
   bottom: 0;
   width: auto;

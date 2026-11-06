@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { STICKY_COLORS, type Sticky } from '../../domain/model';
-import { REACTION_EMOJI, normalizeTags, type NoteDetails } from '../../domain/note-details';
+import { REACTION_EMOJI, type NoteDetails } from '../../domain/note-details';
 import type { Arrangement } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
@@ -62,8 +62,7 @@ const ARRANGEMENTS: [Arrangement, string][] = [
 
 /** Screen-space controls stay readable at every board zoom level. */
 export function SelectionToolbar(props: Props) {
-  const [panel, setPanel] = useState<'color' | 'align' | 'tags' | 'emoji' | null>(null);
-  const [tagText, setTagText] = useState('');
+  const [panel, setPanel] = useState<'color' | 'align' | 'emoji' | null>(null);
   const note = props.notes[0];
   const locked = props.notes.some((s) => s.locked);
   const grouped = props.notes.some((s) => s.groupId);
@@ -178,17 +177,6 @@ export function SelectionToolbar(props: Props) {
         >
           <Icon name="align" />
         </Tool>
-        <Tool
-          label="태그 편집"
-          active={panel === 'tags'}
-          disabled={locked}
-          onClick={() => {
-            setTagText(note.tags?.join(', ') ?? '');
-            toggle('tags');
-          }}
-        >
-          <Icon name="tag" />
-        </Tool>
         <Tool label="반응 추가" active={panel === 'emoji'} onClick={() => toggle('emoji')}>
           <Icon name="emoji" />
         </Tool>
@@ -284,29 +272,6 @@ export function SelectionToolbar(props: Props) {
               )}
             </>
           )}
-          {panel === 'tags' && (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                props.onFormat({ tags: normalizeTags(tagText) });
-                setPanel(null);
-              }}
-            >
-              <label className="popover-label" htmlFor="note-tags">
-                태그 · 쉼표로 구분, 최대 8개
-              </label>
-              <input
-                id="note-tags"
-                value={tagText}
-                maxLength={247}
-                placeholder="아이디어, 다음 할 일"
-                onChange={(event) => setTagText(event.target.value)}
-              />
-              <button type="submit" className="primary-button">
-                {props.notes.length > 1 ? '선택한 메모에 적용' : '적용'}
-              </button>
-            </form>
-          )}
           {panel === 'emoji' && (
             <>
               <span className="popover-label">반응을 눌러 추가하거나 취소하세요</span>
@@ -322,15 +287,6 @@ export function SelectionToolbar(props: Props) {
                   </button>
                 ))}
               </div>
-              <label className="author-option">
-                <input
-                  type="checkbox"
-                  disabled={locked}
-                  checked={props.notes.every((s) => s.showAuthor)}
-                  onChange={(event) => props.onFormat({ showAuthor: event.target.checked })}
-                />
-                작성자 표시
-              </label>
             </>
           )}
         </div>

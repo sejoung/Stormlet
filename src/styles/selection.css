@@ -125,18 +125,6 @@
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
-.selection-popover input[type='text'],
-.selection-popover input:not([type]) {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-  font-size: 12px;
-}
 .primary-button {
   padding: 10px 16px;
   border: 1px solid #4262e8;
@@ -163,19 +151,6 @@
 }
 .emoji-options button:hover {
   background: var(--selected);
-}
-.author-option {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  color: var(--text);
-  font-size: 12px;
-}
-.author-option input {
-  accent-color: var(--accent);
 }
 @media (max-width: 600px) {
   .selection-count {

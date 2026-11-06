@@ -27,9 +27,9 @@ export function BoardSearch({
         <input
           ref={ref}
           type="search"
-          aria-label="내용 또는 태그 검색"
+          aria-label="메모 내용 검색"
           value={query}
-          placeholder="내용이나 태그로 찾기"
+          placeholder="메모 내용으로 찾기"
           onChange={(event) => onQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Escape') {
@@ -43,17 +43,14 @@ export function BoardSearch({
         </button>
       </div>
       <p role="status">
-        {query ? `${notes.length}개의 메모를 찾았어요` : '찾고 싶은 단어나 태그를 입력하세요'}
+        {query ? `${notes.length}개의 메모를 찾았어요` : '찾고 싶은 단어를 입력하세요'}
       </p>
       {!!query && (
         <div className="search-results">
           {notes.slice(0, 30).map((note) => (
             <button key={note.id} type="button" onClick={() => onSelect(note.id)}>
               <span style={{ background: COLOR_STYLES[note.color].paper }} />
-              <span>
-                {note.text || '빈 포스트잇'}
-                <small>{note.tags?.map((tag) => `#${tag}`).join(' ')}</small>
-              </span>
+              <span>{note.text || '빈 포스트잇'}</span>
             </button>
           ))}
         </div>

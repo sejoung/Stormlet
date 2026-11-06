@@ -6,7 +6,6 @@ interface Handlers {
   onUndo(): void;
   onRedo(): void;
   onDelete(): void;
-  onPalette(index: number): void;
   onTool(tool: BoardTool): void;
   onEscape(): void;
   onDuplicate(offset?: Point, directional?: boolean): void;
@@ -66,7 +65,6 @@ export function useShortcuts(handlers: Handlers) {
       else if (!mod && key === 'h') handlers.onTool('hand');
       else if (!mod && key === 'n') handlers.onTool('sticky');
       else if (key === 'f1' || key === '?') handlers.onHelp();
-      else if (!mod && /^[1-8]$/.test(key)) handlers.onPalette(Number(key) - 1);
       else return;
       event.preventDefault();
     };

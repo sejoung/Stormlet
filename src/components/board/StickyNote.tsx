@@ -19,7 +19,7 @@ interface Props {
   editing: boolean;
   seed?: string;
   dimmed?: boolean;
-  person: string;
+  reactor: string;
   zIndex: number;
   offset: Point | null;
   resized: StickySize | null;
@@ -110,41 +110,27 @@ export const StickyNote = memo(function StickyNote(props: Props) {
           <Icon name="lock" />
         </span>
       )}
-      {sticky.tags?.length || (sticky.showAuthor && sticky.author) || sticky.reactions?.length ? (
-        <div className="note-details">
-          {sticky.showAuthor && sticky.author && (
-            <span className="note-author">{sticky.author}</span>
-          )}
-          {!!sticky.tags?.length && (
-            <div className="note-tags">
-              {sticky.tags.map((tag) => (
-                <span key={tag}>#{tag}</span>
-              ))}
-            </div>
-          )}
-          {!!sticky.reactions?.length && (
-            <div className="note-reactions">
-              {sticky.reactions.map((r) => (
-                <button
-                  key={r.emoji}
-                  type="button"
-                  aria-label={`${r.emoji} 반응 ${r.people.length}개`}
-                  aria-pressed={r.people.includes(props.person)}
-                  title={r.people.join(', ')}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onDoubleClick={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    props.onReact(sticky.id, r.emoji);
-                  }}
-                >
-                  {r.emoji} {r.people.length}
-                </button>
-              ))}
-            </div>
-          )}
+      {!!sticky.reactions?.length && (
+        <div className="note-reactions">
+          {sticky.reactions.map((reaction) => (
+            <button
+              key={reaction.emoji}
+              type="button"
+              aria-label={`${reaction.emoji} 반응 ${reaction.people.length}개`}
+              aria-pressed={reaction.people.includes(props.reactor)}
+              title={`${reaction.people.length}개의 반응`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                props.onReact(sticky.id, reaction.emoji);
+              }}
+            >
+              {reaction.emoji} {reaction.people.length}
+            </button>
+          ))}
         </div>
-      ) : null}
+      )}
       {selected && !editing && !sticky.locked && !sticky.groupId && (
         <button
           type="button"

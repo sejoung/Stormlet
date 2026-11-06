@@ -8,7 +8,11 @@ import { STICKY_FIELDS, type Board, type Sticky, type StickyField } from './mode
 export type SetPatch = {
   [F in StickyField]: { op: 'set'; id: string; field: F; value: Sticky[F] };
 }[StickyField];
-export type Patch = { op: 'add'; sticky: Sticky } | SetPatch | { op: 'delete'; id: string };
+export type Patch =
+  | { op: 'add'; sticky: Sticky }
+  | SetPatch
+  | { op: 'delete'; id: string }
+  | { op: 'title'; value: string | undefined };
 
 export interface Applied {
   board: Board;
@@ -25,7 +29,15 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
   const current = () => stickies ?? board.stickies;
   const write = () => (stickies ??= { ...board.stickies });
   const inverse: Patch[] = [];
+  let title = board.title;
   for (const patch of patches) {
+    if (patch.op === 'title') {
+      if (title !== patch.value) {
+        inverse.push({ op: 'title', value: title });
+        title = patch.value;
+      }
+      continue;
+    }
     const before = own(current(), patch.op === 'add' ? patch.sticky.id : patch.id);
     if (patch.op === 'add') {
       write()[patch.sticky.id] = patch.sticky;
@@ -42,12 +54,17 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
       inverse.push({ ...patch, value: before[patch.field] } as SetPatch);
     }
   }
-  return { board: stickies ? { stickies } : board, inverse: inverse.reverse() };
+  if (!stickies && title === board.title) return { board, inverse: inverse.reverse() };
+  const next: Board = { ...board, stickies: stickies ?? board.stickies };
+  if (title === undefined) delete next.title;
+  else next.title = title;
+  return { board: next, inverse: inverse.reverse() };
 }
 
 /** Field-level patches that turn `from` into `to`; how changes from outside arrive. */
 export function diffBoards(from: Board, to: Board): Patch[] {
   const patches: Patch[] = [];
+  if (from.title !== to.title) patches.push({ op: 'title', value: to.title });
   for (const id of Object.keys(from.stickies))
     if (!own(to.stickies, id)) patches.push({ op: 'delete', id });
   for (const sticky of Object.values(to.stickies)) {

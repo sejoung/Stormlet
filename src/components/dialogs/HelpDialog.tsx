@@ -1,6 +1,7 @@
 import { Modal } from './Modal';
 
 const SHORTCUTS = [
+  ['보드 이름 수정', '제목 더블클릭 / Enter / F2'],
   ['포스트잇 도구', 'N'],
   ['선택 / 손 도구', 'V / H'],
   ['보드 이동', 'Space + 드래그'],
