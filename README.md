@@ -8,7 +8,7 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 
 - Board actions across the top, a combined interaction tool and sticky palette on the left
 - Drag a colored sticky from the palette onto the board, preview its position and start typing
-- Also add notes by picking a color and clicking the board, double-clicking empty space, or using the center-add button
+- Also add notes by picking a color and clicking the board or using the center-add button
 - Eight free colors by default; an optional event storming palette adds domain event, command, actor, policy, aggregate, read model, external system and hotspot (keys `1`–`8`)
 - Double-click or press Enter to edit; drag a note to move it, drag the background to pan, Shift+drag or Shift+click to multi-select
 - Right-click a note for front/back ordering, size presets, exact width and height, editing and deletion (also Shift+F10)

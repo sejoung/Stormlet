@@ -155,4 +155,32 @@ describe('board interactions', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(editor).toHaveFocus();
   });
+
+  it('lets overflowing note text scroll without zooming the board', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore(boardOf(sticky('a')));
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    await user.dblClick(note('a'));
+    const editor = screen.getByRole('textbox', { name: '스티키 내용' });
+    fireEvent.change(editor, { target: { value: '긴 메모\n'.repeat(100) } });
+    Object.defineProperties(editor, {
+      clientHeight: { value: 96 },
+      scrollHeight: { value: 920 },
+    });
+    expect(fireEvent.wheel(editor, { deltaY: 100 })).toBe(true);
+    expect(screen.getByRole('button', { name: '확대 비율 초기화' })).toHaveTextContent('100%');
+    fireEvent.keyDown(editor, { key: 'Enter' });
+    expect(store.board.stickies.a.text).toBe('긴 메모\n'.repeat(100).trim());
+
+    const content = note(store.board.stickies.a.text).querySelector('.sticky-content')!;
+    Object.defineProperties(content, {
+      clientHeight: { value: 96 },
+      scrollHeight: { value: 920 },
+    });
+    expect(fireEvent.wheel(content, { deltaY: 100 })).toBe(true);
+    expect(screen.getByRole('button', { name: '확대 비율 초기화' })).toHaveTextContent('100%');
+    expect(fireEvent.wheel(board, { deltaY: 100 })).toBe(false);
+    expect(screen.getByRole('button', { name: '확대 비율 초기화' })).not.toHaveTextContent('100%');
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useState, type PointerEvent, type RefObject } from 'react';
 import { own } from '../../domain/ids';
 import { stackOrder, type Board } from '../../domain/model';
 import type { Move } from '../../domain/commands';
@@ -52,7 +52,6 @@ const rectangle = (a: Point, b: Point) => ({
 export function BoardCanvas(props: Props) {
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
-  const lastPlacement = useRef(0);
   useEffect(() => {
     const cancel = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setGesture(null);
@@ -71,6 +70,11 @@ export function BoardCanvas(props: Props) {
   useEffect(() => {
     const node = element.current!;
     const onWheel = (event: WheelEvent) => {
+      const content =
+        event.target instanceof Element
+          ? event.target.closest('.sticky-editor, .sticky-content')
+          : null;
+      if (content && content.scrollHeight > content.clientHeight) return;
       event.preventDefault();
       onViewChange(zoomAround(view, view.zoom * wheelZoomFactor(event.deltaY), local(event)));
     };
@@ -166,7 +170,6 @@ export function BoardCanvas(props: Props) {
     if (gesture?.type === 'place') {
       const at = local(event);
       if (Math.hypot(at.x - gesture.start.x, at.y - gesture.start.y) < DRAG_THRESHOLD) {
-        lastPlacement.current = Date.now();
         props.onAdd(toBoardPoint(view, at));
       }
     } else if (gesture?.type === 'resize') {
@@ -212,10 +215,6 @@ export function BoardCanvas(props: Props) {
       onPointerUp={onPointerUp}
       onPointerCancel={() => setGesture(null)}
       onLostPointerCapture={() => setGesture(null)}
-      onDoubleClick={(event) => {
-        if (event.target === event.currentTarget && Date.now() - lastPlacement.current > 500)
-          props.onAdd(toBoardPoint(view, local(event)));
-      }}
     >
       <div
         className="board-layer"

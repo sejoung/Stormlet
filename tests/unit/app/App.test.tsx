@@ -6,11 +6,31 @@ import { App } from '../../../src/app/App';
 import { memoryStore, ids, boardBounds, startDrag, drop } from '../../support/app';
 
 describe('App', () => {
-  it('adds a free sticky by double-click, edits its text and undoes both steps', async () => {
+  it('ignores background double-clicks and keeps note double-clicks for editing', async () => {
     const user = userEvent.setup();
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);
-    fireEvent.doubleClick(boardBounds(), { clientX: 400, clientY: 230 });
+    const board = boardBounds();
+    await user.dblClick(board);
+    expect(store.board.stickies).toEqual({});
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '가운데 붙이기' }));
+    await user.type(screen.getByRole('textbox', { name: '스티키 내용' }), '아이디어{Enter}');
+    await user.dblClick(screen.getByRole('button', { name: '노란색 포스트잇: 아이디어' }));
+    const editor = screen.getByRole('textbox', { name: '스티키 내용' });
+    expect(editor).toHaveFocus();
+    await user.dblClick(editor);
+    expect(editor).toHaveValue('아이디어');
+    expect(Object.keys(store.board.stickies)).toEqual(['s1']);
+  });
+
+  it('adds a free sticky with the center button, edits its text and undoes both steps', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore();
+    render(<App store={store} newId={ids()} />);
+    boardBounds();
+    await user.click(screen.getByRole('button', { name: '가운데 붙이기' }));
     await user.type(screen.getByRole('textbox', { name: '스티키 내용' }), '새 아이디어{Enter}');
     expect(
       screen.getByRole('button', { name: '노란색 포스트잇: 새 아이디어' }),
@@ -32,7 +52,8 @@ describe('App', () => {
     const user = userEvent.setup();
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);
-    fireEvent.doubleClick(boardBounds(), { clientX: 400, clientY: 230 });
+    boardBounds();
+    await user.click(screen.getByRole('button', { name: '가운데 붙이기' }));
     await user.type(screen.getByRole('textbox', { name: '스티키 내용' }), '메모{Enter}');
     await user.keyboard('3');
     expect(store.board.stickies.s1.color).toBe('yellow');

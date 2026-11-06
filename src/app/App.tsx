@@ -210,7 +210,7 @@ export function App({ store, newId }: Props) {
               <span className="empty-eyebrow">작은 메모에서 시작하는 생각</span>
               <h1>생각 하나, 붙여 볼까요?</h1>
               <p>왼쪽 포스트잇을 보드로 끌어다 놓으세요.</p>
-              <span>빈 곳을 더블클릭해도 좋아요.</span>
+              <span>색을 고른 뒤 원하는 곳을 클릭해도 좋아요.</span>
             </div>
           )}
           <div className="board-footer">

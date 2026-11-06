@@ -138,7 +138,7 @@ function StickyEditor({
     }
   };
   return (
-    <div className="sticky-content">
+    <div className="sticky-content is-editing">
       <p ref={ref} className="sticky-text sticky-measure" aria-hidden="true" style={{ fontSize }}>
         {text || '\u200b'}
       </p>
