@@ -1,3 +1,5 @@
+import type { StickySize } from './sticky-size';
+
 /**
  * The board model (ADR 0002). A board is a flat map of stickies keyed by a random ID; every
  * property is its own field and order is a number, so concurrent edits of different fields
@@ -46,7 +48,7 @@ export interface StickyAppearance {
   kind: StickyKind | null;
 }
 
-export interface Sticky extends StickyAppearance {
+export interface Sticky extends StickyAppearance, StickySize {
   id: string;
   text: string;
   /** Top-left corner in board coordinates. */
@@ -56,7 +58,16 @@ export interface Sticky extends StickyAppearance {
   z: number;
 }
 export type StickyField = Exclude<keyof Sticky, 'id'>;
-export const STICKY_FIELDS: readonly StickyField[] = ['kind', 'color', 'text', 'x', 'y', 'z'];
+export const STICKY_FIELDS: readonly StickyField[] = [
+  'kind',
+  'color',
+  'text',
+  'x',
+  'y',
+  'z',
+  'width',
+  'height',
+];
 
 export interface Board {
   stickies: Readonly<Record<string, Sticky>>;

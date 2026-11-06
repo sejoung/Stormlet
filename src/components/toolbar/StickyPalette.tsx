@@ -44,28 +44,16 @@ export function StickyPalette(props: Props) {
   };
   return (
     <aside className="tool-panel" aria-label="보드 도구">
-      <div className="tool-switch" role="group" aria-label="보드 조작">
-        <button
-          type="button"
-          aria-label="선택"
-          aria-pressed={props.tool === 'select'}
-          title="선택 (V)"
-          onClick={() => props.onTool('select')}
-        >
-          <Icon name="select" />
-          <span>선택</span>
-        </button>
-        <button
-          type="button"
-          aria-label="이동"
-          aria-pressed={props.tool === 'pan'}
-          title="이동 (H)"
-          onClick={() => props.onTool('pan')}
-        >
-          <Icon name="pan" />
-          <span>이동</span>
-        </button>
-      </div>
+      <button
+        type="button"
+        className="interact-tool"
+        aria-pressed={props.tool === 'interact'}
+        title="메모를 클릭해 선택 · 배경을 드래그해 이동"
+        onClick={() => props.onTool('interact')}
+      >
+        <Icon name="select" />
+        <span>선택 · 이동</span>
+      </button>
       <div className="palette-heading">
         <Icon name="note" />
         <h2>포스트잇</h2>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefOb
 import { own } from '../../domain/ids';
 import { stackOrder, type Board } from '../../domain/model';
 import type { Move } from '../../domain/commands';
+import { clampStickySize, type StickySize } from '../../domain/sticky-size';
 import { centeredAt, snap, STICKY_HEIGHT, STICKY_WIDTH } from '../../engine/sticky-metrics';
 import {
   panBy,
@@ -26,6 +27,8 @@ interface Props {
   onViewChange(view: View): void;
   onSelect(ids: string[]): void;
   onMove(moves: Move[]): void;
+  onResize(ids: string[], size: StickySize): void;
+  onContextMenu(id: string, point: Point): void;
   onAdd(at: Point): void;
   onStartEdit(id: string | null): void;
   onCommitText(id: string, text: string): void;
@@ -34,6 +37,7 @@ interface Props {
 type Gesture =
   | { type: 'pan'; last: Point }
   | { type: 'place'; start: Point }
+  | { type: 'resize'; id: string; start: Point; original: StickySize; size: StickySize }
   | { type: 'drag'; ids: string[]; start: Point; offset: Point }
   | { type: 'marquee'; start: Point; point: Point; keep: string[] };
 
@@ -49,6 +53,13 @@ export function BoardCanvas(props: Props) {
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const lastPlacement = useRef(0);
+  useEffect(() => {
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setGesture(null);
+    };
+    window.addEventListener('keydown', cancel);
+    return () => window.removeEventListener('keydown', cancel);
+  }, []);
   const local = useCallback(
     (event: { clientX: number; clientY: number }): Point => {
       const rect = element.current!.getBoundingClientRect();
@@ -71,8 +82,9 @@ export function BoardCanvas(props: Props) {
     if ((event.button !== 0 && event.button !== 1) || event.target !== event.currentTarget) return;
     if (event.button === 1) event.preventDefault();
     element.current!.setPointerCapture(event.pointerId);
+    if (tool !== 'sticky' && !event.shiftKey && event.button === 0) onSelect([]);
     if (tool === 'sticky' && event.button === 0) setGesture({ type: 'place', start: local(event) });
-    else if (tool === 'pan' || event.button === 1) setGesture({ type: 'pan', last: local(event) });
+    else if (!event.shiftKey || event.button === 1) setGesture({ type: 'pan', last: local(event) });
     else {
       const at = toBoardPoint(view, local(event));
       const keep = event.shiftKey ? [...selection] : [];
@@ -86,17 +98,13 @@ export function BoardCanvas(props: Props) {
       if (event.button !== 0 || editing === id) return;
       event.stopPropagation();
       element.current!.setPointerCapture(event.pointerId);
-      if (tool === 'pan') {
-        setGesture({ type: 'pan', last: local(event) });
-        return;
-      }
       let ids = selection.has(id) ? [...selection] : [id];
       if (event.shiftKey)
         ids = selection.has(id) ? ids.filter((other) => other !== id) : [...selection, id];
       onSelect(ids);
       setGesture({ type: 'drag', ids, start: local(event), offset: { x: 0, y: 0 } });
     },
-    [selection, editing, local, onSelect, element, tool],
+    [selection, editing, local, onSelect, element],
   );
 
   const onPointerMove = (event: PointerEvent) => {
@@ -111,12 +119,20 @@ export function BoardCanvas(props: Props) {
       const inside = Object.values(board.stickies).filter(
         (sticky) =>
           sticky.x < box.left + box.width &&
-          sticky.x + STICKY_WIDTH > box.left &&
+          sticky.x + sticky.width > box.left &&
           sticky.y < box.top + box.height &&
-          sticky.y + STICKY_HEIGHT > box.top,
+          sticky.y + sticky.height > box.top,
       );
       onSelect([...new Set([...gesture.keep, ...inside.map(({ id }) => id)])]);
       setGesture({ ...gesture, point: at });
+    } else if (gesture.type === 'resize') {
+      setGesture({
+        ...gesture,
+        size: clampStickySize({
+          width: gesture.original.width + (point.x - gesture.start.x) / view.zoom,
+          height: gesture.original.height + (point.y - gesture.start.y) / view.zoom,
+        }),
+      });
     } else {
       const dx = point.x - gesture.start.x;
       const dy = point.y - gesture.start.y;
@@ -125,6 +141,27 @@ export function BoardCanvas(props: Props) {
     }
   };
 
+  const onResizeStart = useCallback(
+    (event: PointerEvent, id: string) => {
+      if (event.button !== 0) return;
+      const sticky = own(board.stickies, id);
+      if (!sticky) return;
+      event.preventDefault();
+      event.stopPropagation();
+      element.current!.setPointerCapture(event.pointerId);
+      onSelect([id]);
+      const { width, height } = sticky;
+      setGesture({
+        type: 'resize',
+        id,
+        start: local(event),
+        original: { width, height },
+        size: { width, height },
+      });
+    },
+    [board, element, local, onSelect],
+  );
+
   const onPointerUp = (event: PointerEvent) => {
     if (gesture?.type === 'place') {
       const at = local(event);
@@ -132,6 +169,8 @@ export function BoardCanvas(props: Props) {
         lastPlacement.current = Date.now();
         props.onAdd(toBoardPoint(view, at));
       }
+    } else if (gesture?.type === 'resize') {
+      props.onResize([gesture.id], gesture.size);
     } else if (gesture?.type === 'drag' && (gesture.offset.x || gesture.offset.y)) {
       props.onMove(
         gesture.ids.flatMap((id) => {
@@ -172,6 +211,7 @@ export function BoardCanvas(props: Props) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={() => setGesture(null)}
+      onLostPointerCapture={() => setGesture(null)}
       onDoubleClick={(event) => {
         if (event.target === event.currentTarget && Date.now() - lastPlacement.current > 500)
           props.onAdd(toBoardPoint(view, local(event)));
@@ -181,10 +221,15 @@ export function BoardCanvas(props: Props) {
         className="board-layer"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}
       >
-        {stackOrder(board).map((sticky) => (
+        {stackOrder(board).map((sticky, index) => (
           <StickyNote
             key={sticky.id}
             sticky={sticky}
+            zIndex={index + 1}
+            resized={gesture?.type === 'resize' && gesture.id === sticky.id ? gesture.size : null}
+            onResize={props.onResize}
+            onContextMenu={props.onContextMenu}
+            onResizeStart={onResizeStart}
             selected={selection.has(sticky.id)}
             editing={editing === sticky.id}
             offset={dragging?.ids.includes(sticky.id) ? dragging.offset : null}

@@ -8,7 +8,7 @@ import {
 } from '../../domain/model';
 
 export type PaletteMode = 'free' | 'eventStorming';
-export type BoardTool = 'select' | 'pan' | 'sticky';
+export type BoardTool = 'interact' | 'sticky';
 export interface PaletteEntry extends StickyAppearance {
   label: string;
 }

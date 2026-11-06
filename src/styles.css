@@ -1,5 +1,6 @@
 @import './styles/toolbar.css';
 @import './styles/board.css';
+@import './styles/context-menu.css';
 
 :root {
   --bg: #f6f5f1;

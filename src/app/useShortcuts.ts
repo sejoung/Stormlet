@@ -25,8 +25,7 @@ export function useShortcuts(handlers: Handlers) {
       else if (mod && key === 'y') handlers.onRedo();
       else if (!mod && (key === 'delete' || key === 'backspace')) handlers.onDelete();
       else if (!mod && key === 'escape') handlers.onEscape();
-      else if (!mod && key === 'v') handlers.onTool('select');
-      else if (!mod && key === 'h') handlers.onTool('pan');
+      else if (!mod && (key === 'v' || key === 'h')) handlers.onTool('interact');
       else if (!mod && /^[1-8]$/.test(key)) handlers.onPalette(Number(key) - 1);
       else return;
       event.preventDefault();

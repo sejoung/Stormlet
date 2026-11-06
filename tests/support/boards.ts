@@ -8,6 +8,8 @@ export const sticky = (id: string, extra: Partial<Sticky> = {}): Sticky => ({
   x: 0,
   y: 0,
   z: 1,
+  width: 160,
+  height: 120,
   ...extra,
 });
 

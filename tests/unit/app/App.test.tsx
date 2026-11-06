@@ -1,57 +1,9 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { App } from '../../../src/app/App';
-import { emptyBoard, type Board } from '../../../src/domain/model';
-import { applyPatches, type Patch } from '../../../src/domain/patch';
-import type { BoardStore } from '../../../src/domain/store';
-
-/** An in-memory store that records what the app hands it and can push outside changes. */
-function memoryStore(board: Board = emptyBoard()) {
-  let listener: ((patches: Patch[]) => void) | null = null;
-  const store: BoardStore & { board: Board; push(patches: Patch[]): void } = {
-    board,
-    load: () => store.board,
-    apply: (patches) => {
-      store.board = applyPatches(store.board, patches).board;
-    },
-    subscribe: (next) => {
-      listener = next;
-      return () => (listener = null);
-    },
-    push: (patches) => listener?.(patches),
-  };
-  return store;
-}
-
-// jsdom lacks pointer capture and PointerEvent; mouse events carry the same fields here.
-Element.prototype.setPointerCapture ??= () => {};
-window.PointerEvent ??= class extends MouseEvent {} as typeof PointerEvent;
-
-const ids = () => {
-  let n = 0;
-  return () => `s${++n}`;
-};
-
-const boardBounds = () => {
-  const board = screen.getByRole('application', { name: '포스트잇 보드' });
-  vi.spyOn(board, 'getBoundingClientRect').mockReturnValue(new DOMRect(200, 80, 1000, 700));
-  return board;
-};
-
-const startDrag = (name: string, x = 800, y = 400) => {
-  const swatch = screen.getByRole('button', { name });
-  fireEvent.pointerDown(swatch, { button: 0, pointerId: 1, clientX: 80, clientY: 180 });
-  fireEvent.pointerMove(swatch, { pointerId: 1, clientX: x, clientY: y });
-  return swatch;
-};
-
-const drop = (swatch: HTMLElement, x = 800, y = 400) => {
-  fireEvent.pointerUp(swatch, { pointerId: 1, clientX: x, clientY: y });
-  // Captured pointer sequences produce a click on the original palette button in browsers.
-  fireEvent.click(swatch);
-};
+import { memoryStore, ids, boardBounds, startDrag, drop } from '../../support/app';
 
 describe('App', () => {
   it('adds a free sticky by double-click, edits its text and undoes both steps', async () => {
@@ -93,7 +45,19 @@ describe('App', () => {
   it('uses the preset to change selected notes and shows external changes', async () => {
     const user = userEvent.setup();
     const store = memoryStore({
-      stickies: { a: { id: 'a', kind: 'event', color: 'orange', text: 'Paid', x: 0, y: 0, z: 1 } },
+      stickies: {
+        a: {
+          id: 'a',
+          kind: 'event',
+          color: 'orange',
+          text: 'Paid',
+          x: 0,
+          y: 0,
+          z: 1,
+          width: 160,
+          height: 120,
+        },
+      },
     });
     render(<App store={store} newId={ids()} />);
     fireEvent.pointerDown(screen.getByRole('button', { name: '도메인 이벤트: Paid' }), {
@@ -118,7 +82,6 @@ describe('App', () => {
     render(<App store={store} newId={ids()} />);
     const board = boardBounds();
     fireEvent.wheel(board, { clientX: 200, clientY: 80, deltaY: -Math.log(2) / 0.002 });
-    await user.click(screen.getByRole('button', { name: '이동' }));
     fireEvent.pointerDown(board, { button: 0, clientX: 400, clientY: 200 });
     fireEvent.pointerMove(board, { clientX: 480, clientY: 240 });
     fireEvent.pointerUp(board);
@@ -184,7 +147,17 @@ describe('App', () => {
   it('drags a new color without recoloring the existing selection', () => {
     const store = memoryStore({
       stickies: {
-        a: { id: 'a', color: 'orange', kind: 'event', text: '기존 메모', x: 0, y: 0, z: 1 },
+        a: {
+          id: 'a',
+          color: 'orange',
+          kind: 'event',
+          text: '기존 메모',
+          x: 0,
+          y: 0,
+          z: 1,
+          width: 160,
+          height: 120,
+        },
       },
     });
     render(<App store={store} newId={ids()} />);
@@ -201,13 +174,33 @@ describe('App', () => {
     const user = userEvent.setup();
     const store = memoryStore({
       stickies: {
-        a: { id: 'a', color: 'yellow', kind: null, text: 'A', x: 40, y: 40, z: 1 },
-        b: { id: 'b', color: 'yellow', kind: null, text: 'B', x: 240, y: 40, z: 2 },
+        a: {
+          id: 'a',
+          color: 'yellow',
+          kind: null,
+          text: 'A',
+          x: 40,
+          y: 40,
+          z: 1,
+          width: 160,
+          height: 120,
+        },
+        b: {
+          id: 'b',
+          color: 'yellow',
+          kind: null,
+          text: 'B',
+          x: 240,
+          y: 40,
+          z: 2,
+          width: 160,
+          height: 120,
+        },
       },
     });
     render(<App store={store} newId={ids()} />);
     const board = boardBounds();
-    fireEvent.pointerDown(board, { button: 0, clientX: 200, clientY: 80 });
+    fireEvent.pointerDown(board, { button: 0, shiftKey: true, clientX: 200, clientY: 80 });
     fireEvent.pointerMove(board, { clientX: 700, clientY: 300 });
     fireEvent.pointerUp(board);
     expect(screen.getByRole('button', { name: '노란색 포스트잇: A' })).toHaveAttribute(

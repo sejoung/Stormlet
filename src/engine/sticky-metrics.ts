@@ -1,8 +1,9 @@
 import type { Point } from './viewport';
+import { DEFAULT_STICKY_SIZE } from '../domain/sticky-size';
 
-/** Every sticky has the same footprint, like paper notes on a wall. */
-export const STICKY_WIDTH = 160;
-export const STICKY_HEIGHT = 120;
+/** Initial footprint; existing notes keep their individual dimensions. */
+export const STICKY_WIDTH = DEFAULT_STICKY_SIZE.width;
+export const STICKY_HEIGHT = DEFAULT_STICKY_SIZE.height;
 /** Positions snap to this grid when a drag ends, so rows of notes line up. */
 export const GRID = 20;
 

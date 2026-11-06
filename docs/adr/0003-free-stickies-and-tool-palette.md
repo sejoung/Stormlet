@@ -2,6 +2,7 @@
 
 - 상태: 채택
 - 날짜: 2026-11-06
+- 후속: 조작 방식과 저장 포맷은 [ADR 0004](0004-direct-manipulation-and-note-size.md)에서 갱신
 
 ## 배경
 

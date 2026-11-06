@@ -1,0 +1,90 @@
+.sticky-context-menu {
+  position: fixed;
+  z-index: 2147483647;
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 16%);
+}
+.sticky-context-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 13px;
+}
+.sticky-context-menu button:hover,
+.sticky-context-menu button:focus-visible {
+  background: var(--selected);
+}
+.context-caption {
+  display: block;
+  margin: 4px 10px 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.context-separator {
+  height: 1px;
+  margin: 6px 2px;
+  background: var(--border);
+}
+.size-presets button span {
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.custom-size {
+  display: flex;
+  align-items: end;
+  gap: 6px;
+  padding: 6px 10px;
+}
+.custom-size label {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.custom-size input {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.custom-size > span {
+  padding-bottom: 7px;
+  color: var(--muted);
+}
+.custom-size button {
+  width: auto;
+  padding: 7px;
+  background: var(--selected);
+  font-size: 12px;
+}
+.sticky-context-menu .context-delete {
+  color: #c33d4b;
+}
+@media (prefers-color-scheme: dark) {
+  .sticky-context-menu .context-delete {
+    color: #ff9ca5;
+  }
+}

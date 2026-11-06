@@ -7,6 +7,8 @@ import {
   setAppearance,
   setColor,
   setText,
+  sendToBack,
+  resizeStickies,
 } from '../../../src/domain/commands';
 import { emptyBoard, stackOrder } from '../../../src/domain/model';
 import { applyPatches } from '../../../src/domain/patch';
@@ -30,6 +32,8 @@ describe('commands', () => {
       x: 10,
       y: 20,
       z: 5,
+      width: 160,
+      height: 120,
     });
     expect(
       addSticky(emptyBoard(), { id: 'c', kind: 'event', color: 'orange', x: 0, y: 0 })[0],
@@ -80,5 +84,32 @@ describe('commands', () => {
       ...board.stickies.event,
       text: 'New text',
     });
+  });
+
+  it('sends a group to the back with stable ties and ignores missing and duplicate IDs', () => {
+    const board = frozen(
+      boardOf(sticky('a', { z: 0 }), sticky('b', { z: 0 }), sticky('c', { z: 1 })),
+    );
+    const applied = applyPatches(board, sendToBack(board, ['c', 'missing', 'b', 'b']));
+    expect(stackOrder(applied.board).map(({ id }) => id)).toEqual(['b', 'c', 'a']);
+    expect(sendToBack(applied.board, ['b', 'c'])).toEqual([]);
+    expect(sendToBack(board, ['missing'])).toEqual([]);
+    expect(bringToFront(board, ['missing'])).toEqual([]);
+    expect(run(applied.board, applied.inverse)).toEqual(board);
+  });
+
+  it('clamps resized dimensions, skips missing notes and undoes without losing external text edits', () => {
+    const board = frozen(boardOf(sticky('a')));
+    const applied = applyPatches(
+      board,
+      resizeStickies(board, ['a', 'missing'], { width: 9999, height: 1 }),
+    );
+    expect(applied.board.stickies.a).toMatchObject({ width: 1280, height: 60 });
+    const outside = run(applied.board, setText(applied.board, 'a', 'Another edit'));
+    expect(run(outside, applied.inverse).stickies.a).toEqual({
+      ...board.stickies.a,
+      text: 'Another edit',
+    });
+    expect(resizeStickies(board, ['a'], { width: NaN, height: 100 })).toEqual([]);
   });
 });

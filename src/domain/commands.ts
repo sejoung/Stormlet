@@ -1,5 +1,6 @@
 import { own } from './ids';
-import { topZ, type Board, type StickyAppearance, type StickyColor } from './model';
+import { topZ, stackOrder, type Board, type StickyAppearance, type StickyColor } from './model';
+import { DEFAULT_STICKY_SIZE, clampStickySize, type StickySize } from './sticky-size';
 import type { Patch } from './patch';
 
 /**
@@ -14,7 +15,7 @@ export interface NewSticky extends StickyAppearance {
 }
 
 export const addSticky = (board: Board, sticky: NewSticky): Patch[] => [
-  { op: 'add', sticky: { text: '', ...sticky, z: topZ(board) + 1 } },
+  { op: 'add', sticky: { text: '', ...DEFAULT_STICKY_SIZE, ...sticky, z: topZ(board) + 1 } },
 ];
 
 export interface Move {
@@ -54,14 +55,39 @@ export const setAppearance = (
 export const deleteStickies = (board: Board, ids: readonly string[]): Patch[] =>
   ids.filter((id) => own(board.stickies, id)).map((id) => ({ op: 'delete', id }));
 
+export const resizeStickies = (board: Board, ids: readonly string[], size: StickySize): Patch[] => {
+  if (!Number.isFinite(size.width) || !Number.isFinite(size.height)) return [];
+  const next = clampStickySize(size);
+  return ids
+    .filter((id) => own(board.stickies, id))
+    .flatMap((id): Patch[] => [
+      { op: 'set', id, field: 'width', value: next.width },
+      { op: 'set', id, field: 'height', value: next.height },
+    ]);
+};
+
 /** Raise `ids` above every other sticky, keeping their order among themselves. */
 export function bringToFront(board: Board, ids: readonly string[]): Patch[] {
-  const raised = ids
-    .map((id) => own(board.stickies, id))
-    .filter((sticky) => sticky !== undefined)
-    .sort((a, b) => a.z - b.z);
+  const picked = new Set(ids);
+  const ordered = stackOrder(board);
+  const raised = ordered.filter(({ id }) => picked.has(id));
   const top = topZ(board);
-  if (raised.length && raised.every((sticky, i) => sticky.z === top - raised.length + 1 + i))
-    return [];
+  if (!raised.length || ordered.slice(-raised.length).every(({ id }) => picked.has(id))) return [];
   return raised.map((sticky, i) => ({ op: 'set', id: sticky.id, field: 'z', value: top + 1 + i }));
+}
+
+/** Lower a group together, keeping its internal order and other notes' fields intact. */
+export function sendToBack(board: Board, ids: readonly string[]): Patch[] {
+  const picked = new Set(ids);
+  const ordered = stackOrder(board);
+  const lowered = ordered.filter(({ id }) => picked.has(id));
+  if (!lowered.length || ordered.slice(0, lowered.length).every(({ id }) => picked.has(id)))
+    return [];
+  const bottom = ordered.reduce((min, sticky) => Math.min(min, sticky.z), 0);
+  return lowered.map((sticky, i) => ({
+    op: 'set',
+    id: sticky.id,
+    field: 'z',
+    value: bottom - lowered.length + i,
+  }));
 }
