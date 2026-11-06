@@ -2,6 +2,7 @@
 
 - 상태: 채택
 - 날짜: 2026-11-06
+- 후속: [흐름 연결선과 저장 형식 버전 6](0006-flow-connections.md)
 - 선행: [ADR 0004](0004-direct-manipulation-and-note-size.md)
 
 ## 결정

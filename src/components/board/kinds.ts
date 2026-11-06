@@ -1,6 +1,6 @@
 import type { StickyColor, StickyKind } from '../../domain/model';
 
-export type BoardTool = 'interact' | 'sticky' | 'hand';
+export type BoardTool = 'interact' | 'sticky' | 'hand' | 'connect';
 
 export const COLOR_STYLES: Record<StickyColor, { label: string; paper: string; ink: string }> = {
   yellow: { label: '노란색', paper: '#fff3a3', ink: '#2e2a07' },

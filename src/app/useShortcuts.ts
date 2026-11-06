@@ -35,6 +35,16 @@ export function useShortcuts(handlers: Handlers) {
         key as 'b' | 'i' | 'u'
       ];
       if (isTyping(event.target)) {
+        if (
+          mod &&
+          key === 's' &&
+          event.target instanceof Element &&
+          event.target.matches('.connection-label-input')
+        ) {
+          handlers.onSave();
+          event.preventDefault();
+          return;
+        }
         if (mod && event.target instanceof HTMLElement && event.target.matches('.sticky-editor')) {
           if (formatKey) handlers.onFormat(formatKey);
           else if (key === 's') handlers.onSave();
@@ -64,6 +74,7 @@ export function useShortcuts(handlers: Handlers) {
       else if (!mod && key === 'v') handlers.onTool('interact');
       else if (!mod && key === 'h') handlers.onTool('hand');
       else if (!mod && key === 'n') handlers.onTool('sticky');
+      else if (!mod && key === 'l') handlers.onTool('connect');
       else if (key === 'f1' || key === '?') handlers.onHelp();
       else return;
       event.preventDefault();

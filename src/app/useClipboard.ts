@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { stackOrder, type Board, type Sticky } from '../domain/model';
+import { stackOrder, type Board } from '../domain/model';
+import { internalConnections } from '../domain/connections/commands';
 import { serializeBoard, parseBoard } from '../adapters/files/stormlet-format';
 import { textCells, type TextCell } from '../engine/paste';
 import { isTyping } from './useShortcuts';
@@ -7,7 +8,7 @@ import { isTyping } from './useShortcuts';
 interface Options {
   board: Board;
   ids: string[];
-  onPaste(notes: Sticky[]): void;
+  onPaste(board: Board): void;
   onText(cells: TextCell[]): void;
   onCut(): void;
   onStatus(message: string): void;
@@ -19,7 +20,10 @@ export function useClipboard(options: Options) {
     const copy = (event: ClipboardEvent) => {
       if (isTyping(event.target) || !event.clipboardData || !options.ids.length) return;
       const notes = stackOrder(options.board).filter((s) => options.ids.includes(s.id));
-      const board = { stickies: Object.fromEntries(notes.map((s) => [s.id, s])) };
+      const board = {
+        stickies: Object.fromEntries(notes.map((s) => [s.id, s])),
+        connections: internalConnections(options.board, options.ids),
+      };
       event.clipboardData.setData('application/x-stormlet', serializeBoard(board));
       event.clipboardData.setData('text/plain', notes.map((s) => s.text).join('\n'));
       event.preventDefault();
@@ -36,9 +40,9 @@ export function useClipboard(options: Options) {
       event.preventDefault();
       try {
         if (structured) {
-          const notes = stackOrder(parseBoard(structured));
-          if (notes.length > 5000) throw new Error('Too many notes');
-          options.onPaste(notes);
+          const board = parseBoard(structured);
+          if (Object.keys(board.stickies).length > 5000) throw new Error('Too many notes');
+          options.onPaste(board);
         } else {
           options.onText(textCells(plain));
           if (plain.length > 3000 || plain.split('\n').length > 50)

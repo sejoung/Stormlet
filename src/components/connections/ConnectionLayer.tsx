@@ -1,0 +1,175 @@
+import { useId, type PointerEvent } from 'react';
+import type { Board } from '../../domain/model';
+import { CONNECTION_COLORS, type Connection } from '../../domain/connections/model';
+import { connectionGeometry } from '../../engine/connections/geometry';
+import type { ConnectionInteraction } from './types';
+
+export const LINE_COLORS = {
+  slate: { color: '#697389', label: '회색' },
+  blue: { color: '#4262ff', label: '파란색' },
+  red: { color: '#da5360', label: '빨간색' },
+  green: { color: '#28936b', label: '초록색' },
+  purple: { color: '#9560ce', label: '보라색' },
+};
+
+export function ConnectionLayer({
+  board,
+  zoom,
+  draft,
+  links,
+  onReconnect,
+  onKeyboardReconnect,
+  overlay = false,
+}: {
+  board: Board;
+  zoom: number;
+  draft: Connection | null;
+  links: ConnectionInteraction;
+  overlay?: boolean;
+  onReconnect(event: PointerEvent, id: string, end: 'from' | 'to'): void;
+  onKeyboardReconnect(id: string, end: 'from' | 'to'): void;
+}) {
+  const prefix = useId().replace(/:/g, '');
+  const lines = Object.values(board.connections ?? {}).filter((line) => line.id !== draft?.id);
+  if (draft) lines.push(draft);
+  const selected = lines.find((line) => line.id === links.selectedId);
+  const geometry = selected && connectionGeometry(board, selected);
+  if (overlay)
+    return (
+      <svg className="connection-layer connection-overlay" aria-label="연결선 끝점">
+        {selected &&
+          !selected.locked &&
+          geometry &&
+          (['from', 'to'] as const).map((end) => (
+            <circle
+              key={end}
+              className="connection-endpoint"
+              role="button"
+              tabIndex={0}
+              aria-label={`연결선 ${end === 'from' ? '시작점' : '끝점'} 이동`}
+              cx={geometry[end].x}
+              cy={geometry[end].y}
+              r={6 / zoom}
+              onPointerDown={(event) => onReconnect(event, selected.id, end)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onKeyboardReconnect(selected.id, end);
+                }
+                if (event.key === 'Escape') event.currentTarget.blur();
+              }}
+            />
+          ))}
+      </svg>
+    );
+  return (
+    <svg className="connection-layer" aria-label="흐름 연결선">
+      <defs>
+        {CONNECTION_COLORS.map((color) => (
+          <marker
+            key={color}
+            id={`${prefix}-${color}`}
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="8"
+            markerHeight="8"
+            orient="auto-start-reverse"
+          >
+            <path d="M 1 1 L 9 5 L 1 9 Z" fill={LINE_COLORS[color].color} />
+          </marker>
+        ))}
+      </defs>
+      {lines.map((line) => {
+        const shape = connectionGeometry(board, line);
+        if (!shape) return null;
+        const preview = line === draft;
+        if (preview && Math.hypot(shape.to.x - shape.from.x, shape.to.y - shape.from.y) < 1)
+          return null;
+        if (
+          preview &&
+          'stickyId' in line.from &&
+          'stickyId' in line.to &&
+          line.from.stickyId === line.to.stickyId
+        )
+          return null;
+        const label =
+          line.label ||
+          `${'stickyId' in line.from ? board.stickies[line.from.stickyId]?.text || '빈 메모' : '자유 시작점'} → ${'stickyId' in line.to ? board.stickies[line.to.stickyId]?.text || '빈 메모' : '자유 끝점'}`;
+        return (
+          <g
+            key={line.id}
+            className={`connection${line.id === links.selectedId ? ' is-selected' : ''}${preview ? ' is-preview' : ''}`}
+            role="button"
+            aria-hidden={preview}
+            tabIndex={preview ? -1 : 0}
+            aria-label={`연결선: ${label}`}
+            aria-pressed={line.id === links.selectedId}
+            data-connection-id={line.id}
+            onFocus={() => {
+              if (!preview) links.onSelect(line.id);
+            }}
+            onPointerDown={(event) => {
+              if (preview || event.button !== 0) return;
+              event.stopPropagation();
+              event.currentTarget.focus();
+              links.onSelect(line.id);
+            }}
+            onDoubleClick={(event) => {
+              event.stopPropagation();
+              if (!preview && !line.locked) links.onEditLabel(line.id);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !line.locked) {
+                event.preventDefault();
+                event.stopPropagation();
+                links.onEditLabel(line.id);
+              }
+            }}
+          >
+            {line.id === links.selectedId && (
+              <path
+                className="connection-selection"
+                d={shape.path}
+                fill="none"
+                strokeWidth={line.width + 6 / zoom}
+              />
+            )}
+            <path
+              className="connection-stroke"
+              d={shape.path}
+              fill="none"
+              stroke={LINE_COLORS[line.color].color}
+              strokeWidth={line.width}
+              strokeDasharray={line.dashed ? '8 6' : undefined}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              markerStart={line.startArrow ? `url(#${prefix}-${line.color})` : undefined}
+              markerEnd={line.endArrow ? `url(#${prefix}-${line.color})` : undefined}
+            />
+            {!preview && (
+              <path
+                className="connection-hit"
+                d={shape.path}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={16 / zoom}
+              />
+            )}
+            {!!line.label && (
+              <text
+                className="connection-label"
+                x={shape.label.x}
+                y={shape.label.y - 10}
+                textAnchor="middle"
+              >
+                {line.label}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}

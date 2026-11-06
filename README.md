@@ -14,6 +14,9 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 - Drag the background to select; Space+drag or the hand tool pans. Use `N` for notes, `V` for select, `H` for hand
 - Whole-note bold/italic/underline, alignment, auto/manual font sizes, square and rectangular notes
 - Duplicate with Ctrl/Cmd+D or Alt/Option+drag; copy/cut/paste preserves styles and groups
+- Connect notes with `L` or drag a side port; attached arrows follow moves and resizing
+- Straight, elbow and curved connections, arrowheads, color/width/dashes, labels, endpoint reattachment and locking
+- Copy or duplicate a flow with its internal connections; deleting a note also removes its incident lines, all undoable
 - Bulk entry and spreadsheet paste (up to 50 rows × 100 columns, 3,000 characters per note)
 - Align, distribute and arrange notes in a grid; alignment guides, grouping and locking
 - Toggle emoji reactions and search note contents
@@ -23,7 +26,7 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 - Undo and redo (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`)
 - Autosave in the browser, synced across tabs of the same browser
 - Double-click the board title to rename it (also Enter/F2); the title is autosaved and used as the download filename
-- Version 5 `.stormlet` files retain the title, sizes, styles, groups, locks and reactions; versions 1–4 remain readable
+- Version 6 `.stormlet` files retain the title, notes, connections and their styles; versions 1–5 remain readable
 - Keyboard help, responsive controls and dark mode
 
 Reactions toggle using a stable local identifier without a visible profile. Same-browser tab synchronization includes the board title.

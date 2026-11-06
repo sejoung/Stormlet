@@ -5,6 +5,8 @@ import type { Point } from '../../engine/viewport';
 import { COLOR_STYLES, KIND_LABELS } from './kinds';
 import { StickyText, StickyEditor } from './NoteContent';
 import { Icon } from '../toolbar/Icon';
+import { ConnectionPorts } from '../connections/ConnectionPorts';
+import type { ConnectionSide } from '../../domain/connections/model';
 
 const RESIZE_KEYS: Record<string, [number, number]> = {
   ArrowRight: [20, 0],
@@ -15,6 +17,9 @@ const RESIZE_KEYS: Record<string, [number, number]> = {
 
 interface Props {
   sticky: Sticky;
+  showPorts: boolean;
+  onConnect(event: PointerEvent, side: ConnectionSide): void;
+  onKeyboardConnect(side: ConnectionSide): void;
   selected: boolean;
   editing: boolean;
   seed?: string;
@@ -104,6 +109,9 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         />
       ) : (
         <StickyText note={sticky} size={size} />
+      )}
+      {props.showPorts && (
+        <ConnectionPorts onStart={props.onConnect} onKeyboardStart={props.onKeyboardConnect} />
       )}
       {sticky.locked && (
         <span className="note-lock" aria-label="잠긴 메모">

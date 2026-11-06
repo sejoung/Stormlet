@@ -43,10 +43,19 @@ export const setColor = (board: Board, ids: readonly string[], color: StickyColo
     .filter((id) => own(board.stickies, id) && !board.stickies[id].locked)
     .map((id) => ({ op: 'set', id, field: 'color', value: color }));
 
-export const deleteStickies = (board: Board, ids: readonly string[]): Patch[] =>
-  ids
-    .filter((id) => own(board.stickies, id) && !board.stickies[id].locked)
-    .map((id) => ({ op: 'delete', id }));
+export const deleteStickies = (board: Board, ids: readonly string[]): Patch[] => {
+  const removed = new Set(
+    ids.filter((id) => own(board.stickies, id) && !board.stickies[id].locked),
+  );
+  const connections: Patch[] = Object.values(board.connections ?? {})
+    .filter(
+      (line) =>
+        ('stickyId' in line.from && removed.has(line.from.stickyId)) ||
+        ('stickyId' in line.to && removed.has(line.to.stickyId)),
+    )
+    .map((line) => ({ op: 'connection:delete', id: line.id }));
+  return [...connections, ...[...removed].map((id): Patch => ({ op: 'delete', id }))];
+};
 
 export const resizeStickies = (board: Board, ids: readonly string[], size: StickySize): Patch[] => {
   if (!Number.isFinite(size.width) || !Number.isFinite(size.height)) return [];

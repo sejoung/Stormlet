@@ -1,5 +1,6 @@
 import type { StickySize } from './sticky-size';
 import type { NoteDetails } from './note-details';
+import type { Connection } from './connections/model';
 
 /**
  * The board model (ADR 0002). A board is a flat map of stickies keyed by a random ID; every
@@ -93,6 +94,7 @@ export const STICKY_FIELDS: readonly StickyField[] = [
 
 export interface Board {
   title?: string;
+  connections?: Readonly<Record<string, Connection>>;
   stickies: Readonly<Record<string, Sticky>>;
 }
 

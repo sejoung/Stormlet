@@ -1,5 +1,11 @@
 import { own } from './ids';
 import { STICKY_FIELDS, type Board, type Sticky, type StickyField } from './model';
+import {
+  CONNECTION_FIELDS,
+  type Connection,
+  type ConnectionPatch,
+  type ConnectionSetPatch,
+} from './connections/model';
 
 /**
  * The only way a board changes (ADR 0002). Commands return patches, history stores their
@@ -12,7 +18,8 @@ export type Patch =
   | { op: 'add'; sticky: Sticky }
   | SetPatch
   | { op: 'delete'; id: string }
-  | { op: 'title'; value: string | undefined };
+  | { op: 'title'; value: string | undefined }
+  | ConnectionPatch;
 
 export interface Applied {
   board: Board;
@@ -30,7 +37,34 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
   const write = () => (stickies ??= { ...board.stickies });
   const inverse: Patch[] = [];
   let title = board.title;
+  let connections: Record<string, Connection> | null = null;
+  const currentConnections = () => connections ?? board.connections ?? {};
+  const writeConnections = () => (connections ??= { ...board.connections });
   for (const patch of patches) {
+    if (patch.op === 'connection:add') {
+      const before = own(currentConnections(), patch.connection.id);
+      writeConnections()[patch.connection.id] = patch.connection;
+      inverse.push(
+        before
+          ? { op: 'connection:add', connection: before }
+          : { op: 'connection:delete', id: patch.connection.id },
+      );
+      continue;
+    }
+    if (patch.op === 'connection:delete' || patch.op === 'connection:set') {
+      const before = own(currentConnections(), patch.id);
+      if (!before) continue;
+      if (patch.op === 'connection:delete') {
+        delete writeConnections()[patch.id];
+        inverse.push({ op: 'connection:add', connection: before });
+      } else if (before[patch.field] !== patch.value) {
+        const next = { ...before, [patch.field]: patch.value };
+        if (patch.value === undefined) delete (next as Partial<Connection>)[patch.field];
+        writeConnections()[patch.id] = next;
+        inverse.push({ ...patch, value: before[patch.field] } as ConnectionSetPatch);
+      }
+      continue;
+    }
     if (patch.op === 'title') {
       if (title !== patch.value) {
         inverse.push({ op: 'title', value: title });
@@ -54,8 +88,13 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
       inverse.push({ ...patch, value: before[patch.field] } as SetPatch);
     }
   }
-  if (!stickies && title === board.title) return { board, inverse: inverse.reverse() };
+  if (!stickies && !connections && title === board.title)
+    return { board, inverse: inverse.reverse() };
   const next: Board = { ...board, stickies: stickies ?? board.stickies };
+  if (connections) {
+    if (Object.keys(connections).length) next.connections = connections;
+    else delete next.connections;
+  }
   if (title === undefined) delete next.title;
   else next.title = title;
   return { board: next, inverse: inverse.reverse() };
@@ -65,6 +104,21 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
 export function diffBoards(from: Board, to: Board): Patch[] {
   const patches: Patch[] = [];
   if (from.title !== to.title) patches.push({ op: 'title', value: to.title });
+  for (const id of Object.keys(from.connections ?? {}))
+    if (!own(to.connections ?? {}, id)) patches.push({ op: 'connection:delete', id });
+  for (const connection of Object.values(to.connections ?? {})) {
+    const before = own(from.connections ?? {}, connection.id);
+    if (!before) patches.push({ op: 'connection:add', connection });
+    else
+      for (const field of CONNECTION_FIELDS)
+        if (before[field] !== connection[field])
+          patches.push({
+            op: 'connection:set',
+            id: connection.id,
+            field,
+            value: connection[field],
+          } as ConnectionSetPatch);
+  }
   for (const id of Object.keys(from.stickies))
     if (!own(to.stickies, id)) patches.push({ op: 'delete', id });
   for (const sticky of Object.values(to.stickies)) {

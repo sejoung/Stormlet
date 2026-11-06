@@ -1,0 +1,185 @@
+.board.tool-connect {
+  cursor: crosshair;
+}
+.connection-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+.connection-overlay {
+  z-index: 2147483645;
+}
+.connection {
+  outline: none;
+}
+.connection-hit {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.connection-stroke {
+  pointer-events: none;
+}
+.connection-selection {
+  stroke: var(--focus);
+  opacity: 0.2;
+  pointer-events: none;
+}
+.connection:focus-visible .connection-stroke {
+  stroke: var(--focus);
+}
+.connection.is-preview {
+  opacity: 0.65;
+  pointer-events: none;
+}
+.connection-label {
+  font:
+    14px system-ui,
+    sans-serif;
+  fill: var(--text);
+  stroke: var(--bg);
+  stroke-width: 6px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  pointer-events: all;
+  cursor: text;
+}
+.connection-endpoint {
+  fill: var(--surface);
+  stroke: var(--focus);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  cursor: crosshair;
+  pointer-events: all;
+}
+.connection-endpoint:focus-visible {
+  fill: var(--selected);
+  outline: 2px solid var(--focus);
+}
+.connection-port {
+  position: absolute;
+  z-index: 3;
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+  cursor: crosshair;
+  touch-action: none;
+}
+.connection-port:hover,
+.connection-port:focus-visible {
+  transform: scale(1.25);
+}
+.port-top {
+  left: calc(50% - 5px);
+  top: -15px;
+}
+.port-right {
+  top: calc(50% - 5px);
+  right: -15px;
+}
+.port-bottom {
+  left: calc(50% - 5px);
+  bottom: -15px;
+}
+.port-left {
+  top: calc(50% - 5px);
+  left: -15px;
+}
+.connection-toolbar {
+  position: absolute;
+  z-index: 42;
+  width: 330px;
+  max-width: calc(100% - 24px);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+.connection-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.connection-tools > span {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+.connection-tools select {
+  min-height: 29px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+}
+.connection-tools button {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  padding: 5px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+}
+.connection-tools button:hover:not(:disabled),
+.connection-tools button[aria-pressed='true'] {
+  background: var(--selected);
+  color: var(--accent);
+}
+.connection-tools label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.connection-tools input {
+  margin: 0 3px 0 0;
+  accent-color: var(--focus);
+}
+.connection-colors button {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+}
+.connection-colors button[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.connection-label-input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  outline-color: var(--focus);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.board.tool-hand .connection-hit,
+.board.tool-hand .connection-label,
+.board.tool-hand .connection-endpoint,
+.board.tool-connect .connection-hit {
+  pointer-events: none;
+}
+.board.tool-connect .connection-label {
+  pointer-events: none;
+}

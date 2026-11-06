@@ -6,13 +6,7 @@ import {
   updateNotes,
   type Arrangement,
 } from '../domain/note-actions';
-import {
-  stackOrder,
-  topZ,
-  type Board,
-  type Sticky,
-  DEFAULT_STICKY_APPEARANCE,
-} from '../domain/model';
+import { stackOrder, topZ, type Board, DEFAULT_STICKY_APPEARANCE } from '../domain/model';
 import type { NoteDetails } from '../domain/note-details';
 import type { Patch } from '../domain/patch';
 import type { Point } from '../engine/viewport';
@@ -53,14 +47,15 @@ export function useNoteActions(options: Options) {
     });
     onSelect(created);
   };
-  const pasteNotes = (notes: Sticky[]) => {
+  const pasteNotes = (pasted: Board) => {
+    const notes = stackOrder(pasted);
     if (!notes.length) return;
     const at = options.center();
     const left = Math.min(...notes.map((s) => s.x)),
       top = Math.min(...notes.map((s) => s.y));
     let created: string[] = [];
     edit((current) => {
-      const next = cloneNotes(current, notes, newId, at.x - left, at.y - top);
+      const next = cloneNotes(current, notes, newId, at.x - left, at.y - top, pasted.connections);
       created = next.ids;
       return next.patches;
     });

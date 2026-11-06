@@ -4,7 +4,7 @@ import { stackOrder, type Board } from '../../domain/model';
 import type { Move } from '../../domain/commands';
 import { clampStickySize, type StickySize } from '../../domain/sticky-size';
 import { groupSelection } from '../../domain/note-actions';
-import { snapOffset, type Guides } from '../../engine/snapping';
+import { snapOffset } from '../../engine/snapping';
 import {
   panBy,
   toBoardPoint,
@@ -13,11 +13,17 @@ import {
   type Point,
   type View,
 } from '../../engine/viewport';
-import { COLOR_STYLES, type BoardTool } from './kinds';
+import type { BoardTool } from './kinds';
+import { rectangle, previewBoard, type Gesture } from './board-gestures';
+import { BoardOverlays } from './BoardOverlays';
+import { ConnectionLayer } from '../connections/ConnectionLayer';
+import { useConnectionDrawing } from '../connections/useConnectionDrawing';
+import type { ConnectionInteraction } from '../connections/types';
 import { StickyNote } from './StickyNote';
 
 interface Props {
   board: Board;
+  links: ConnectionInteraction;
   view: View;
   selection: ReadonlySet<string>;
   editing: string | null;
@@ -38,35 +44,20 @@ interface Props {
   onReact(id: string, emoji: string): void;
 }
 
-type Gesture =
-  | { type: 'pan'; last: Point }
-  | { type: 'place'; start: Point }
-  | { type: 'resize'; id: string; start: Point; original: StickySize; size: StickySize }
-  | {
-      type: 'drag';
-      ids: string[];
-      start: Point;
-      offset: Point;
-      duplicate: boolean;
-      guides?: Guides;
-    }
-  | { type: 'marquee'; start: Point; point: Point; keep: string[] };
-
 const DRAG_THRESHOLD = 3;
-const rectangle = (a: Point, b: Point) => ({
-  left: Math.min(a.x, b.x),
-  top: Math.min(a.y, b.y),
-  width: Math.abs(a.x - b.x),
-  height: Math.abs(a.y - b.y),
-});
 
 export function BoardCanvas(props: Props) {
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const [space, setSpace] = useState(false);
+  const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
+  const cancelDrawing = drawing.cancel;
   useEffect(() => {
     const cancel = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setGesture(null);
+      if (event.key === 'Escape') {
+        setGesture(null);
+        cancelDrawing();
+      }
       if (
         event.code === 'Space' &&
         !(
@@ -84,6 +75,7 @@ export function BoardCanvas(props: Props) {
     const blur = () => {
       setSpace(false);
       setGesture(null);
+      cancelDrawing();
     };
     window.addEventListener('keydown', cancel);
     window.addEventListener('keyup', release);
@@ -93,7 +85,7 @@ export function BoardCanvas(props: Props) {
       window.removeEventListener('keyup', release);
       window.removeEventListener('blur', blur);
     };
-  }, []);
+  }, [cancelDrawing]);
   const local = useCallback(
     (event: { clientX: number; clientY: number }): Point => {
       const rect = element.current!.getBoundingClientRect();
@@ -119,6 +111,7 @@ export function BoardCanvas(props: Props) {
 
   const onBackgroundDown = (event: PointerEvent) => {
     if ((event.button !== 0 && event.button !== 1) || event.target !== event.currentTarget) return;
+    if (!space && event.button === 0 && drawing.backgroundDown(event)) return;
     if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
     if (event.button === 1 || space) event.preventDefault();
     element.current!.setPointerCapture(event.pointerId);
@@ -135,36 +128,36 @@ export function BoardCanvas(props: Props) {
     }
   };
 
-  const onStickyDown = useCallback(
-    (event: PointerEvent, id: string) => {
-      if (event.button !== 0 || editing === id) return;
-      event.stopPropagation();
-      event.currentTarget.setPointerCapture(event.pointerId);
-      if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
-      if (space || tool === 'hand') {
-        setGesture({ type: 'pan', last: local(event) });
-        return;
-      }
-      const group = groupSelection(board, [id]);
-      let ids = selection.has(id) ? [...selection] : group;
-      if (event.shiftKey || event.metaKey || event.ctrlKey)
-        ids = selection.has(id)
-          ? ids.filter((other) => !group.includes(other))
-          : [...selection, ...group];
-      onSelect(ids);
-      if (board.stickies[id].locked) return;
-      setGesture({
-        type: 'drag',
-        ids: ids.filter((other) => !board.stickies[other]?.locked),
-        start: local(event),
-        offset: { x: 0, y: 0 },
-        duplicate: event.altKey,
-      });
-    },
-    [selection, editing, local, onSelect, board, space, tool],
-  );
+  const onStickyDown = (event: PointerEvent, id: string) => {
+    if (!space && tool !== 'hand' && drawing.backgroundDown(event, { stickyId: id, side: 'auto' }))
+      return;
+    if (event.button !== 0 || editing === id) return;
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
+    if (space || tool === 'hand') {
+      setGesture({ type: 'pan', last: local(event) });
+      return;
+    }
+    const group = groupSelection(board, [id]);
+    let ids = selection.has(id) ? [...selection] : group;
+    if (event.shiftKey || event.metaKey || event.ctrlKey)
+      ids = selection.has(id)
+        ? ids.filter((other) => !group.includes(other))
+        : [...selection, ...group];
+    onSelect(ids);
+    if (board.stickies[id].locked) return;
+    setGesture({
+      type: 'drag',
+      ids: ids.filter((other) => !board.stickies[other]?.locked),
+      start: local(event),
+      offset: { x: 0, y: 0 },
+      duplicate: event.altKey,
+    });
+  };
 
   const onPointerMove = (event: PointerEvent) => {
+    if (drawing.move(event)) return;
     if (!gesture || gesture.type === 'place') return;
     const point = local(event);
     if (gesture.type === 'pan') {
@@ -230,6 +223,7 @@ export function BoardCanvas(props: Props) {
   );
 
   const onPointerUp = (event: PointerEvent) => {
+    if (drawing.up(event)) return;
     if (gesture?.type === 'place') {
       const at = local(event);
       if (Math.hypot(at.x - gesture.start.x, at.y - gesture.start.y) < DRAG_THRESHOLD) {
@@ -253,6 +247,9 @@ export function BoardCanvas(props: Props) {
   };
 
   const dragging = gesture?.type === 'drag' ? gesture : null;
+  const displayed = previewBoard(board, gesture);
+  const reconnect = (event: PointerEvent, id: string, end: 'from' | 'to') =>
+    drawing.begin(event, undefined, { id, end });
   return (
     <div
       ref={element}
@@ -260,16 +257,36 @@ export function BoardCanvas(props: Props) {
       role="application"
       aria-label="포스트잇 보드"
       tabIndex={0}
+      onKeyDownCapture={(event) => {
+        if (!drawing.active || event.key !== 'Enter' || !(event.target instanceof Element)) return;
+        const id = event.target.closest('[data-sticky-id]')?.getAttribute('data-sticky-id');
+        if (id) {
+          event.preventDefault();
+          event.stopPropagation();
+          drawing.confirm({ stickyId: id, side: 'auto' });
+        }
+      }}
       onPointerDown={onBackgroundDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => setGesture(null)}
+      onPointerCancel={() => {
+        setGesture(null);
+        cancelDrawing();
+      }}
       onLostPointerCapture={() => setGesture(null)}
     >
       <div
         className="board-layer"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}
       >
+        <ConnectionLayer
+          board={displayed}
+          zoom={view.zoom}
+          draft={drawing.draft}
+          links={props.links}
+          onReconnect={reconnect}
+          onKeyboardReconnect={drawing.keyboardReconnect}
+        />
         {stackOrder(board).map((sticky, index) => (
           <StickyNote
             key={sticky.id}
@@ -285,6 +302,14 @@ export function BoardCanvas(props: Props) {
             reactor={props.reactor}
             dimmed={!!props.matches && !props.matches.has(sticky.id)}
             onReact={props.onReact}
+            showPorts={
+              !editing &&
+              !space &&
+              tool !== 'hand' &&
+              (selection.has(sticky.id) || tool === 'connect')
+            }
+            onConnect={(event, side) => drawing.begin(event, { stickyId: sticky.id, side })}
+            onKeyboardConnect={(side) => drawing.keyboardStart({ stickyId: sticky.id, side })}
             offset={
               dragging?.ids.includes(sticky.id) && !dragging.duplicate ? dragging.offset : null
             }
@@ -293,52 +318,22 @@ export function BoardCanvas(props: Props) {
             onCommitText={props.onCommitText}
           />
         ))}
-        {dragging?.duplicate &&
-          dragging.ids.map((id) => {
-            const note = board.stickies[id];
-            return (
-              <div
-                key={`copy-${id}`}
-                className="sticky sticky-preview"
-                aria-hidden="true"
-                style={{
-                  left: note.x + dragging.offset.x,
-                  top: note.y + dragging.offset.y,
-                  width: note.width,
-                  height: note.height,
-                  background: COLOR_STYLES[note.color].paper,
-                  color: COLOR_STYLES[note.color].ink,
-                }}
-              >
-                {note.text || '복제'}
-              </div>
-            );
-          })}
-        {gesture?.type === 'marquee' && (
-          <div className="selection-box" style={rectangle(gesture.start, gesture.point)} />
-        )}
-        {dragging?.guides?.x !== undefined && (
-          <div
-            className="alignment-guide guide-vertical"
-            aria-hidden="true"
-            style={{
-              left: dragging.guides.x,
-              top: -view.y / view.zoom,
-              height: (element.current?.clientHeight ?? 0) / view.zoom,
-            }}
-          />
-        )}
-        {dragging?.guides?.y !== undefined && (
-          <div
-            className="alignment-guide guide-horizontal"
-            aria-hidden="true"
-            style={{
-              top: dragging.guides.y,
-              left: -view.x / view.zoom,
-              width: (element.current?.clientWidth ?? 0) / view.zoom,
-            }}
-          />
-        )}
+        <BoardOverlays
+          board={board}
+          gesture={gesture}
+          view={view}
+          width={element.current?.clientWidth ?? 0}
+          height={element.current?.clientHeight ?? 0}
+        />
+        <ConnectionLayer
+          overlay
+          board={displayed}
+          zoom={view.zoom}
+          draft={drawing.draft}
+          links={props.links}
+          onReconnect={reconnect}
+          onKeyboardReconnect={drawing.keyboardReconnect}
+        />
       </div>
     </div>
   );

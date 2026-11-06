@@ -37,6 +37,9 @@ import { HelpDialog } from '../components/dialogs/HelpDialog';
 import { BoardSearch } from '../components/toolbar/BoardSearch';
 import { BoardChrome } from '../components/board/BoardChrome';
 import { updateNotes } from '../domain/note-actions';
+import { useConnectionSession } from './useConnectionSession';
+import { ConnectionToolbar } from '../components/connections/ConnectionToolbar';
+import { connectionGeometry } from '../engine/connections/geometry';
 
 interface Props {
   store: BoardStore;
@@ -60,6 +63,19 @@ export function App({ store, newId }: Props) {
   const [menu, setMenu] = useState<{ ids: string[]; point: Point } | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const [status, setStatus] = useState<string | null>(null);
+  const links = useConnectionSession({
+    board,
+    edit,
+    newId,
+    clearNotes: () => setPicked([]),
+    onTool: () => setTool('interact'),
+    onStatus: setStatus,
+  });
+  const clearConnection = links.clear;
+  const selectNotes = (ids: string[]) => {
+    links.clear();
+    setPicked(ids);
+  };
   useEffect(() => {
     if (!status) return;
     const timer = window.setTimeout(() => setStatus(null), 5000);
@@ -86,11 +102,12 @@ export function App({ store, newId }: Props) {
     reactor,
     newId,
     edit,
-    onSelect: setPicked,
+    onSelect: selectNotes,
     onStatus: setStatus,
     center: () => toBoardPoint(view, center()),
   });
-  const remove = () => edit((current) => deleteStickies(current, activeIds));
+  const remove = () =>
+    links.selected ? links.remove() : edit((current) => deleteStickies(current, activeIds));
   useClipboard({
     board,
     ids: activeIds,
@@ -102,7 +119,12 @@ export function App({ store, newId }: Props) {
   const fit = (ids?: string[]) => {
     const rect = boardElement.current!.getBoundingClientRect();
     const next = fitView(
-      Object.values(board.stickies).filter((s) => !ids || ids.includes(s.id)),
+      [
+        ...Object.values(board.stickies).filter((s) => !ids || ids.includes(s.id)),
+        ...Object.values(board.connections ?? {})
+          .filter((line) => !ids || links.selectedId === line.id)
+          .flatMap((line) => connectionGeometry(board, line)?.bounds ?? []),
+      ],
       rect.width,
       rect.height,
     );
@@ -115,6 +137,7 @@ export function App({ store, newId }: Props) {
   };
 
   const onAdd = (at: Point) => {
+    clearConnection();
     const id = newId();
     edit((current) => addSticky(current, { id, ...DEFAULT_STICKY_APPEARANCE, ...centeredAt(at) }));
     setPicked([id]);
@@ -132,11 +155,12 @@ export function App({ store, newId }: Props) {
   );
   const onContextMenu = useCallback(
     (id: string, point: Point) => {
+      clearConnection();
       const ids = selection.has(id) ? [...selection] : [id];
       setPicked(ids);
       setMenu({ ids, point });
     },
-    [selection],
+    [selection, clearConnection],
   );
   const menuIds = menu?.ids.filter((id) => own(board.stickies, id)) ?? [];
 
@@ -150,6 +174,11 @@ export function App({ store, newId }: Props) {
   const flushEditor = () => {
     const editor = boardElement.current?.querySelector<HTMLTextAreaElement>('.sticky-editor');
     if (editing && editor) onCommitText(editing, editor.value.trim());
+    const label =
+      boardElement.current?.parentElement?.querySelector<HTMLInputElement>(
+        '.connection-label-input',
+      );
+    if (links.selected && label) links.onChange(links.selected.id, { label: label.value.trim() });
   };
   const save = () => {
     flushEditor();
@@ -165,6 +194,7 @@ export function App({ store, newId }: Props) {
       setPicked([]);
       setEditing(null);
       setMenu(null);
+      links.clear();
       setStatus(`${file.name}을(를) 열었습니다.`);
     } catch (error) {
       setStatus(`열 수 없는 파일입니다: ${(error as Error).message}`);
@@ -175,16 +205,23 @@ export function App({ store, newId }: Props) {
     onUndo: undo,
     onRedo: redo,
     onDelete: remove,
-    onTool: setTool,
-    onDuplicate: (offset, directional) => actions.duplicate(activeIds, offset, directional),
+    onTool: (tool) => {
+      links.clear();
+      setTool(tool);
+    },
+    onDuplicate: (offset, directional) =>
+      links.selected ? links.duplicate() : actions.duplicate(activeIds, offset, directional),
     onSelectAll: () =>
-      setPicked(
+      selectNotes(
         Object.values(board.stickies)
           .filter((s) => !s.locked)
           .map((s) => s.id),
       ),
     onGroup: actions.group,
-    onLock: actions.lock,
+    onLock: () =>
+      links.selected
+        ? links.onChange(links.selected.id, { locked: !links.selected.locked })
+        : actions.lock(),
     onFormat: actions.toggleFormat,
     onNudge: (offset) =>
       onMove(selectedNotes.map((s) => ({ id: s.id, x: s.x + offset.x, y: s.y + offset.y }))),
@@ -195,6 +232,7 @@ export function App({ store, newId }: Props) {
     onEscape: () => {
       setPicked([]);
       setTool('interact');
+      links.clear();
     },
   });
 
@@ -220,13 +258,17 @@ export function App({ store, newId }: Props) {
       <main className="workspace">
         <CreationToolbar
           tool={tool}
-          onTool={setTool}
+          onTool={(tool) => {
+            links.clear();
+            setTool(tool);
+          }}
           onAddCenter={() => onAdd(toBoardPoint(view, center()))}
           onBulk={() => setDialog('bulk')}
         />
         <div className="canvas-area">
           <BoardCanvas
             board={board}
+            links={links}
             view={view}
             selection={selection}
             editing={editing}
@@ -236,7 +278,7 @@ export function App({ store, newId }: Props) {
             element={boardElement}
             tool={tool}
             onViewChange={setView}
-            onSelect={setPicked}
+            onSelect={selectNotes}
             onMove={onMove}
             onResize={onResize}
             onContextMenu={onContextMenu}
@@ -246,6 +288,17 @@ export function App({ store, newId }: Props) {
             onDuplicate={actions.duplicate}
             onReact={(id, emoji) => actions.react(emoji, [id])}
           />
+          {links.selected && (
+            <ConnectionToolbar
+              key={links.selected.id}
+              board={board}
+              line={links.selected}
+              view={view}
+              editingLabel={links.editingLabel}
+              onChange={(values) => links.onChange(links.selected!.id, values)}
+              onDelete={links.remove}
+            />
+          )}
           {!!selectedNotes.length && !menu && (
             <SelectionToolbar
               key={activeIds.join(',')}
@@ -284,7 +337,7 @@ export function App({ store, newId }: Props) {
               notes={matches}
               onQuery={setQuery}
               onSelect={(id) => {
-                setPicked([id]);
+                selectNotes([id]);
                 fit([id]);
               }}
               onClose={() => {
@@ -294,7 +347,9 @@ export function App({ store, newId }: Props) {
             />
           )}
           <BoardChrome
-            empty={!Object.keys(board.stickies).length}
+            empty={
+              !Object.keys(board.stickies).length && !Object.keys(board.connections ?? {}).length
+            }
             tool={tool}
             zoom={view.zoom}
             onZoom={(zoom) => setView(zoomAround(view, zoom, center()))}

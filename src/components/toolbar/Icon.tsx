@@ -7,6 +7,8 @@ const paths = {
   pan: 'M8 12V6a2 2 0 0 1 4 0v6-8a2 2 0 0 1 4 0v8-6a2 2 0 0 1 4 0v9c0 5-3 7-7 7-3 0-5-2-7-5l-3-4a2 2 0 0 1 3-2l2 2Z',
   note: 'M4 3h16v13l-5 5H4V3Zm11 18v-5h5',
   plus: 'M12 5v14M5 12h14',
+  connect: 'M3 6h7v12h11m-5-5 5 5-5 5',
+  delete: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
   duplicate: 'M8 8h13v13H8V8ZM16 8V3H3v13h5',
   lock: 'M5 10h14v11H5V10Zm3 0V7a4 4 0 0 1 8 0v3',
   unlock: 'M5 10h14v11H5V10Zm3 0V7a4 4 0 0 1 8 0',

@@ -10,13 +10,15 @@ import {
 } from '../../domain/model';
 import { readDetails } from './note-details';
 import { normalizeBoardTitle } from '../../domain/board-title';
+import { readConnections } from './connections';
+import type { Connection } from '../../domain/connections/model';
 
 /**
  * The `.stormlet` file: readable JSON with stickies listed bottom to top. Unknown fields
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-export const FORMAT_VERSION = 5;
+export const FORMAT_VERSION = 6;
 export const FILE_EXTENSION = '.stormlet';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };
@@ -28,6 +30,7 @@ interface StormletFile {
   version: number;
   stickies: Sticky[];
   title?: string;
+  connections?: Connection[];
 }
 
 export function serializeBoard(board: Board): string {
@@ -46,6 +49,9 @@ export function serializeBoard(board: Board): string {
     version: FORMAT_VERSION,
     ...(board.title === undefined ? {} : { title: board.title }),
     stickies,
+    ...(Object.keys(board.connections ?? {}).length
+      ? { connections: Object.values(board.connections!).sort((a, b) => a.id.localeCompare(b.id)) }
+      : {}),
   };
   return `${JSON.stringify(file, null, 2)}\n`;
 }
@@ -105,6 +111,7 @@ export function parseBoard(content: string): Board {
     version !== 2 &&
     version !== 3 &&
     version !== 4 &&
+    version !== 5 &&
     version !== FORMAT_VERSION
   )
     throw new FormatError('The file version is not supported by this Stormlet.');
@@ -119,5 +126,12 @@ export function parseBoard(content: string): Board {
       throw new FormatError(`Sticky ID ${sticky.id} appears twice.`);
     stickies[sticky.id] = sticky;
   });
-  return { ...(title === undefined ? {} : { title }), stickies };
+  const board: Board = { ...(title === undefined ? {} : { title }), stickies };
+  try {
+    const connections = version >= 6 ? readConnections(file.connections, board) : {};
+    if (Object.keys(connections).length) board.connections = connections;
+  } catch {
+    throw new FormatError('The connections are malformed.');
+  }
+  return board;
 }

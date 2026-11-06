@@ -2,6 +2,7 @@ import { own } from './ids';
 import { stackOrder, topZ, type Board, type Sticky, type StickyField } from './model';
 import type { NoteDetails } from './note-details';
 import type { Patch, SetPatch } from './patch';
+import type { Connection } from './connections/model';
 
 export function updateNotes(board: Board, ids: readonly string[], values: NoteDetails): Patch[] {
   return ids.flatMap((id) => {
@@ -28,6 +29,7 @@ export function cloneNotes(
   newId: () => string,
   dx: number,
   dy: number,
+  sourceConnections: Readonly<Record<string, Connection>> = board.connections ?? {},
 ): { patches: Patch[]; ids: string[] } {
   const groups = new Map<string, string>();
   const top = topZ(board);
@@ -44,7 +46,32 @@ export function cloneNotes(
       reactions: [],
     };
   });
-  return { patches: copies.map((sticky) => ({ op: 'add', sticky })), ids: copies.map((s) => s.id) };
+  const mapping = new Map(notes.map((note, i) => [note.id, copies[i].id]));
+  const connections = Object.values(sourceConnections).flatMap((line): Patch[] => {
+    if (
+      !('stickyId' in line.from) ||
+      !('stickyId' in line.to) ||
+      !mapping.has(line.from.stickyId) ||
+      !mapping.has(line.to.stickyId)
+    )
+      return [];
+    return [
+      {
+        op: 'connection:add',
+        connection: {
+          ...line,
+          id: newId(),
+          from: { ...line.from, stickyId: mapping.get(line.from.stickyId)! },
+          to: { ...line.to, stickyId: mapping.get(line.to.stickyId)! },
+          locked: false,
+        },
+      },
+    ];
+  });
+  return {
+    patches: [...copies.map((sticky): Patch => ({ op: 'add', sticky })), ...connections],
+    ids: copies.map((s) => s.id),
+  };
 }
 
 export function reactToNotes(

@@ -1,7 +1,11 @@
 import type { Sticky } from '../domain/model';
 import { clampZoom, type View } from './viewport';
 
-export function fitView(notes: readonly Sticky[], width: number, height: number): View | null {
+export function fitView(
+  notes: readonly Pick<Sticky, 'x' | 'y' | 'width' | 'height'>[],
+  width: number,
+  height: number,
+): View | null {
   if (!notes.length || width <= 0 || height <= 0) return null;
   const left = Math.min(...notes.map((s) => s.x)),
     top = Math.min(...notes.map((s) => s.y));
