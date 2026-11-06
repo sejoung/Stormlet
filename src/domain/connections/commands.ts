@@ -6,6 +6,7 @@ import {
   type Connection,
   type Endpoint,
   type ConnectionSetPatch,
+  type ConnectionStyle,
 } from './model';
 
 export const endpointExists = (board: Board, endpoint: Endpoint): boolean =>
@@ -21,9 +22,15 @@ export function validEndpoints(board: Board, from: Endpoint, to: Endpoint): bool
   );
 }
 
-export function addConnection(board: Board, id: string, from: Endpoint, to: Endpoint): Patch[] {
+export function addConnection(
+  board: Board,
+  id: string,
+  from: Endpoint,
+  to: Endpoint,
+  style: Partial<ConnectionStyle> = {},
+): Patch[] {
   if (!validEndpoints(board, from, to) || own(board.connections ?? {}, id)) return [];
-  return [{ op: 'connection:add', connection: { id, from, to, ...DEFAULT_CONNECTION } }];
+  return [{ op: 'connection:add', connection: { id, from, to, ...DEFAULT_CONNECTION, ...style } }];
 }
 
 export function updateConnection(

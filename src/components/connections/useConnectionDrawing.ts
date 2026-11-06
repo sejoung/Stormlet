@@ -132,6 +132,7 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
   const preview: Connection | null = draft
     ? {
         ...DEFAULT_CONNECTION,
+        ...links.style,
         ...(draft.existing ? board.connections?.[draft.existing.id] : {}),
         id: draft.existing?.id ?? '',
         from: draft.from,

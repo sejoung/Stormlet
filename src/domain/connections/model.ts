@@ -19,6 +19,10 @@ export interface Connection {
   label: string;
   locked?: boolean;
 }
+export type ConnectionStyle = Pick<
+  Connection,
+  'path' | 'color' | 'width' | 'startArrow' | 'endArrow' | 'dashed'
+>;
 export const CONNECTION_FIELDS = [
   'from',
   'to',

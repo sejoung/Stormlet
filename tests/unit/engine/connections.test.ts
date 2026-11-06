@@ -8,8 +8,39 @@ import { snapEndpoint, constrainEndpoint } from '../../../src/engine/connections
 import { CONNECTION_PATHS, CONNECTION_SIDES } from '../../../src/domain/connections/model';
 import { connectedBoard, connection } from '../../support/connections';
 import { applyPatches } from '../../../src/domain/patch';
+import { roundedPolyline } from '../../../src/engine/connections/rounded-path';
 
 describe('connection geometry', () => {
+  it('rounds elbow corners without moving endpoints or overshooting short segments', () => {
+    expect(roundedPolyline([])).toBe('');
+    expect(
+      roundedPolyline([
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ]),
+    ).toBe('M 0 0');
+    expect(
+      roundedPolyline(
+        [
+          { x: 0, y: 0 },
+          { x: 20, y: 0 },
+          { x: 20, y: 40 },
+        ],
+        12,
+      ),
+    ).toBe('M 0 0 L 10 0 Q 20 0 20 10 L 20 40');
+    expect(
+      roundedPolyline([
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 20, y: 0 },
+      ]),
+    ).not.toContain(' Q ');
+    const shape = connectionGeometry(connectedBoard(), connection())!;
+    expect(shape.path).toContain(' Q ');
+    expect(shape.path).not.toMatch(/NaN|Infinity/);
+    expect(shape.path).toMatch(new RegExp(`L ${shape.to.x} ${shape.to.y}$`));
+  });
   it('anchors at note boundaries and follows temporary and committed moves and resizing', () => {
     const board = connectedBoard();
     const line = connection('line', { from: { stickyId: 'a', side: 'right' } });

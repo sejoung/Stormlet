@@ -1,0 +1,200 @@
+.creation-tools {
+  position: absolute;
+  inset: 0;
+  z-index: 46;
+  pointer-events: none;
+}
+.creation-tools .tool-panel {
+  pointer-events: auto;
+}
+.creation-tool {
+  position: relative;
+}
+.creation-color-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgb(0 0 0 / 18%);
+  border-radius: 2px;
+}
+.creation-flyout {
+  position: absolute;
+  top: 96px;
+  left: 84px;
+  max-width: calc(100vw - 100px);
+  max-height: calc(100dvh - 128px);
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+.creation-flyout header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.creation-flyout h2 {
+  margin: 0;
+  padding-left: 2px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.creation-flyout .close-button {
+  width: 23px;
+  height: 23px;
+}
+.creation-flyout .close-button svg {
+  width: 14px;
+  height: 14px;
+}
+.flyout-sticky {
+  width: 152px;
+}
+.default-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 3px;
+}
+.default-color-grid button {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 18%);
+  border-radius: 1px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 7%);
+}
+.default-color-grid button:hover {
+  outline: 1px solid var(--muted);
+  outline-offset: 2px;
+}
+.default-color-grid button[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.default-color-grid button[aria-pressed='true']::after {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #4262e8;
+  color: white;
+  content: '✓';
+  font-size: 10px;
+}
+.creation-flyout-hint {
+  margin: 14px 2px 2px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+.flyout-connect {
+  width: 240px;
+}
+.default-line-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.default-line-presets button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 39px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+}
+.default-line-presets button:hover {
+  background: var(--bg);
+}
+.default-line-presets button[aria-pressed='true'] {
+  background: var(--selected);
+  color: var(--accent);
+}
+.default-line-presets small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+.creation-flyout-divider {
+  height: 1px;
+  margin: 12px 0;
+  background: var(--border);
+}
+.creation-flyout-caption {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.default-line-colors {
+  display: flex;
+  gap: 10px;
+  padding: 3px;
+}
+.default-line-colors button {
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+}
+.default-line-colors button[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.default-line-options {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 15px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.default-line-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.default-line-options select {
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.default-line-options input {
+  accent-color: var(--focus);
+}
+@media (max-width: 600px) {
+  .creation-flyout {
+    top: 125px;
+    left: 78px;
+    max-width: calc(100vw - 90px);
+    max-height: calc(100dvh - 150px);
+  }
+}

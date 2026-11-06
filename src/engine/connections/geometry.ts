@@ -2,6 +2,7 @@ import { own } from '../../domain/ids';
 import type { Board } from '../../domain/model';
 import type { Connection, ConnectionSide, Endpoint } from '../../domain/connections/model';
 import type { Point } from '../viewport';
+import { roundedPolyline } from './rounded-path';
 
 export interface Anchor extends Point {
   nx: number;
@@ -96,7 +97,7 @@ export function connectionGeometry(board: Board, connection: Connection) {
       const y = (p.y + q.y) / 2 + (from.y === to.y ? 48 : 0);
       points = [from, p, { x: p.x, y }, { x: q.x, y }, q, to];
     }
-    path = points.map((point, i) => `${i ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ');
+    path = roundedPolyline(points);
     label = halfway(points);
   }
   const x = Math.min(...points.map((point) => point.x)),

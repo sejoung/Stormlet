@@ -3,7 +3,11 @@ import { own } from '../domain/ids';
 import type { Board } from '../domain/model';
 import type { Patch } from '../domain/patch';
 import { addConnection, deleteConnections, updateConnection } from '../domain/connections/commands';
-import { DEFAULT_CONNECTION, type Endpoint } from '../domain/connections/model';
+import {
+  DEFAULT_CONNECTION,
+  type ConnectionStyle,
+  type Endpoint,
+} from '../domain/connections/model';
 import { connectionGeometry } from '../engine/connections/geometry';
 import type { ConnectionInteraction } from '../components/connections/types';
 
@@ -14,6 +18,7 @@ export function useConnectionSession({
   clearNotes,
   onTool,
   onStatus,
+  style,
 }: {
   board: Board;
   edit(change: (board: Board) => Patch[]): void;
@@ -21,6 +26,7 @@ export function useConnectionSession({
   clearNotes(): void;
   onTool(): void;
   onStatus(message: string): void;
+  style: ConnectionStyle;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingLabel, setEditingLabel] = useState(false);
@@ -35,6 +41,7 @@ export function useConnectionSession({
     setEditingLabel(false);
   };
   const interaction: ConnectionInteraction = {
+    style,
     selectedId: selected?.id ?? null,
     onSelect,
     onEditLabel: (id) => {
@@ -45,11 +52,17 @@ export function useConnectionSession({
       const id = newId();
       let created = false;
       edit((current) => {
-        const geometry = connectionGeometry(current, { id, from, to, ...DEFAULT_CONNECTION });
+        const geometry = connectionGeometry(current, {
+          id,
+          from,
+          to,
+          ...DEFAULT_CONNECTION,
+          ...style,
+        });
         const patches =
           geometry &&
           Math.hypot(geometry.from.x - geometry.to.x, geometry.from.y - geometry.to.y) >= 4
-            ? addConnection(current, id, from, to)
+            ? addConnection(current, id, from, to, style)
             : [];
         created = patches.length > 0;
         return patches;

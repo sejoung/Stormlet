@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addSticky,
-  bringToFront,
   deleteStickies,
   moveStickies,
   resizeStickies,
-  sendToBack,
   setColor,
   setText,
   type Move,
 } from '../domain/commands';
 import type { StickySize } from '../domain/sticky-size';
-import { StickyContextMenu } from '../components/board/StickyContextMenu';
+import { BoardContextMenu } from '../components/board/BoardContextMenu';
 import { own } from '../domain/ids';
 import { DEFAULT_STICKY_APPEARANCE } from '../domain/model';
 import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
@@ -36,7 +34,7 @@ import { BulkDialog } from '../components/dialogs/BulkDialog';
 import { HelpDialog } from '../components/dialogs/HelpDialog';
 import { BoardSearch } from '../components/toolbar/BoardSearch';
 import { BoardChrome } from '../components/board/BoardChrome';
-import { updateNotes } from '../domain/note-actions';
+import { useCreationDefaults } from './useCreationDefaults';
 import { useConnectionSession } from './useConnectionSession';
 import { ConnectionToolbar } from '../components/connections/ConnectionToolbar';
 import { connectionGeometry } from '../engine/connections/geometry';
@@ -49,6 +47,7 @@ interface Props {
 export function App({ store, newId }: Props) {
   const { session, edit, undo, redo } = useBoardSession(store);
   const { board } = session;
+  const defaults = useCreationDefaults();
   const boardElement = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>(INITIAL_VIEW);
   const [tool, setTool] = useState<BoardTool>('interact');
@@ -70,6 +69,7 @@ export function App({ store, newId }: Props) {
     clearNotes: () => setPicked([]),
     onTool: () => setTool('interact'),
     onStatus: setStatus,
+    style: defaults.connection,
   });
   const clearConnection = links.clear;
   const selectNotes = (ids: string[]) => {
@@ -100,6 +100,7 @@ export function App({ store, newId }: Props) {
     board,
     ids: activeIds,
     reactor,
+    stickyColor: defaults.stickyColor,
     newId,
     edit,
     onSelect: selectNotes,
@@ -139,7 +140,14 @@ export function App({ store, newId }: Props) {
   const onAdd = (at: Point) => {
     clearConnection();
     const id = newId();
-    edit((current) => addSticky(current, { id, ...DEFAULT_STICKY_APPEARANCE, ...centeredAt(at) }));
+    edit((current) =>
+      addSticky(current, {
+        id,
+        ...DEFAULT_STICKY_APPEARANCE,
+        color: defaults.stickyColor,
+        ...centeredAt(at),
+      }),
+    );
     setPicked([id]);
     startEdit(id);
     setTool('interact');
@@ -162,7 +170,6 @@ export function App({ store, newId }: Props) {
     },
     [selection, clearConnection],
   );
-  const menuIds = menu?.ids.filter((id) => own(board.stickies, id)) ?? [];
 
   const onCommitText = useCallback(
     (id: string, text: string) => {
@@ -257,13 +264,19 @@ export function App({ store, newId }: Props) {
       />
       <main className="workspace">
         <CreationToolbar
+          defaults={defaults}
+          onStickyColor={defaults.onStickyColor}
+          onConnectionStyle={defaults.onConnection}
           tool={tool}
           onTool={(tool) => {
             links.clear();
             setTool(tool);
           }}
           onAddCenter={() => onAdd(toBoardPoint(view, center()))}
-          onBulk={() => setDialog('bulk')}
+          onBulk={() => {
+            setTool('interact');
+            setDialog('bulk');
+          }}
         />
         <div className="canvas-area">
           <BoardCanvas
@@ -358,29 +371,14 @@ export function App({ store, newId }: Props) {
           />
         </div>
       </main>
-      {menu && menuIds.length > 0 && (
-        <StickyContextMenu
-          key={menuIds.join(',') + menu.point.x + ':' + menu.point.y}
-          point={menu.point}
-          count={menuIds.length}
-          size={board.stickies[menuIds[0]]}
-          onClose={closeMenu}
-          onFront={() => edit((current) => bringToFront(current, menuIds))}
-          onBack={() => edit((current) => sendToBack(current, menuIds))}
-          onResize={(size) => onResize(menuIds, size)}
-          onEdit={() => startEdit(menuIds[0])}
-          onDelete={() => edit((current) => deleteStickies(current, menuIds))}
-          locked={menuIds.some((id) => board.stickies[id].locked)}
-          onDuplicate={() => actions.duplicate(menuIds)}
-          onLock={() =>
-            edit((current) =>
-              updateNotes(current, menuIds, {
-                locked: !menuIds.some((id) => current.stickies[id].locked),
-              }),
-            )
-          }
-        />
-      )}
+      <BoardContextMenu
+        board={board}
+        menu={menu}
+        edit={edit}
+        onClose={closeMenu}
+        onEdit={startEdit}
+        onDuplicate={actions.duplicate}
+      />
       {dialog === 'bulk' && (
         <BulkDialog
           onClose={closeDialog}

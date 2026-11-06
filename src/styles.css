@@ -6,6 +6,7 @@
 @import './styles/workspace.css';
 @import './styles/responsive.css';
 @import './styles/connections.css';
+@import './styles/creation-flyout.css';
 
 :root {
   --bg: #f5f5f8;

@@ -1,6 +1,7 @@
-import type { Connection, Endpoint } from '../../domain/connections/model';
+import type { Connection, ConnectionStyle, Endpoint } from '../../domain/connections/model';
 
 export interface ConnectionInteraction {
+  style: ConnectionStyle;
   selectedId: string | null;
   onSelect(id: string): void;
   onCreate(from: Endpoint, to: Endpoint): boolean;

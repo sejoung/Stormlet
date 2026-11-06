@@ -6,7 +6,13 @@ import {
   updateNotes,
   type Arrangement,
 } from '../domain/note-actions';
-import { stackOrder, topZ, type Board, DEFAULT_STICKY_APPEARANCE } from '../domain/model';
+import {
+  stackOrder,
+  topZ,
+  type Board,
+  type StickyColor,
+  DEFAULT_STICKY_APPEARANCE,
+} from '../domain/model';
 import type { NoteDetails } from '../domain/note-details';
 import type { Patch } from '../domain/patch';
 import type { Point } from '../engine/viewport';
@@ -16,6 +22,7 @@ interface Options {
   board: Board;
   ids: string[];
   reactor: string;
+  stickyColor: StickyColor;
   newId(): string;
   edit(change: (board: Board) => Patch[]): void;
   onSelect(ids: string[]): void;
@@ -76,6 +83,7 @@ export function useNoteActions(options: Options) {
         sticky: {
           id: cell.id,
           ...DEFAULT_STICKY_APPEARANCE,
+          color: options.stickyColor,
           ...DEFAULT_STICKY_SIZE,
           text: cell.text,
           x: Math.round(

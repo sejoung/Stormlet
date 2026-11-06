@@ -9,13 +9,14 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 - Floating board actions, a compact creation toolbar and a contextual toolbar beside selected notes
 - Create a 160 × 160 square note with the note tool or `N`, then click the board and start typing
 - Add a note at the center or enter multiple notes at once from the creation toolbar
-- Change note colors using the contextual toolbar, with sixteen colors available
+- Click the note or connection tool to open a side panel for default note color and line style; preferences survive reloads
+- Change individual note colors using the contextual toolbar, with sixteen colors available
 - Type into a selection or double-click/press Enter to edit; Enter/Escape finishes, Shift+Enter adds a newline, with IME-safe input
 - Drag the background to select; Space+drag or the hand tool pans. Use `N` for notes, `V` for select, `H` for hand
 - Whole-note bold/italic/underline, alignment, auto/manual font sizes, square and rectangular notes
 - Duplicate with Ctrl/Cmd+D or Alt/Option+drag; copy/cut/paste preserves styles and groups
 - Connect notes with `L` or drag a side port; attached arrows follow moves and resizing
-- Straight, elbow and curved connections, arrowheads, color/width/dashes, labels, endpoint reattachment and locking
+- Straight, smoothly rounded elbow (default) and curved connections, arrowheads, color/width/dashes, labels, endpoint reattachment and locking
 - Copy or duplicate a flow with its internal connections; deleting a note also removes its incident lines, all undoable
 - Bulk entry and spreadsheet paste (up to 50 rows × 100 columns, 3,000 characters per note)
 - Align, distribute and arrange notes in a grid; alignment guides, grouping and locking
