@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   addSticky,
   bringToFront,
@@ -18,14 +18,7 @@ import type { StickyAppearance } from '../domain/model';
 import { diffBoards } from '../domain/patch';
 import type { BoardStore } from '../domain/store';
 import { centeredAt } from '../engine/sticky-metrics';
-import {
-  INITIAL_VIEW,
-  toBoardPoint,
-  zoomAround,
-  ZOOM_STEP,
-  type Point,
-  type View,
-} from '../engine/viewport';
+import { INITIAL_VIEW, toBoardPoint, zoomAround, type Point, type View } from '../engine/viewport';
 import { BoardCanvas } from '../components/board/BoardCanvas';
 import { paletteEntries, type BoardTool, type PaletteMode } from '../components/board/kinds';
 import { Toolbar } from '../components/toolbar/Toolbar';
@@ -34,6 +27,16 @@ import { downloadText, readFileText } from '../adapters/files/download';
 import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
 import { useBoardSession } from './useBoardSession';
 import { useShortcuts } from './useShortcuts';
+import { useNoteActions } from './useNoteActions';
+import { useClipboard } from './useClipboard';
+import { readItem, writeItem } from '../adapters/storage/web-storage';
+import { fitView } from '../engine/fit-view';
+import { SelectionToolbar } from '../components/selection/SelectionToolbar';
+import { BulkDialog } from '../components/dialogs/BulkDialog';
+import { HelpDialog } from '../components/dialogs/HelpDialog';
+import { BoardSearch } from '../components/toolbar/BoardSearch';
+import { BoardChrome } from '../components/board/BoardChrome';
+import { updateNotes } from '../domain/note-actions';
 
 interface Props {
   store: BoardStore;
@@ -54,14 +57,74 @@ export function App({ store, newId }: Props) {
   const [draft, setDraft] = useState<PaletteDraft | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
+  const [seed, setSeed] = useState<string | undefined>();
+  const [author, setAuthor] = useState(
+    () => readItem('stormlet.author')?.trim().slice(0, 50) || '나',
+  );
+  const [dialog, setDialog] = useState<'bulk' | 'help' | null>(null);
+  const closeDialog = useCallback(() => setDialog(null), []);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<{ ids: string[]; point: Point } | null>(null);
   const closeMenu = useCallback(() => setMenu(null), []);
   const [status, setStatus] = useState<string | null>(null);
+  useEffect(() => {
+    if (!status) return;
+    const timer = window.setTimeout(() => setStatus(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [status]);
   const entries = useMemo(() => paletteEntries(mode), [mode]);
   const selection = useMemo(
     () => new Set(picked.filter((id) => own(board.stickies, id))),
     [picked, board],
   );
+  const activeIds = editing && own(board.stickies, editing) ? [editing] : [...selection];
+  const selectedNotes = activeIds.map((id) => board.stickies[id]);
+  const matches = query.trim()
+    ? Object.values(board.stickies).filter((note) =>
+        `${note.text} ${note.tags?.join(' ') ?? ''} ${note.author ?? ''}`
+          .toLocaleLowerCase()
+          .includes(query.trim().toLocaleLowerCase()),
+      )
+    : Object.values(board.stickies);
+  const center = (): Point => {
+    const rect = boardElement.current!.getBoundingClientRect();
+    return { x: rect.width / 2, y: rect.height / 2 };
+  };
+  const actions = useNoteActions({
+    board,
+    ids: activeIds,
+    author,
+    appearance,
+    newId,
+    edit,
+    onSelect: setPicked,
+    onStatus: setStatus,
+    center: () => toBoardPoint(view, center()),
+  });
+  const remove = () => edit((current) => deleteStickies(current, activeIds));
+  useClipboard({
+    board,
+    ids: activeIds,
+    onPaste: actions.pasteNotes,
+    onText: actions.addCells,
+    onCut: remove,
+    onStatus: setStatus,
+  });
+  const fit = (ids?: string[]) => {
+    const rect = boardElement.current!.getBoundingClientRect();
+    const next = fitView(
+      Object.values(board.stickies).filter((s) => !ids || ids.includes(s.id)),
+      rect.width,
+      rect.height,
+    );
+    if (next) setView(next);
+  };
+  const startEdit = (id: string | null, initial?: string) => {
+    if (id && board.stickies[id]?.locked) return;
+    setSeed(initial);
+    setEditing(id);
+  };
 
   const onPick = useCallback(
     (next: StickyAppearance) => {
@@ -79,9 +142,9 @@ export function App({ store, newId }: Props) {
 
   const onAdd = (at: Point, next = appearance) => {
     const id = newId();
-    edit((current) => addSticky(current, { id, ...next, ...centeredAt(at) }));
-    setPicked([]);
-    setEditing(id);
+    edit((current) => addSticky(current, { id, ...next, ...centeredAt(at), author }));
+    setPicked([id]);
+    startEdit(id);
     setTool('interact');
   };
 
@@ -119,10 +182,21 @@ export function App({ store, newId }: Props) {
   const onCommitText = useCallback(
     (id: string, text: string) => {
       setEditing(null);
-      edit((current) => setText(current, id, text));
+      edit((current) => [
+        ...setText(current, id, text),
+        ...(current.stickies[id]?.text !== text ? updateNotes(current, [id], { author }) : []),
+      ]);
     },
-    [edit],
+    [edit, author],
   );
+  const flushEditor = () => {
+    const editor = boardElement.current?.querySelector<HTMLTextAreaElement>('.sticky-editor');
+    if (editing && editor) onCommitText(editing, editor.value.trim());
+  };
+  const save = () => {
+    flushEditor();
+    downloadText(`board${FILE_EXTENSION}`, serializeBoard(store.load()));
+  };
 
   const onOpen = async (file: File) => {
     try {
@@ -137,27 +211,34 @@ export function App({ store, newId }: Props) {
     }
   };
 
-  const shortcuts = useMemo(
-    () => ({
-      onUndo: undo,
-      onRedo: redo,
-      onDelete: () => edit((current) => deleteStickies(current, [...selection])),
-      onPalette: (index: number) => onPick(entries[index]),
-      onTool: setTool,
-      onEscape: () => {
-        setPicked([]);
-        setTool('interact');
-        setDraft(null);
-      },
-    }),
-    [undo, redo, edit, selection, onPick, entries],
-  );
-  useShortcuts(shortcuts);
-
-  const center = (): Point => {
-    const rect = boardElement.current!.getBoundingClientRect();
-    return { x: rect.width / 2, y: rect.height / 2 };
-  };
+  useShortcuts({
+    onUndo: undo,
+    onRedo: redo,
+    onDelete: remove,
+    onPalette: (index: number) => onPick(entries[index]),
+    onTool: setTool,
+    onDuplicate: (offset, directional) => actions.duplicate(activeIds, offset, directional),
+    onSelectAll: () =>
+      setPicked(
+        Object.values(board.stickies)
+          .filter((s) => !s.locked)
+          .map((s) => s.id),
+      ),
+    onGroup: actions.group,
+    onLock: actions.lock,
+    onFormat: actions.toggleFormat,
+    onNudge: (offset) =>
+      onMove(selectedNotes.map((s) => ({ id: s.id, x: s.x + offset.x, y: s.y + offset.y }))),
+    onSearch: () => setSearchOpen(true),
+    onFit: (selected) => fit(selected ? activeIds : undefined),
+    onHelp: () => setDialog('help'),
+    onSave: save,
+    onEscape: () => {
+      setPicked([]);
+      setTool('interact');
+      setDraft(null);
+    },
+  });
 
   return (
     <div className="app">
@@ -166,6 +247,13 @@ export function App({ store, newId }: Props) {
         canUndo={session.undo.length > 0}
         canRedo={session.redo.length > 0}
         status={status}
+        author={author}
+        onAuthor={(value) => {
+          const name = value.trim().slice(0, 50) || '나';
+          setAuthor(name);
+          writeItem('stormlet.author', name);
+        }}
+        onSearch={() => setSearchOpen((open) => !open)}
         onMode={(next) => {
           setMode(next);
           setCurrentAppearance(paletteEntries(next)[0]);
@@ -174,7 +262,7 @@ export function App({ store, newId }: Props) {
         onUndo={undo}
         onRedo={redo}
         onOpen={onOpen}
-        onSave={() => downloadText(`board${FILE_EXTENSION}`, serializeBoard(board))}
+        onSave={save}
       />
       <main className="workspace">
         <StickyPalette
@@ -186,6 +274,7 @@ export function App({ store, newId }: Props) {
           onDraft={setDraft}
           onDrop={onDrop}
           onAddCenter={() => onAdd(toBoardPoint(view, center()))}
+          onBulk={() => setDialog('bulk')}
         />
         <div className="canvas-area">
           <BoardCanvas
@@ -193,6 +282,9 @@ export function App({ store, newId }: Props) {
             view={view}
             selection={selection}
             editing={editing}
+            seed={seed}
+            person={author}
+            matches={query.trim() ? new Set(matches.map((s) => s.id)) : null}
             element={boardElement}
             tool={tool}
             draft={draft}
@@ -202,47 +294,66 @@ export function App({ store, newId }: Props) {
             onResize={onResize}
             onContextMenu={onContextMenu}
             onAdd={onAdd}
-            onStartEdit={setEditing}
+            onStartEdit={startEdit}
             onCommitText={onCommitText}
+            onDuplicate={actions.duplicate}
+            onReact={(id, emoji) => actions.react(emoji, [id])}
           />
-          {Object.keys(board.stickies).length === 0 && (
-            <div className="empty-hint">
-              <span className="empty-eyebrow">작은 메모에서 시작하는 생각</span>
-              <h1>생각 하나, 붙여 볼까요?</h1>
-              <p>왼쪽 포스트잇을 보드로 끌어다 놓으세요.</p>
-              <span>색을 고른 뒤 원하는 곳을 클릭해도 좋아요.</span>
-            </div>
+          {!!selectedNotes.length && !menu && (
+            <SelectionToolbar
+              key={activeIds.join(',')}
+              notes={selectedNotes}
+              view={view}
+              viewport={{
+                width: boardElement.current?.clientWidth ?? 900,
+                height: boardElement.current?.clientHeight ?? 700,
+              }}
+              onFormat={(details) => {
+                if (details.locked) flushEditor();
+                actions.format(details);
+              }}
+              onColor={(color) => edit((current) => setColor(current, activeIds, color))}
+              onResize={(size) => onResize(activeIds, size)}
+              onArrange={actions.arrange}
+              onDuplicate={() => {
+                flushEditor();
+                actions.duplicate();
+              }}
+              onGroup={() => actions.group()}
+              onReact={actions.react}
+              onMore={(point) => {
+                flushEditor();
+                const rect = boardElement.current!.getBoundingClientRect();
+                setMenu({
+                  ids: activeIds,
+                  point: { x: point.x + rect.left, y: point.y + rect.top },
+                });
+              }}
+            />
           )}
-          <div className="board-footer">
-            <span className="board-help">
-              {tool === 'sticky'
-                ? '원하는 곳을 클릭해 붙이기 · Esc 취소'
-                : '배경 드래그로 이동 · Shift+드래그로 선택 · 우클릭 메뉴'}
-            </span>
-            <div className="zoom-controls" role="group" aria-label="확대 및 축소">
-              <button
-                type="button"
-                aria-label="축소"
-                onClick={() => setView(zoomAround(view, view.zoom / ZOOM_STEP, center()))}
-              >
-                −
-              </button>
-              <button
-                type="button"
-                aria-label="확대 비율 초기화"
-                onClick={() => setView(zoomAround(view, 1, center()))}
-              >
-                {Math.round(view.zoom * 100)}%
-              </button>
-              <button
-                type="button"
-                aria-label="확대"
-                onClick={() => setView(zoomAround(view, view.zoom * ZOOM_STEP, center()))}
-              >
-                +
-              </button>
-            </div>
-          </div>
+          {searchOpen && (
+            <BoardSearch
+              query={query}
+              notes={matches}
+              onQuery={setQuery}
+              onSelect={(id) => {
+                setPicked([id]);
+                fit([id]);
+              }}
+              onClose={() => {
+                setSearchOpen(false);
+                setQuery('');
+              }}
+            />
+          )}
+          <BoardChrome
+            empty={!Object.keys(board.stickies).length}
+            tool={tool}
+            zoom={view.zoom}
+            onZoom={(zoom) => setView(zoomAround(view, zoom, center()))}
+            onFit={() => fit()}
+            onHelp={() => setDialog('help')}
+          />
         </div>
       </main>
       {menu && menuIds.length > 0 && (
@@ -255,10 +366,26 @@ export function App({ store, newId }: Props) {
           onFront={() => edit((current) => bringToFront(current, menuIds))}
           onBack={() => edit((current) => sendToBack(current, menuIds))}
           onResize={(size) => onResize(menuIds, size)}
-          onEdit={() => setEditing(menuIds[0])}
+          onEdit={() => startEdit(menuIds[0])}
           onDelete={() => edit((current) => deleteStickies(current, menuIds))}
+          locked={menuIds.some((id) => board.stickies[id].locked)}
+          onDuplicate={() => actions.duplicate(menuIds)}
+          onLock={() =>
+            edit((current) =>
+              updateNotes(current, menuIds, {
+                locked: !menuIds.some((id) => current.stickies[id].locked),
+              }),
+            )
+          }
         />
       )}
+      {dialog === 'bulk' && (
+        <BulkDialog
+          onClose={closeDialog}
+          onAdd={(texts) => actions.addCells(texts.map((text, row) => ({ text, row, column: 0 })))}
+        />
+      )}
+      {dialog === 'help' && <HelpDialog onClose={closeDialog} />}
     </div>
   );
 }

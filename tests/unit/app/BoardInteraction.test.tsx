@@ -19,8 +19,8 @@ describe('board interactions', () => {
     render(<App store={store} newId={ids()} />);
     const board = boardBounds();
     expect(screen.getByRole('button', { name: '선택 · 이동' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '이동' })).not.toBeInTheDocument();
-    fireEvent.pointerDown(board, { button: 0, clientX: 400, clientY: 200 });
+    expect(screen.getByRole('button', { name: '손 도구' })).toBeInTheDocument();
+    fireEvent.pointerDown(board, { button: 1, clientX: 400, clientY: 200 });
     fireEvent.pointerMove(board, { clientX: 460, clientY: 240 });
     fireEvent.pointerUp(board);
     expect(board.querySelector('.board-layer')).toHaveStyle({
@@ -71,9 +71,9 @@ describe('board interactions', () => {
       note('주문이 접수되었습니다').querySelector('p')!.style.fontSize,
     );
     await user.click(
-      within(menuFor('주문이 접수되었습니다')).getByRole('menuitem', { name: '크게 320 × 240' }),
+      within(menuFor('주문이 접수되었습니다')).getByRole('menuitem', { name: '크게 320 × 320' }),
     );
-    expect(store.board.stickies.a).toMatchObject({ width: 320, height: 240, kind: 'event' });
+    expect(store.board.stickies.a).toMatchObject({ width: 320, height: 320, kind: 'event' });
     expect(
       parseFloat(note('주문이 접수되었습니다').querySelector('p')!.style.fontSize),
     ).toBeGreaterThan(originalFont);
@@ -88,7 +88,7 @@ describe('board interactions', () => {
     await user.click(within(menu).getByRole('menuitem', { name: '적용' }));
     expect(store.board.stickies.a).toMatchObject({ width: 280, height: 160 });
     await user.keyboard('{Control>}z{/Control}');
-    expect(store.board.stickies.a).toMatchObject({ width: 320, height: 240 });
+    expect(store.board.stickies.a).toMatchObject({ width: 320, height: 320 });
   });
 
   it('previews resizing at the current zoom and commits only once on release', async () => {

@@ -1,4 +1,5 @@
 import type { StickySize } from './sticky-size';
+import type { NoteDetails } from './note-details';
 
 /**
  * The board model (ADR 0002). A board is a flat map of stickies keyed by a random ID; every
@@ -28,6 +29,14 @@ export const STICKY_COLORS = [
   'pink',
   'red',
   'gold',
+  'lime',
+  'teal',
+  'sky',
+  'violet',
+  'rose',
+  'peach',
+  'gray',
+  'white',
 ] as const;
 export type StickyColor = (typeof STICKY_COLORS)[number];
 
@@ -48,7 +57,7 @@ export interface StickyAppearance {
   kind: StickyKind | null;
 }
 
-export interface Sticky extends StickyAppearance, StickySize {
+export interface Sticky extends StickyAppearance, StickySize, NoteDetails {
   id: string;
   text: string;
   /** Top-left corner in board coordinates. */
@@ -67,6 +76,18 @@ export const STICKY_FIELDS: readonly StickyField[] = [
   'z',
   'width',
   'height',
+  'bold',
+  'italic',
+  'underline',
+  'textAlign',
+  'autoFont',
+  'fontSize',
+  'tags',
+  'author',
+  'showAuthor',
+  'groupId',
+  'locked',
+  'reactions',
 ];
 
 export interface Board {

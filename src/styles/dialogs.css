@@ -1,0 +1,228 @@
+.modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(22 24 45 / 25%);
+  backdrop-filter: blur(3px);
+}
+.board-modal {
+  width: min(600px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 20px 80px rgb(22 24 45 / 20%);
+}
+.board-modal > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.modal-eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.board-modal h2 {
+  margin: 8px 0 0;
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+}
+.close-button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.close-button:hover {
+  background: var(--selected);
+  color: var(--text);
+}
+.modal-description {
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.bulk-input {
+  display: block;
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline-color: var(--focus);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.bulk-preview {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+.bulk-preview span {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  padding: 9px;
+  background: #fff0a8;
+  color: #514420;
+  box-shadow: 0 2px 3px rgb(0 0 0 / 7%);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 9px;
+}
+.board-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+.board-modal footer > span {
+  flex: 1;
+  color: var(--muted);
+  font-size: 11px;
+}
+.board-modal footer button:not(.primary-button) {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+.shortcut-list {
+  margin: 0;
+}
+.shortcut-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.shortcut-list dt {
+  color: var(--text);
+}
+.shortcut-list dd {
+  margin: 0;
+  color: var(--muted);
+  text-align: right;
+}
+.shortcut-list kbd {
+  font: inherit;
+  font-size: 11px;
+}
+.board-search {
+  position: absolute;
+  z-index: 45;
+  right: 16px;
+  top: 88px;
+  width: min(340px, calc(100% - 32px));
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.search-input > svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.search-input input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+.board-search p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+.search-results {
+  max-height: min(400px, 50dvh);
+  overflow-y: auto;
+  margin-top: 12px;
+}
+.search-results button {
+  display: flex;
+  align-items: start;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+.search-results button:hover {
+  background: var(--selected);
+}
+.search-results button > span:first-child {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border: 1px solid rgb(0 0 0 / 8%);
+  border-radius: 2px;
+}
+.search-results button > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.search-results small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+@media (max-width: 600px) {
+  .board-modal {
+    padding: 20px;
+  }
+  .board-modal h2 {
+    font-size: 20px;
+  }
+  .shortcut-list div {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .shortcut-list dd {
+    text-align: left;
+  }
+  .board-search {
+    top: 122px;
+  }
+}

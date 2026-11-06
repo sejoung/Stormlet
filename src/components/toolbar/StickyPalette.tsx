@@ -18,6 +18,7 @@ interface Props {
   onDraft(draft: PaletteDraft | null): void;
   onDrop(draft: PaletteDraft): void;
   onAddCenter(): void;
+  onBulk(): void;
 }
 
 /** Pointer capture keeps palette dragging consistent with mouse, pen and touch. */
@@ -48,25 +49,51 @@ export function StickyPalette(props: Props) {
         type="button"
         className="interact-tool"
         aria-pressed={props.tool === 'interact'}
-        title="메모를 클릭해 선택 · 배경을 드래그해 이동"
+        title="드래그로 영역 선택 (V) · Space를 누르면 보드 이동"
         onClick={() => props.onTool('interact')}
       >
         <Icon name="select" />
         <span>선택 · 이동</span>
+      </button>
+      <button
+        type="button"
+        className="interact-tool"
+        aria-pressed={props.tool === 'hand'}
+        title="보드 이동 (H) · Space+드래그"
+        onClick={() => props.onTool('hand')}
+      >
+        <Icon name="pan" />
+        <span>손 도구</span>
+      </button>
+      <button
+        type="button"
+        className="interact-tool"
+        aria-pressed={props.tool === 'sticky'}
+        title="포스트잇 도구 (N)"
+        onClick={() => props.onTool('sticky')}
+      >
+        <Icon name="note" />
+        <span>
+          포스트잇 <kbd>N</kbd>
+        </span>
       </button>
       <div className="palette-heading">
         <Icon name="note" />
         <h2>포스트잇</h2>
       </div>
       <p className="palette-hint">보드로 끌어다 놓으세요</p>
-      <div className="palette" role="group" aria-label="포스트잇 색상">
+      <div
+        className={`palette${props.entries.some((entry) => entry.kind) ? ' has-roles' : ''}`}
+        role="group"
+        aria-label="포스트잇 색상"
+      >
         {props.entries.map((entry, index) => (
           <button
             key={entry.label}
             type="button"
             className="palette-item"
             aria-label={entry.label}
-            title={`${entry.label} (${index + 1}) · 끌어서 붙이기`}
+            title={`${entry.label}${index < 8 ? ` (${index + 1})` : ''} · 끌어서 붙이기`}
             aria-pressed={
               props.appearance.color === entry.color && props.appearance.kind === entry.kind
             }
@@ -118,7 +145,7 @@ export function StickyPalette(props: Props) {
             }}
           >
             <span className="palette-number" aria-hidden="true">
-              {index + 1}
+              {index < 8 ? index + 1 : ''}
             </span>
             <span className="palette-label">{entry.kind ? entry.label : ''}</span>
           </button>
@@ -128,11 +155,11 @@ export function StickyPalette(props: Props) {
         <Icon name="plus" />
         <span>가운데 붙이기</span>
       </button>
-      <p className="palette-footnote">
-        색을 고른 뒤 보드를 클릭해도
-        <br />
-        붙일 수 있어요.
-      </p>
+      <button type="button" className="add-center bulk-trigger" onClick={props.onBulk}>
+        <Icon name="grid" />
+        <span>여러 개 한 번에</span>
+      </button>
+      <p className="palette-footnote">선택 → 입력 → 자유롭게 이동</p>
     </aside>
   );
 }

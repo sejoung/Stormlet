@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { StickySize } from '../../domain/sticky-size';
 import { fitNoteFont, NOTE_PADDING } from '../../engine/text-fit';
+import type { NoteDetails } from '../../domain/note-details';
 
 /** Measure actual wrapping, including CJK, emoji and explicit newlines. */
-export function useFittedText(text: string, size: StickySize) {
+export function useFittedText(text: string, size: StickySize, details: NoteDetails = {}) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [fontSize, setFontSize] = useState(() => fitNoteFont(text, size));
   const { width, height } = size;
@@ -20,6 +21,6 @@ export function useFittedText(text: string, size: StickySize) {
     const fitted = fitNoteFont(text, { width, height }, measure);
     node.style.fontSize = `${fitted}px`;
     setFontSize(fitted);
-  }, [text, width, height]);
-  return { ref, fontSize };
+  }, [text, width, height, details.bold, details.italic]);
+  return { ref, fontSize: details.autoFont === false ? (details.fontSize ?? 24) : fontSize };
 }

@@ -13,7 +13,7 @@ describe('App', () => {
     const board = boardBounds();
     await user.dblClick(board);
     expect(store.board.stickies).toEqual({});
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '스티키 내용' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '가운데 붙이기' }));
     await user.type(screen.getByRole('textbox', { name: '스티키 내용' }), '아이디어{Enter}');
@@ -48,13 +48,15 @@ describe('App', () => {
     expect(Object.keys(store.board.stickies)).toEqual(['s1']);
   });
 
-  it('leaves a new sticky unselected, so a number key picks the next color', async () => {
+  it('keeps a new note selected and lets Escape switch back to picking the next color', async () => {
     const user = userEvent.setup();
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);
     boardBounds();
     await user.click(screen.getByRole('button', { name: '가운데 붙이기' }));
     await user.type(screen.getByRole('textbox', { name: '스티키 내용' }), '메모{Enter}');
+    await user.keyboard('{Escape}');
+    boardBounds().focus();
     await user.keyboard('3');
     expect(store.board.stickies.s1.color).toBe('yellow');
     expect(screen.getByRole('button', { name: '파란색 포스트잇' })).toHaveAttribute(
@@ -103,14 +105,26 @@ describe('App', () => {
     render(<App store={store} newId={ids()} />);
     const board = boardBounds();
     fireEvent.wheel(board, { clientX: 200, clientY: 80, deltaY: -Math.log(2) / 0.002 });
-    fireEvent.pointerDown(board, { button: 0, clientX: 400, clientY: 200 });
+    fireEvent.pointerDown(board, { button: 1, clientX: 400, clientY: 200 });
     fireEvent.pointerMove(board, { clientX: 480, clientY: 240 });
     fireEvent.pointerUp(board);
     const swatch = startDrag('파란색 포스트잇');
     expect(store.board.stickies).toEqual({});
-    expect(screen.getByText('놓아서 붙이기')).toHaveStyle({ left: '180px', top: '80px' });
+    expect(screen.getByText('놓아서 붙이기')).toHaveStyle({
+      left: '180px',
+      top: '60px',
+      width: '160px',
+      height: '160px',
+    });
     drop(swatch);
-    expect(store.board.stickies.s1).toMatchObject({ x: 180, y: 80, kind: null, color: 'blue' });
+    expect(store.board.stickies.s1).toMatchObject({
+      x: 180,
+      y: 60,
+      kind: null,
+      color: 'blue',
+      width: 160,
+      height: 160,
+    });
     expect(screen.queryByText('놓아서 붙이기')).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: '스티키 내용' })).toHaveFocus();
     await user.type(screen.getByRole('textbox', { name: '스티키 내용' }), '발견한 점{Enter}');
@@ -143,7 +157,14 @@ describe('App', () => {
     fireEvent.pointerUp(board, { button: 0, clientX: 600, clientY: 380 });
     fireEvent.doubleClick(board, { clientX: 600, clientY: 380 });
     expect(Object.values(store.board.stickies)).toHaveLength(1);
-    expect(store.board.stickies.s1).toMatchObject({ color: 'pink', kind: null, x: 320, y: 240 });
+    expect(store.board.stickies.s1).toMatchObject({
+      color: 'pink',
+      kind: null,
+      x: 320,
+      y: 220,
+      width: 160,
+      height: 160,
+    });
   });
 
   it('provides a keyboard alternative to dragging and retains event storming roles', async () => {
@@ -160,7 +181,9 @@ describe('App', () => {
       kind: 'event',
       color: 'orange',
       x: 420,
-      y: 300,
+      y: 280,
+      width: 160,
+      height: 160,
     });
     expect(screen.getByRole('button', { name: '도메인 이벤트: 빈 스티키' })).toBeInTheDocument();
   });

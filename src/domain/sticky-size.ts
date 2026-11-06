@@ -3,7 +3,7 @@ export interface StickySize {
   height: number;
 }
 
-export const DEFAULT_STICKY_SIZE: Readonly<StickySize> = { width: 160, height: 120 };
+export const DEFAULT_STICKY_SIZE: Readonly<StickySize> = { width: 160, height: 160 };
 export const MIN_STICKY_SIZE: Readonly<StickySize> = { width: 80, height: 60 };
 export const MAX_STICKY_SIZE: Readonly<StickySize> = { width: 1280, height: 960 };
 

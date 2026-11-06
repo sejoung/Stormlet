@@ -18,12 +18,15 @@ interface Props {
   onEdit(): void;
   onDelete(): void;
   onClose(): void;
+  locked: boolean;
+  onDuplicate(): void;
+  onLock(): void;
 }
 
 const PRESETS = [
-  { label: '작게', width: 160, height: 120 },
-  { label: '보통', width: 240, height: 180 },
-  { label: '크게', width: 320, height: 240 },
+  { label: '작게', width: 160, height: 160 },
+  { label: '보통', width: 240, height: 240 },
+  { label: '크게', width: 320, height: 320 },
 ];
 
 /** Render outside the transformed board, so zoom and clipping cannot affect the menu. */
@@ -107,10 +110,20 @@ export function StickyContextMenu(props: Props) {
       <span className="context-caption">
         {props.count > 1 ? `포스트잇 ${props.count}개` : '포스트잇'}
       </span>
-      <button type="button" role="menuitem" onClick={() => run(props.onFront)}>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={props.locked}
+        onClick={() => run(props.onFront)}
+      >
         맨 앞으로
       </button>
-      <button type="button" role="menuitem" onClick={() => run(props.onBack)}>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={props.locked}
+        onClick={() => run(props.onBack)}
+      >
         맨 뒤로
       </button>
       <div className="context-separator" role="separator" />
@@ -122,6 +135,7 @@ export function StickyContextMenu(props: Props) {
             type="button"
             role="menuitem"
             aria-label={`${size.label} ${size.width} × ${size.height}`}
+            disabled={props.locked}
             onClick={() => run(() => props.onResize(size))}
           >
             {size.label}
@@ -148,6 +162,7 @@ export function StickyContextMenu(props: Props) {
             min={MIN_STICKY_SIZE.width}
             max={MAX_STICKY_SIZE.width}
             required
+            disabled={props.locked}
             onChange={(event) => setWidth(event.target.value)}
           />
         </label>
@@ -161,23 +176,36 @@ export function StickyContextMenu(props: Props) {
             min={MIN_STICKY_SIZE.height}
             max={MAX_STICKY_SIZE.height}
             required
+            disabled={props.locked}
             onChange={(event) => setHeight(event.target.value)}
           />
         </label>
-        <button type="submit" role="menuitem">
+        <button type="submit" role="menuitem" disabled={props.locked}>
           적용
         </button>
       </form>
       <div className="context-separator" role="separator" />
       {props.count === 1 && (
-        <button type="button" role="menuitem" onClick={() => run(props.onEdit)}>
+        <button
+          type="button"
+          role="menuitem"
+          disabled={props.locked}
+          onClick={() => run(props.onEdit)}
+        >
           내용 편집
         </button>
       )}
+      <button type="button" role="menuitem" onClick={() => run(props.onDuplicate)}>
+        복제 <span>⌘ / Ctrl+D</span>
+      </button>
+      <button type="button" role="menuitem" onClick={() => run(props.onLock)}>
+        {props.locked ? '잠금 해제' : '잠금'} <span>⌘ / Ctrl+Shift+L</span>
+      </button>
       <button
         type="button"
         role="menuitem"
         className="context-delete"
+        disabled={props.locked}
         onClick={() => run(props.onDelete)}
       >
         삭제

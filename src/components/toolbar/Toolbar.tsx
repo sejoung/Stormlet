@@ -7,6 +7,9 @@ interface Props {
   canUndo: boolean;
   canRedo: boolean;
   status: string | null;
+  author: string;
+  onAuthor(name: string): void;
+  onSearch(): void;
   onMode(mode: PaletteMode): void;
   onUndo(): void;
   onRedo(): void;
@@ -24,7 +27,9 @@ export function Toolbar(props: Props) {
           <Icon name="note" />
         </span>
         <strong>Stormlet</strong>
-        <span className="board-caption">생각을 펼치는 보드</span>
+        <span className="board-caption">
+          나의 아이디어 보드 <span className="local-badge">자동 저장</span>
+        </span>
       </div>
       <label className="preset-picker">
         <span>팔레트</span>
@@ -38,6 +43,15 @@ export function Toolbar(props: Props) {
         </select>
       </label>
       <div className="actions" role="group" aria-label="보드 작업">
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="메모 검색"
+          title="메모 검색 (Ctrl/Cmd+F)"
+          onClick={props.onSearch}
+        >
+          <Icon name="search" />
+        </button>
         <button
           className="icon-button"
           type="button"
@@ -67,6 +81,21 @@ export function Toolbar(props: Props) {
           <Icon name="save" />
           저장
         </button>
+        <label className="profile-name" title="새 메모와 반응에 사용할 이름">
+          <span aria-hidden="true">{props.author.slice(0, 1)}</span>
+          <input
+            aria-label="작성자 이름"
+            defaultValue={props.author}
+            maxLength={50}
+            onBlur={(event) => {
+              props.onAuthor(event.target.value);
+              event.target.value = event.target.value.trim() || '나';
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+          />
+        </label>
         <input
           ref={fileInput}
           type="file"

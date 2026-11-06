@@ -8,7 +8,7 @@ import {
 } from '../../domain/model';
 
 export type PaletteMode = 'free' | 'eventStorming';
-export type BoardTool = 'interact' | 'sticky';
+export type BoardTool = 'interact' | 'sticky' | 'hand';
 export interface PaletteEntry extends StickyAppearance {
   label: string;
 }
@@ -22,6 +22,14 @@ export const COLOR_STYLES: Record<StickyColor, { label: string; paper: string; i
   pink: { label: '분홍색', paper: '#ffb3d9', ink: '#3d0a24' },
   red: { label: '빨간색', paper: '#ff6b81', ink: '#3b0a15' },
   gold: { label: '진노란색', paper: '#ffd84d', ink: '#2e2405' },
+  lime: { label: '연두색', paper: '#d9ef9b', ink: '#263310' },
+  teal: { label: '청록색', paper: '#9ee0d5', ink: '#123b36' },
+  sky: { label: '하늘색', paper: '#c2e7fb', ink: '#173b50' },
+  violet: { label: '연보라색', paper: '#e5d8fa', ink: '#38274e' },
+  rose: { label: '장미색', paper: '#f4c8ce', ink: '#4a252e' },
+  peach: { label: '살구색', paper: '#ffdcc5', ink: '#52321f' },
+  gray: { label: '회색', paper: '#dce0e5', ink: '#303742' },
+  white: { label: '흰색', paper: '#fffef8', ink: '#303039' },
 };
 
 export const KIND_LABELS: Record<StickyKind, string> = {

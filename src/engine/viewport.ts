@@ -10,7 +10,7 @@ export interface View {
   zoom: number;
 }
 
-export const MIN_ZOOM = 0.2;
+export const MIN_ZOOM = 0.05;
 export const MAX_ZOOM = 3;
 export const ZOOM_STEP = 1.2;
 /** Wheel zoom per pixel of scroll; exponential so zooming in and out feel symmetric. */

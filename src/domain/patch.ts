@@ -1,5 +1,5 @@
 import { own } from './ids';
-import type { Board, Sticky, StickyField } from './model';
+import { STICKY_FIELDS, type Board, type Sticky, type StickyField } from './model';
 
 /**
  * The only way a board changes (ADR 0002). Commands return patches, history stores their
@@ -36,7 +36,9 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
       inverse.push({ op: 'add', sticky: before });
     } else {
       if (!before || before[patch.field] === patch.value) continue;
-      write()[patch.id] = { ...before, [patch.field]: patch.value };
+      const next = { ...before, [patch.field]: patch.value };
+      if (patch.value === undefined) delete (next as Partial<Sticky>)[patch.field];
+      write()[patch.id] = next;
       inverse.push({ ...patch, value: before[patch.field] } as SetPatch);
     }
   }
@@ -54,8 +56,8 @@ export function diffBoards(from: Board, to: Board): Patch[] {
       patches.push({ op: 'add', sticky });
       continue;
     }
-    for (const field of Object.keys(sticky) as (keyof Sticky)[])
-      if (field !== 'id' && before[field] !== sticky[field])
+    for (const field of STICKY_FIELDS)
+      if (before[field] !== sticky[field])
         patches.push({ op: 'set', id: sticky.id, field, value: sticky[field] } as SetPatch);
   }
   return patches;

@@ -1,0 +1,263 @@
+.app {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+.workspace {
+  position: relative;
+  display: block;
+  height: 100%;
+  background-size: 24px 24px;
+}
+.canvas-area {
+  width: 100%;
+  height: 100%;
+}
+.board.tool-interact {
+  cursor: default;
+}
+.board.tool-hand {
+  cursor: grab;
+}
+.board.is-panning {
+  cursor: grabbing;
+}
+.board:focus-visible {
+  box-shadow: none;
+}
+.sticky {
+  padding: 12px;
+  border-radius: 1px;
+  box-shadow: 0 2px 4px rgb(20 22 45 / 12%);
+}
+.sticky::after {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
+  background: rgb(0 0 0 / 4%);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  content: '';
+  pointer-events: none;
+}
+.sticky.is-selected,
+.sticky:focus-visible,
+.sticky.is-editing {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 3px 10px rgb(20 22 45 / 12%);
+}
+.sticky.is-editing {
+  cursor: text;
+}
+.sticky.is-dimmed {
+  opacity: 0.18;
+}
+.sticky.is-locked {
+  cursor: default;
+}
+.note-lock {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  opacity: 0.5;
+}
+.note-lock svg {
+  width: 12px;
+  height: 12px;
+}
+.resize-handle {
+  width: 9px;
+  height: 9px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 1px;
+  background: var(--surface);
+  z-index: 2;
+}
+.note-details {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font:
+    normal 10px/1.4 system-ui,
+    sans-serif;
+  text-decoration: none;
+  color: var(--muted);
+}
+.note-author {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.note-tags,
+.note-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.note-tags span {
+  max-width: 100%;
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+.note-reactions button {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.note-reactions button[aria-pressed='true'] {
+  border-color: var(--focus);
+  background: var(--selected);
+}
+.editing-hint {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 3;
+  width: max-content;
+  max-width: 330px;
+  display: flex;
+  gap: 12px;
+  padding: 5px 7px;
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font:
+    normal 10px/1.5 system-ui,
+    sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.sticky.is-editing .note-details {
+  visibility: hidden;
+}
+.sticky-content {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, currentColor 28%, transparent) transparent;
+}
+.sticky-editor {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, currentColor 28%, transparent) transparent;
+}
+.empty-hint {
+  top: 45%;
+  padding-left: 50px;
+  width: min(90%, 620px);
+}
+.empty-note {
+  display: grid;
+  place-items: center;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 32px;
+  background: #fff0a8;
+  color: #67562d;
+  font-size: 16px;
+  box-shadow: 0 5px 14px rgb(35 36 54 / 8%);
+  transform: rotate(-7deg);
+}
+.empty-eyebrow {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+}
+.empty-hint h1 {
+  margin: 14px 0;
+  font-size: clamp(22px, 2.7vw, 32px);
+  letter-spacing: -1.2px;
+}
+.empty-hint kbd {
+  display: inline-block;
+  margin: 0 3px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  font: inherit;
+}
+.board-footer {
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+}
+.board-help {
+  margin-left: 188px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.zoom-controls {
+  gap: 2px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.zoom-controls button[aria-label='확대 비율 초기화'] {
+  min-width: 55px;
+  font-size: 12px;
+}
+.zoom-controls button {
+  min-width: 32px;
+}
+.selection-box {
+  border-color: var(--focus);
+  background: color-mix(in srgb, var(--focus) 8%, transparent);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.workspace .canvas-area {
+  position: absolute;
+  top: 88px;
+  left: 204px;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+}
+.empty-hint {
+  padding-left: 0;
+}
+.board-help {
+  margin-left: 0;
+}
+.alignment-guide {
+  position: absolute;
+  z-index: 2147483646;
+  pointer-events: none;
+  background: var(--focus);
+  opacity: 0.65;
+}
+.guide-vertical {
+  width: 1px;
+}
+.guide-horizontal {
+  height: 1px;
+}

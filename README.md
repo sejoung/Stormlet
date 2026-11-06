@@ -6,17 +6,26 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 
 ## Features
 
-- Board actions across the top, a combined interaction tool and sticky palette on the left
-- Drag a colored sticky from the palette onto the board, preview its position and start typing
+- Floating board actions, a left creation palette and a contextual toolbar beside selected notes
+- Drag a colored sticky from the palette onto the board, preview its position and start typing; new notes default to a 160 × 160 square
 - Also add notes by picking a color and clicking the board or using the center-add button
-- Eight free colors by default; an optional event storming palette adds domain event, command, actor, policy, aggregate, read model, external system and hotspot (keys `1`–`8`)
-- Double-click or press Enter to edit; drag a note to move it, drag the background to pan, Shift+drag or Shift+click to multi-select
+- Sixteen free colors; an optional event storming palette adds domain event, command, actor, policy, aggregate, read model, external system and hotspot (keys `1`–`8`)
+- Type into a selection or double-click/press Enter to edit; Enter/Escape finishes, Shift+Enter adds a newline, with IME-safe input
+- Drag the background to select; Space+drag or the hand tool pans. Use `N` for notes, `V` for select, `H` for hand
+- Whole-note bold/italic/underline, alignment, auto/manual font sizes, square and rectangular notes
+- Duplicate with Ctrl/Cmd+D or Alt/Option+drag; copy/cut/paste preserves styles, tags and groups
+- Bulk entry and spreadsheet paste (up to 50 rows × 100 columns, 3,000 characters per note)
+- Align, distribute and arrange notes in a grid; alignment guides, grouping and locking
+- Tags, author labels, name-based emoji reactions, and text/tag/author search
 - Right-click a note for front/back ordering, size presets, exact width and height, editing and deletion (also Shift+F10)
 - Resize using the selected note's bottom-right handle or arrow keys; text automatically fits the note, without a type label
-- Zoom with the wheel or bottom-right controls
+- Zoom with the wheel or bottom-right controls; fit all or selected notes with Alt/Option+1/2
 - Undo and redo (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`)
 - Autosave in the browser, synced across tabs of the same browser
-- Open and save `.stormlet` files with note dimensions; version 1 and 2 boards import with their original sizes, colors and roles
+- Version 4 `.stormlet` files retain sizes, styles, tags, groups, locks, authors and reactions; versions 1–3 remain readable
+- Keyboard help, responsive controls and dark mode
+
+Author names and reactions use a browser-local profile, without account authentication or a multiplayer server. Existing same-browser tab synchronization remains available.
 
 ## Development
 

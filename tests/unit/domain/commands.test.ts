@@ -33,7 +33,7 @@ describe('commands', () => {
       y: 20,
       z: 5,
       width: 160,
-      height: 120,
+      height: 160,
     });
     expect(
       addSticky(emptyBoard(), { id: 'c', kind: 'event', color: 'orange', x: 0, y: 0 })[0],
