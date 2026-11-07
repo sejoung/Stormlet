@@ -59,7 +59,7 @@
   padding: 3px 7px;
   border: 1px solid transparent;
   border-radius: 4px;
-  background: var(--surface);
+  background: transparent;
   color: var(--text);
   font:
     500 13px/18px system-ui,
@@ -86,10 +86,11 @@
   white-space: nowrap;
 }
 .frame-title:hover {
-  background: var(--selected);
+  color: var(--accent);
 }
 .frame-title-input {
   width: 280px;
+  background: var(--surface);
   outline: 2px solid var(--focus);
 }
 .frame-resize {
