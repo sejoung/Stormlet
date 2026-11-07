@@ -139,26 +139,11 @@
   text-align: center;
   pointer-events: none;
 }
-.empty-eyebrow {
-  color: var(--accent);
-  font-size: 11px;
-  letter-spacing: 1px;
-}
-.empty-hint h1 {
-  margin: 15px 0 12px;
-  font-size: clamp(22px, 3vw, 32px);
-  font-weight: 600;
-  letter-spacing: -1.3px;
-}
 .empty-hint p {
   margin: 0 0 8px;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.7;
-}
-.empty-hint > span:last-child {
-  color: var(--muted);
-  font-size: 11px;
 }
 .board-footer {
   position: absolute;
@@ -199,19 +184,8 @@
   .empty-hint {
     top: 40%;
   }
-  .empty-hint h1 {
-    font-size: 22px;
-    line-height: 1.5;
-  }
-  .empty-eyebrow {
-    font-size: 9px;
-    letter-spacing: 0;
-  }
   .empty-hint p {
     font-size: 12px;
-  }
-  .empty-hint > span:last-child {
-    font-size: 10px;
   }
   .board-help {
     display: none;

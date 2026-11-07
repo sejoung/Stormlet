@@ -24,13 +24,8 @@
   justify-content: space-between;
   gap: 16px;
 }
-.modal-eyebrow {
-  color: var(--accent);
-  font-size: 10px;
-  letter-spacing: 2px;
-}
 .board-modal h2 {
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 23px;
   font-weight: 600;
   letter-spacing: -0.7px;
@@ -111,7 +106,7 @@
   font-size: 12px;
 }
 .shortcut-list {
-  margin: 0;
+  margin: 20px 0 0;
 }
 .shortcut-list div {
   display: flex;

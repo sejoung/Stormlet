@@ -245,7 +245,7 @@ export function SelectionToolbar(props: Props) {
           )}
           {panel === 'align' && (
             <>
-              <span className="popover-label">텍스트 정렬 · 메모 전체에 적용</span>
+              <span className="popover-label">텍스트 정렬</span>
               <div className="shape-options">
                 {(['left', 'center', 'right'] as const).map((align, i) => (
                   <button
@@ -260,7 +260,7 @@ export function SelectionToolbar(props: Props) {
               </div>
               {props.notes.length > 1 && (
                 <>
-                  <span className="popover-label">선택한 포스트잇 배치</span>
+                  <span className="popover-label">배치</span>
                   <div className="arrange-options">
                     {ARRANGEMENTS.map(([action, label]) => (
                       <button key={action} type="button" onClick={() => props.onArrange(action)}>
@@ -274,7 +274,7 @@ export function SelectionToolbar(props: Props) {
           )}
           {panel === 'emoji' && (
             <>
-              <span className="popover-label">반응을 눌러 추가하거나 취소하세요</span>
+              <span className="popover-label">반응</span>
               <div className="emoji-options">
                 {REACTION_EMOJI.map((emoji) => (
                   <button

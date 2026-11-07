@@ -203,7 +203,7 @@ describe('flow connections', () => {
     expect(saved.from).toEqual({ x: 50, y: 320 });
     expect(saved.to).toMatchObject({ y: 320 });
     expect(store.board.stickies).toEqual({});
-    expect(screen.queryByText('작은 생각이, 큰 그림이 되도록.')).not.toBeInTheDocument();
+    expect(screen.queryByText('왼쪽 포스트잇 도구나', { exact: false })).not.toBeInTheDocument();
   });
 
   it('copies and pastes a whole flow with fresh endpoint IDs in one undo step', async () => {

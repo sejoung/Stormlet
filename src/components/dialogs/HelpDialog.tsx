@@ -27,11 +27,7 @@ const SHORTCUTS = [
 
 export function HelpDialog({ onClose }: { onClose(): void }) {
   return (
-    <Modal title="생각을 놓치지 않는 단축키" onClose={onClose}>
-      <p className="modal-description">
-        메모는 클릭해서 선택하고 바로 입력하세요. 엑셀의 셀이나 여러 줄의 텍스트도 보드에 붙여넣을
-        수 있어요.
-      </p>
+    <Modal title="단축키" onClose={onClose}>
       <dl className="shortcut-list">
         {SHORTCUTS.map(([action, key]) => (
           <div key={action}>

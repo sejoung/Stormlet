@@ -5,9 +5,6 @@
   .toolbar {
     gap: 10px 12px;
   }
-  .local-badge {
-    display: none;
-  }
 }
 @media (max-width: 760px) {
   .actions button svg {
@@ -20,8 +17,11 @@
     padding: 8px 10px;
     gap: 8px;
   }
-  .brand strong {
-    font-size: 16px;
+  .brand {
+    gap: 10px;
+  }
+  .app-brand {
+    padding-right: 10px;
   }
   .brand-mark {
     width: 27px;
@@ -32,10 +32,6 @@
   }
   .actions {
     gap: 1px;
-  }
-  .board-caption {
-    padding-left: 8px;
-    margin-left: 0;
   }
 }
 @media (max-width: 600px) {
@@ -66,16 +62,6 @@
     top: 48%;
     margin-left: 0;
     width: 90%;
-  }
-  .empty-note {
-    width: 70px;
-    height: 70px;
-    margin-bottom: 24px;
-    font-size: 12px;
-  }
-  .empty-hint h1 {
-    font-size: 22px;
-    line-height: 1.4;
   }
   .empty-hint p {
     font-size: 12px;

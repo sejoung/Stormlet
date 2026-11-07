@@ -26,7 +26,7 @@ describe('bulk entry and clipboard', () => {
     const editor = screen.getByRole('textbox', { name: '포스트잇 여러 개 입력' });
     expect(editor).toHaveFocus();
     await user.type(editor, '첫 번째 생각{Enter}{Enter}두 번째 생각');
-    expect(screen.getByRole('status')).toHaveTextContent('2개의 포스트잇');
+    expect(screen.getByRole('status')).toHaveTextContent('포스트잇 2개');
     await user.click(screen.getByRole('button', { name: '보드에 붙이기' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(Object.values(store.board.stickies).map((s) => s.text)).toEqual([

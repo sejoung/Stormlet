@@ -136,31 +136,7 @@
 }
 .empty-hint {
   top: 45%;
-  padding-left: 50px;
   width: min(90%, 620px);
-}
-.empty-note {
-  display: grid;
-  place-items: center;
-  width: 100px;
-  height: 100px;
-  margin: 0 auto 32px;
-  background: #fff0a8;
-  color: #67562d;
-  font-size: 16px;
-  box-shadow: 0 5px 14px rgb(35 36 54 / 8%);
-  transform: rotate(-7deg);
-}
-.empty-eyebrow {
-  display: block;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 1.5px;
-}
-.empty-hint h1 {
-  margin: 14px 0;
-  font-size: clamp(22px, 2.7vw, 32px);
-  letter-spacing: -1.2px;
 }
 .empty-hint kbd {
   display: inline-block;
@@ -219,9 +195,6 @@
   bottom: 0;
   width: auto;
   height: auto;
-}
-.empty-hint {
-  padding-left: 0;
 }
 .board-help {
   margin-left: 0;

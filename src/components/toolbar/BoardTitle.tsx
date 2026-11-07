@@ -75,7 +75,7 @@ export function BoardTitle({
           {title}
         </button>
       )}
-      <span className="local-badge">자동 저장</span>
+      <span className="local-badge">브라우저에 자동 저장</span>
     </div>
   );
 }

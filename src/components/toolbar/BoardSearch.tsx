@@ -42,9 +42,7 @@ export function BoardSearch({
           <Icon name="close" />
         </button>
       </div>
-      <p role="status">
-        {query ? `${notes.length}개의 메모를 찾았어요` : '찾고 싶은 단어를 입력하세요'}
-      </p>
+      <p role="status">{query ? `검색 결과 ${notes.length}개` : '검색어를 입력하세요.'}</p>
       {!!query && (
         <div className="search-results">
           {notes.slice(0, 30).map((note) => (

@@ -20,15 +20,9 @@ export function BoardChrome({
     <>
       {empty && (
         <div className="empty-hint">
-          <span className="empty-note" aria-hidden="true">
-            생각 하나
-          </span>
-          <span className="empty-eyebrow">여기서 시작하세요</span>
-          <h1>작은 생각이, 큰 그림이 되도록.</h1>
           <p>
             왼쪽 포스트잇 도구나 <kbd>N</kbd>을 누른 뒤 보드를 클릭하세요.
           </p>
-          <span>선택해서 바로 입력하고, 자유롭게 옮겨 보세요.</span>
         </div>
       )}
       <div className="board-footer">

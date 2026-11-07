@@ -50,10 +50,7 @@ export function Modal({
     <div className="modal-backdrop">
       <div ref={ref} className="board-modal" role="dialog" aria-modal="true" aria-label={title}>
         <header>
-          <div>
-            <span className="modal-eyebrow">STORMLET</span>
-            <h2>{title}</h2>
-          </div>
+          <h2>{title}</h2>
           <button type="button" className="close-button" aria-label="닫기" onClick={onClose}>
             <Icon name="close" />
           </button>

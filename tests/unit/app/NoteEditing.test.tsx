@@ -122,7 +122,7 @@ describe('note editing experience', () => {
     expect(store.board.stickies.a.reactions).toEqual([]);
     await user.click(screen.getByRole('button', { name: '메모 검색' }));
     await user.type(screen.getByRole('searchbox', { name: '메모 내용 검색' }), '실험');
-    expect(screen.getByText('1개의 메모를 찾았어요')).toBeInTheDocument();
+    expect(screen.getByText('검색 결과 1개')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '검색 닫기' }));
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
