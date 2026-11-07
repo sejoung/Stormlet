@@ -33,6 +33,7 @@ export function ObjectToolbars({
           key={links.selected.id}
           board={board}
           line={links.selected}
+          viewport={viewport}
           view={view}
           editingLabel={links.editingLabel}
           onChange={(values) => links.onChange(links.selected!.id, values)}

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Board } from '../../domain/model';
 import { CONNECTION_COLORS, type Connection } from '../../domain/connections/model';
 import { connectionGeometry } from '../../engine/connections/geometry';
 import type { View } from '../../engine/viewport';
 import { Icon } from '../toolbar/Icon';
 import { LINE_COLORS } from './ConnectionLayer';
+import { connectionToolbarPosition } from '../../engine/connections/toolbar-position';
 
 export function ConnectionToolbar({
   board,
@@ -13,6 +14,7 @@ export function ConnectionToolbar({
   editingLabel,
   onChange,
   onDelete,
+  viewport,
 }: {
   board: Board;
   line: Connection;
@@ -20,7 +22,23 @@ export function ConnectionToolbar({
   editingLabel: boolean;
   onChange(values: Partial<Omit<Connection, 'id'>>): void;
   onDelete(): void;
+  viewport: { width: number; height: number };
 }) {
+  const panel = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 330, height: 180 });
+  useLayoutEffect(() => {
+    const node = panel.current;
+    if (!node) return;
+    const measure = () => {
+      if (node.offsetWidth && node.offsetHeight)
+        setSize({ width: node.offsetWidth, height: node.offsetHeight });
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   const [label, setLabel] = useState(line.label);
   const input = useRef<HTMLInputElement>(null);
   const cancelBlur = useRef(false);
@@ -38,21 +56,21 @@ export function ConnectionToolbar({
   const commit = () => {
     if (label.trim() !== line.label) onChange({ label: label.trim() });
   };
+  const position = connectionToolbarPosition(
+    [
+      { x: shape.from.x * view.zoom + view.x, y: shape.from.y * view.zoom + view.y },
+      { x: shape.to.x * view.zoom + view.x, y: shape.to.y * view.zoom + view.y },
+    ],
+    size,
+    viewport,
+  );
   return (
     <div
+      ref={panel}
       className="connection-toolbar"
       role="toolbar"
       aria-label="연결선 편집 도구"
-      style={{
-        left: Math.max(
-          12,
-          Math.min(shape.label.x * view.zoom + view.x - 140, window.innerWidth - 520),
-        ),
-        top: Math.max(
-          12,
-          Math.min(shape.label.y * view.zoom + view.y - 100, window.innerHeight - 300),
-        ),
-      }}
+      style={{ left: position.x, top: position.y }}
     >
       <div className="connection-tools">
         <span>연결선</span>

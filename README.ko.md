@@ -57,6 +57,17 @@ npm run verify   # 포맷, 린트, 타입, 테스트와 커버리지, 빌드
 npm run arch     # 계층 의존 규칙 보고서
 ```
 
+E2E 테스트는 Playwright로 실제 Chromium에서 실행한다. 프레임·연결선·우클릭 메뉴·텍스트 편집과 밝은 화면·다크 모드·좁은 화면을 검증한다.
+
+```sh
+npm run test:e2e:install  # 최초 1회 Chromium 설치
+npm run test:e2e          # E2E 전체 실행
+npm run test:e2e:headed   # 브라우저 창을 보면서 실행
+npm run test:e2e:ui       # Playwright UI에서 실행·디버깅
+```
+
+테스트 서버는 4173 포트에서 자동 실행되고 테스트 종료 시 종료된다. HTML 보고서는 `playwright-report/index.html`, 화면 캡처는 `test-results/e2e`에 저장한다. 실패한 테스트의 추적 기록과 영상도 남긴다. CI에서도 E2E를 실행한다.
+
 ## 구조
 
 | 계층              | 역할                                                 |

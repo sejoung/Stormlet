@@ -47,6 +47,17 @@ npm run dev      # http://127.0.0.1:5173
 npm run verify   # format, lint, types, tests with coverage, build
 ```
 
+Playwright E2E tests run in real Chromium, covering frames, connections, context menus, text editing, dark mode and narrow layouts.
+
+```sh
+npm run test:e2e:install  # Install Chromium once
+npm run test:e2e          # Run all E2E tests
+npm run test:e2e:headed   # Run with a visible browser
+npm run test:e2e:ui       # Open Playwright UI mode
+```
+
+The test server starts on port 4173 and shuts down automatically. Find the HTML report at `playwright-report/index.html` and screenshots under `test-results/e2e`. Failed tests retain traces and videos. CI also runs the E2E suite.
+
 Design decisions are in [docs/adr](docs/adr). The model is built so a CRDT store can replace local storage later ([ADR 0002](docs/adr/0002-collaboration-ready-model.md)).
 
 ## License
