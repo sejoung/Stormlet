@@ -26,6 +26,7 @@ import { HelpDialog } from '../components/dialogs/HelpDialog';
 import { BoardSearch } from '../components/toolbar/BoardSearch';
 import { BoardChrome } from '../components/board/BoardChrome';
 import { DraftProvider, useDraftRegistry } from '../components/common/drafts';
+import { FitProvider, useFitRegistry } from '../components/common/fitted-fonts';
 import { useElementSize } from '../components/common/useElementSize';
 import { elementCenter } from '../components/common/points';
 import { useBoardFiles } from './useBoardFiles';
@@ -59,6 +60,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   // --- Selection and text editing ---
   const selected = useSelection();
   const drafts = useDraftRegistry();
+  const fits = useFitRegistry();
   const flushEditor = drafts.flushAll;
   const [editing, setEditing] = useState<string | null>(null);
   const [seed, setSeed] = useState<string | undefined>();
@@ -233,139 +235,141 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const canRedo = session.redo.length > 0;
   return (
     <DraftProvider registry={drafts}>
-      <div className="app">
-        <Toolbar
-          title={boardTitle(board)}
-          onRename={(value) => edit((current) => renameBoard(current, value))}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          status={status}
-          onSearch={search.toggle}
-          onUndo={undo}
-          onRedo={redo}
-          onOpen={onOpen}
-          onSave={save}
-        />
-        <main className="workspace">
-          <CreationToolbar
-            frames={frames}
-            defaults={defaults}
-            onStickyColor={defaults.onStickyColor}
-            onConnectionStyle={defaults.onConnection}
-            tool={tool}
-            onTool={chooseTool}
-            onAddCenter={() => onAdd(boardCenter())}
-            onBulk={() => {
-              finishTool();
-              setDialog('bulk');
-            }}
+      <FitProvider registry={fits}>
+        <div className="app">
+          <Toolbar
+            title={boardTitle(board)}
+            onRename={(value) => edit((current) => renameBoard(current, value))}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            status={status}
+            onSearch={search.toggle}
+            onUndo={undo}
+            onRedo={redo}
+            onOpen={onOpen}
+            onSave={save}
           />
-          <div className="canvas-area">
-            <BoardCanvas
-              board={board}
-              links={links}
+          <main className="workspace">
+            <CreationToolbar
               frames={frames}
-              view={view}
-              viewport={viewport}
-              selection={selection}
-              editing={editing}
-              seed={seed}
-              reactor={reactor}
-              matches={search.matches}
-              element={boardElement}
+              defaults={defaults}
+              onStickyColor={defaults.onStickyColor}
+              onConnectionStyle={defaults.onConnection}
               tool={tool}
-              onViewChange={setView}
-              onSelect={selected.selectNotes}
-              onMove={onMove}
-              onResize={onResize}
-              onContextMenu={menus.onNote}
-              onCanvasMenu={menus.onCanvas}
-              onAdd={onAdd}
-              onStartEdit={startEdit}
-              onCommitText={onCommitText}
-              onDuplicate={actions.duplicate}
-              onReact={(id, emoji) => actions.react(emoji, [id])}
+              onTool={chooseTool}
+              onAddCenter={() => onAdd(boardCenter())}
+              onBulk={() => {
+                finishTool();
+                setDialog('bulk');
+              }}
             />
-            <ObjectToolbars
-              hidden={menus.open}
-              board={board}
-              view={view}
-              frames={frames}
-              links={links}
-              viewport={viewport}
-              onDeleteFrame={frames.remove}
-            />
-            {!!selectedNotes.length && !menus.open && (
-              <NoteSelection
-                notes={selectedNotes}
-                ids={activeIds}
+            <div className="canvas-area">
+              <BoardCanvas
+                board={board}
+                links={links}
+                frames={frames}
                 view={view}
                 viewport={viewport}
+                selection={selection}
+                editing={editing}
+                seed={seed}
+                reactor={reactor}
+                matches={search.matches}
                 element={boardElement}
-                actions={actions}
-                edit={edit}
+                tool={tool}
+                onViewChange={setView}
+                onSelect={selected.selectNotes}
+                onMove={onMove}
                 onResize={onResize}
-                flushEditor={flushEditor}
-                onMenu={menus.onDetails}
-                onFrame={() => {
-                  flushEditor();
-                  frames.surround(activeIds);
-                }}
+                onContextMenu={menus.onNote}
+                onCanvasMenu={menus.onCanvas}
+                onAdd={onAdd}
+                onStartEdit={startEdit}
+                onCommitText={onCommitText}
+                onDuplicate={actions.duplicate}
+                onReact={(id, emoji) => actions.react(emoji, [id])}
               />
-            )}
-            {search.open && (
-              <BoardSearch
-                query={search.query}
-                notes={search.notes}
-                onQuery={search.setQuery}
-                onSelect={(id) => {
-                  selected.selectNotes([id]);
-                  fit([id]);
-                }}
-                onClose={search.close}
+              <ObjectToolbars
+                hidden={menus.open}
+                board={board}
+                view={view}
+                frames={frames}
+                links={links}
+                viewport={viewport}
+                onDeleteFrame={frames.remove}
               />
-            )}
-            <BoardChrome
-              empty={isEmptyBoard(board)}
-              tool={tool}
-              zoom={view.zoom}
-              onZoom={(zoom) => setView(zoomAround(view, zoom, viewportCenter()))}
-              onFit={() => fit()}
-              onHelp={() => setDialog('help')}
-            />
-          </div>
-        </main>
-        <BoardMenus
-          menu={menus.menu}
-          board={board}
-          view={view}
-          element={boardElement}
-          edit={edit}
-          ids={activeIds}
-          frames={frames}
-          links={links}
-          clipboard={clipboard}
-          onClose={menus.close}
-          onEdit={startEdit}
-          onDuplicate={actions.duplicate}
-          onAdd={onAdd}
-          onSelectAll={selectAll}
-          onFit={() => fit()}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-        />
-        {dialog === 'bulk' && (
-          <BulkDialog
-            onClose={closeDialog}
-            onAdd={(texts) =>
-              actions.addCells(texts.map((text, row) => ({ text, row, column: 0 })))
-            }
+              {!!selectedNotes.length && !menus.open && (
+                <NoteSelection
+                  notes={selectedNotes}
+                  ids={activeIds}
+                  view={view}
+                  viewport={viewport}
+                  element={boardElement}
+                  actions={actions}
+                  edit={edit}
+                  onResize={onResize}
+                  flushEditor={flushEditor}
+                  onMenu={menus.onDetails}
+                  onFrame={() => {
+                    flushEditor();
+                    frames.surround(activeIds);
+                  }}
+                />
+              )}
+              {search.open && (
+                <BoardSearch
+                  query={search.query}
+                  notes={search.notes}
+                  onQuery={search.setQuery}
+                  onSelect={(id) => {
+                    selected.selectNotes([id]);
+                    fit([id]);
+                  }}
+                  onClose={search.close}
+                />
+              )}
+              <BoardChrome
+                empty={isEmptyBoard(board)}
+                tool={tool}
+                zoom={view.zoom}
+                onZoom={(zoom) => setView(zoomAround(view, zoom, viewportCenter()))}
+                onFit={() => fit()}
+                onHelp={() => setDialog('help')}
+              />
+            </div>
+          </main>
+          <BoardMenus
+            menu={menus.menu}
+            board={board}
+            view={view}
+            element={boardElement}
+            edit={edit}
+            ids={activeIds}
+            frames={frames}
+            links={links}
+            clipboard={clipboard}
+            onClose={menus.close}
+            onEdit={startEdit}
+            onDuplicate={actions.duplicate}
+            onAdd={onAdd}
+            onSelectAll={selectAll}
+            onFit={() => fit()}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={canUndo}
+            canRedo={canRedo}
           />
-        )}
-        {dialog === 'help' && <HelpDialog onClose={closeDialog} />}
-      </div>
+          {dialog === 'bulk' && (
+            <BulkDialog
+              onClose={closeDialog}
+              onAdd={(texts) =>
+                actions.addCells(texts.map((text, row) => ({ text, row, column: 0 })))
+              }
+            />
+          )}
+          {dialog === 'help' && <HelpDialog onClose={closeDialog} />}
+        </div>
+      </FitProvider>
     </DraftProvider>
   );
 }

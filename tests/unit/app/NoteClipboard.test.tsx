@@ -71,6 +71,17 @@ describe('bulk entry and clipboard', () => {
     expect(Object.keys(store.board.stickies)).toHaveLength(4);
   });
 
+  it('leaves an empty clipboard paste to the browser even after an earlier copy', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore(boardOf(sticky('a')));
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    await user.click(screen.getByRole('button', { name: '도메인 이벤트: a' }));
+    expect(fireEvent.copy(board, { clipboardData: clipboard() })).toBe(false);
+    expect(fireEvent.paste(board, { clipboardData: clipboard({}) })).toBe(true);
+    expect(Object.keys(store.board.stickies)).toEqual(['a']);
+  });
+
   it('turns spreadsheet cells into separate notes with their row and column positions', () => {
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);

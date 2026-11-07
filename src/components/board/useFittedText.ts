@@ -2,20 +2,28 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { StickySize } from '../../domain/sticky-size';
 import { fitNoteFont, NOTE_PADDING } from '../../engine/text-fit';
 import { DEFAULT_NOTE_FONT, type NoteDetails } from '../../domain/note-details';
+import { useReportFit } from '../common/fitted-fonts';
 
 /**
- * Measure actual wrapping, including CJK, emoji and explicit newlines. A note with a fixed
- * size skips measuring entirely: the effect writes font sizes straight into the DOM while
- * searching, which would otherwise leave the fitted size showing instead of the chosen one.
+ * Measure actual wrapping, including CJK, emoji and explicit newlines, to find the largest
+ * font the text fits at. Automatic notes use that font; a chosen size is kept while it fits
+ * and capped to it when the text or note changes, so a note never needs to scroll. The
+ * largest fit is reported so the font size menu can disable sizes that would overflow.
  */
-export function useFittedText(text: string, size: StickySize, details: NoteDetails = {}) {
+export function useFittedText(
+  id: string,
+  text: string,
+  size: StickySize,
+  details: NoteDetails = {},
+) {
   const ref = useRef<HTMLParagraphElement>(null);
-  const fixed = details.autoFont === false;
   const [fitted, setFitted] = useState(() => fitNoteFont(text, size));
+  const chosen = details.autoFont === false ? (details.fontSize ?? DEFAULT_NOTE_FONT) : null;
+  const fontSize = chosen === null ? fitted : Math.min(chosen, fitted);
   const { width, height } = size;
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node || fixed) return;
+    if (!node) return;
     const availableHeight = height - NOTE_PADDING * 2;
     const measure = node.clientWidth
       ? (font: number) => {
@@ -24,10 +32,12 @@ export function useFittedText(text: string, size: StickySize, details: NoteDetai
         }
       : undefined;
     const next = fitNoteFont(text, { width, height }, measure);
-    node.style.fontSize = `${next}px`;
+    // Measuring leaves its last trial size in the DOM; restore the size actually shown.
+    node.style.fontSize = `${chosen === null ? next : Math.min(chosen, next)}px`;
     setFitted(next);
-  }, [text, width, height, fixed, details.bold, details.italic]);
-  return { ref, fontSize: fixed ? (details.fontSize ?? DEFAULT_NOTE_FONT) : fitted };
+  }, [text, width, height, chosen, details.bold, details.italic]);
+  useReportFit(id, fitted);
+  return { ref, fontSize };
 }
 
 /** Text styling shared by a note's text, its editor and the editor's measuring copy. */

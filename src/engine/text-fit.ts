@@ -33,7 +33,33 @@ function estimatedFit(text: string, font: number, width: number, height: number)
   return lines * font * NOTE_LINE_HEIGHT <= height;
 }
 
-/** Largest half-pixel font that fits. UI supplies real DOM measurements when available. */
+/** Step of the fitted font at sizes a person would choose: half a pixel. */
+const STEP = 0.5;
+/**
+ * Below `MIN_NOTE_FONT` fitting continues in finer steps, so long text always fits the note
+ * instead of scrolling. Zooming in keeps it readable.
+ */
+const FINE_STEP = 0.05;
+export const MIN_FITTED_FONT = FINE_STEP;
+
+/** Largest `low + i * step` up to `high` that fits, or `null` when even `low` does not. */
+function largestFitting(low: number, high: number, step: number, fits: (font: number) => boolean) {
+  const at = (index: number) => Math.round((low + index * step) * 100) / 100;
+  if (high < low || !fits(at(0))) return null;
+  let good = 0;
+  let bad = Math.floor((high - low) / step) + 1;
+  while (bad - good > 1) {
+    const mid = Math.floor((good + bad) / 2);
+    if (fits(at(mid))) good = mid;
+    else bad = mid;
+  }
+  return at(good);
+}
+
+/**
+ * Largest font that fits: half-pixel steps from `MIN_NOTE_FONT` up, finer steps below it.
+ * UI supplies real DOM measurements when available.
+ */
 export function fitNoteFont(
   text: string,
   size: StickySize,
@@ -41,13 +67,11 @@ export function fitNoteFont(
 ): number {
   const width = size.width - NOTE_PADDING * 2;
   const height = size.height - NOTE_PADDING * 2;
-  let low = MIN_NOTE_FONT;
-  let high = Math.min(MAX_NOTE_FONT, Math.floor(height / NOTE_LINE_HEIGHT));
+  const high = Math.min(MAX_NOTE_FONT, Math.floor(height / NOTE_LINE_HEIGHT));
   const canFit = fits ?? ((font: number) => estimatedFit(text, font, width, height));
-  while (high - low >= 0.5) {
-    const mid = Math.ceil((low + high) * 2) / 4;
-    if (canFit(mid)) low = mid;
-    else high = mid - 0.25;
-  }
-  return Math.floor(low * 2) / 2;
+  return (
+    largestFitting(MIN_NOTE_FONT, high, STEP, canFit) ??
+    largestFitting(FINE_STEP, Math.min(high, MIN_NOTE_FONT - FINE_STEP), FINE_STEP, canFit) ??
+    MIN_FITTED_FONT
+  );
 }

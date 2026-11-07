@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { textCells } from '../../../src/engine/paste';
-import { fitView } from '../../../src/engine/fit-view';
+import { fitBoard, fitView } from '../../../src/engine/fit-view';
+import { frame } from '../../support/frames';
+import { connection } from '../../support/connections';
 import { snapOffset } from '../../../src/engine/snapping';
 import { boardOf, sticky } from '../../support/boards';
 
@@ -30,6 +32,29 @@ describe('board tools', () => {
     expect(fitView([], 1000, 700)).toBeNull();
     expect(fitView(notes, 0, 700)).toBeNull();
     expect(fitView([sticky('a')], 1000, 700)?.zoom).toBe(1);
+  });
+
+  it('fits only the selected notes, frame or line when given a selection', () => {
+    const board = {
+      ...boardOf(sticky('a'), sticky('b', { x: 3000, y: 2000 })),
+      frames: { f: frame('f', { x: -4000, y: -4000 }) },
+      connections: { line: connection('line', { from: { x: 5000, y: 0 }, to: { x: 5400, y: 0 } }) },
+    };
+    const viewport = { width: 1000, height: 700 };
+    const centered = (view: { zoom: number; x: number; y: number }, x: number, y: number) => {
+      // Within a pixel: a flat line's bounds are at least 1px tall, so they sit half a pixel low.
+      expect(Math.abs(x * view.zoom + view.x - viewport.width / 2)).toBeLessThanOrEqual(1);
+      expect(Math.abs(y * view.zoom + view.y - viewport.height / 2)).toBeLessThanOrEqual(1);
+    };
+    const only = (notes: string[], connection: string | null, selectedFrame: string | null) =>
+      fitBoard(board, viewport, { notes, connection, frame: selectedFrame })!;
+    expect(fitBoard(board, viewport)!.zoom).toBeLessThan(0.5);
+    const note = only(['a'], null, null);
+    expect(note.zoom).toBe(1);
+    centered(note, 80, 60);
+    centered(only([], null, 'f'), -3680, -3800);
+    centered(only([], 'line', null), 5200, 0);
+    expect(fitBoard(board, viewport, { notes: [], connection: null, frame: null })).toBeNull();
   });
 
   it('snaps edges and centers in screen pixels, excludes the moving selection and returns guides', () => {

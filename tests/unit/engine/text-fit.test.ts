@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   fitNoteFont,
+  MIN_FITTED_FONT,
   MIN_NOTE_FONT,
   NOTE_PADDING,
   NOTE_LINE_HEIGHT,
@@ -36,7 +37,16 @@ describe('note text fitting', () => {
     expect(result).toBeGreaterThan(actualLimit - 1);
   });
 
-  it('keeps a readable minimum for exceptionally long text', () => {
-    expect(fitNoteFont('매우 긴 메모 '.repeat(500), size)).toBe(MIN_NOTE_FONT);
+  it('keeps shrinking below the chosen-size minimum so long text never scrolls', () => {
+    const font = fitNoteFont('매우 긴 메모 '.repeat(500), size);
+    expect(font).toBeLessThan(MIN_NOTE_FONT);
+    expect(font).toBeGreaterThanOrEqual(MIN_FITTED_FONT);
+    const limit = 3.33;
+    expect(fitNoteFont('긴 메모', size, (f) => f <= limit)).toBe(3.3);
+  });
+
+  it('steps in half pixels at readable sizes and returns the floor when nothing fits', () => {
+    expect(fitNoteFont('메모', size, (font) => font <= 17.7)).toBe(17.5);
+    expect(fitNoteFont('메모', size, () => false)).toBe(MIN_FITTED_FONT);
   });
 });

@@ -32,6 +32,39 @@ describe('board interactions', () => {
     expect(store.board.stickies.a).toMatchObject({ x: 40, y: 20, z: 1 });
   });
 
+  it('cancels a drag when the window loses focus, and when Escape is pressed', () => {
+    const store = memoryStore(boardOf(sticky('a')));
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    for (const cancel of [
+      () => fireEvent.blur(window),
+      () => fireEvent.keyDown(window, { key: 'Escape' }),
+    ]) {
+      fireEvent.pointerDown(note('a'), { button: 0, clientX: 300, clientY: 200 });
+      fireEvent.pointerMove(board, { clientX: 340, clientY: 220 });
+      expect(note('a')).toHaveClass('is-dragging');
+      cancel();
+      expect(note('a')).not.toHaveClass('is-dragging');
+      fireEvent.pointerUp(board, { clientX: 340, clientY: 220 });
+      expect(store.board.stickies.a).toMatchObject({ x: 0, y: 0 });
+    }
+  });
+
+  it('leaves Space to focused controls instead of switching to panning', () => {
+    const store = memoryStore(boardOf(sticky('a')));
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    // Toolbar buttons let key events bubble, so this reaches the canvas's window listener.
+    const button = screen.getByRole('button', { name: '선택 · 이동' });
+    expect(fireEvent.keyDown(button, { key: ' ', code: 'Space' })).toBe(true);
+    expect(board).not.toHaveClass('tool-hand');
+    fireEvent.keyUp(button, { key: ' ', code: 'Space' });
+    expect(fireEvent.keyDown(board, { key: ' ', code: 'Space' })).toBe(false);
+    expect(board).toHaveClass('tool-hand');
+    fireEvent.keyUp(board, { key: ' ', code: 'Space' });
+    expect(board).not.toHaveClass('tool-hand');
+  });
+
   it('sends a note behind the others, brings it back and undoes either action', async () => {
     const user = userEvent.setup();
     const store = memoryStore(boardOf(sticky('a'), sticky('b', { z: 2 }), sticky('c', { z: 3 })));
@@ -156,31 +189,22 @@ describe('board interactions', () => {
     expect(editor).toHaveFocus();
   });
 
-  it('lets overflowing note text scroll without zooming the board', async () => {
+  it('zooms the board when wheeling over note text, which is fitted and never scrolls', async () => {
     const user = userEvent.setup();
     const store = memoryStore(boardOf(sticky('a')));
     render(<App store={store} newId={ids()} />);
-    const board = boardBounds();
+    boardBounds();
+    const zoom = () => screen.getByRole('button', { name: '확대 비율 초기화' });
     await user.dblClick(note('a'));
     const editor = screen.getByRole('textbox', { name: '스티키 내용' });
     fireEvent.change(editor, { target: { value: '긴 메모\n'.repeat(100) } });
-    Object.defineProperties(editor, {
-      clientHeight: { value: 96 },
-      scrollHeight: { value: 920 },
-    });
-    expect(fireEvent.wheel(editor, { deltaY: 100 })).toBe(true);
-    expect(screen.getByRole('button', { name: '확대 비율 초기화' })).toHaveTextContent('100%');
+    expect(fireEvent.wheel(editor, { deltaY: 100 })).toBe(false);
+    expect(zoom()).not.toHaveTextContent('100%');
     fireEvent.keyDown(editor, { key: 'Enter' });
     expect(store.board.stickies.a.text).toBe('긴 메모\n'.repeat(100).trim());
-
+    const before = zoom().textContent;
     const content = note(store.board.stickies.a.text).querySelector('.sticky-content')!;
-    Object.defineProperties(content, {
-      clientHeight: { value: 96 },
-      scrollHeight: { value: 920 },
-    });
-    expect(fireEvent.wheel(content, { deltaY: 100 })).toBe(true);
-    expect(screen.getByRole('button', { name: '확대 비율 초기화' })).toHaveTextContent('100%');
-    expect(fireEvent.wheel(board, { deltaY: 100 })).toBe(false);
-    expect(screen.getByRole('button', { name: '확대 비율 초기화' })).not.toHaveTextContent('100%');
+    expect(fireEvent.wheel(content, { deltaY: 100 })).toBe(false);
+    expect(zoom().textContent).not.toBe(before);
   });
 });

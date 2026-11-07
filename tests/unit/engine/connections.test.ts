@@ -7,6 +7,8 @@ import {
 import { snapEndpoint, constrainEndpoint } from '../../../src/engine/connections/snapping';
 import { CONNECTION_PATHS, CONNECTION_SIDES } from '../../../src/domain/connections/model';
 import { connectedBoard, connection } from '../../support/connections';
+import { boardOf, sticky } from '../../support/boards';
+import { frame } from '../../support/frames';
 import { applyPatches } from '../../../src/domain/patch';
 import { roundedPolyline } from '../../../src/engine/connections/rounded-path';
 
@@ -113,5 +115,25 @@ describe('connection geometry', () => {
     expect(constrainEndpoint({ x: 0, y: 0 }, { x: 100, y: 10 }).y).toBe(0);
     const diagonal = constrainEndpoint({ x: 0, y: 0 }, { x: 100, y: 80 });
     expect(diagonal.x).toBeCloseTo(diagonal.y);
+  });
+
+  it('breaks attachment ties toward the topmost note, then notes over frames, then the smallest frame', () => {
+    const stacked = boardOf(sticky('under', { z: 1 }), sticky('over', { z: 2 }));
+    expect(snapEndpoint(stacked, { x: 80, y: 60 }, 1)).toEqual({ stickyId: 'over', side: 'auto' });
+    // Equal stacking falls to the note listed last, which is drawn last.
+    const level = boardOf(sticky('first', { z: 1 }), sticky('second', { z: 1 }));
+    expect(snapEndpoint(level, { x: 80, y: 60 }, 1)).toEqual({ stickyId: 'second', side: 'auto' });
+
+    const nested = {
+      ...boardOf(sticky('far', { x: 2000 })),
+      frames: {
+        outer: frame('outer'),
+        inner: frame('inner', { width: 200, height: 200 }),
+      },
+    };
+    const onSharedEdge = { x: 0, y: 100 };
+    expect(snapEndpoint(nested, onSharedEdge, 1)).toEqual({ frameId: 'inner', side: 'auto' });
+    const withNote = { ...nested, stickies: { a: sticky('a', { x: -160, y: 40 }) } };
+    expect(snapEndpoint(withNote, onSharedEdge, 1)).toEqual({ stickyId: 'a', side: 'auto' });
   });
 });

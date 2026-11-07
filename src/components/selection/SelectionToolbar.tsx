@@ -9,6 +9,7 @@ import {
 } from '../../domain/note-details';
 import { boundsOf } from '../../domain/geometry/bounds';
 import { HORIZONTAL_KEYS, moveFocus } from '../common/keyboard';
+import { useLargestFit } from '../common/fitted-fonts';
 import type { Arrangement } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
@@ -70,7 +71,7 @@ const ARRANGEMENTS: [Arrangement, string][] = [
 ];
 
 const ALIGN_LABELS: Record<TextAlign, string> = { left: '왼쪽', center: '가운데', right: '오른쪽' };
-const FONT_SIZES = [12, 16, 24, 32, 48, 64];
+const FONT_SIZES = [8, 10, 12, 14, 16, 18, 24, 32, 48, 64];
 /** Rectangle notes keep their width and take this share of it as height. */
 const RECTANGLE_RATIO = 0.75;
 /** Toolbar footprint and gaps used to keep it on screen above or below the selection. */
@@ -87,7 +88,13 @@ export function SelectionToolbar(props: Props) {
   const left = bounds.left * zoom + x;
   const top = bounds.top * zoom + y;
   const bottom = bounds.bottom * zoom + y;
-  const fontSizes = [...new Set([...FONT_SIZES, ...(note.fontSize ? [note.fontSize] : [])])].sort(
+  // Sizes the text would overflow at are disabled, so a chosen size never makes a note scroll.
+  const largestFit = useLargestFit(props.notes.map((s) => s.id));
+  // A chosen size the text has outgrown shows at the largest size that fits; list that size.
+  const noteFit = useLargestFit([note.id]);
+  const shownSize =
+    note.autoFont === false ? Math.min(note.fontSize ?? DEFAULT_NOTE_FONT, noteFit) : null;
+  const fontSizes = [...new Set([...FONT_SIZES, ...(shownSize === null ? [] : [shownSize])])].sort(
     (a, b) => a - b,
   );
   const toggle = (next: typeof panel) => setPanel(panel === next ? null : next);
@@ -158,7 +165,7 @@ export function SelectionToolbar(props: Props) {
         <select
           aria-label="글자 크기"
           disabled={locked}
-          value={note.autoFont !== false ? 'auto' : String(note.fontSize ?? DEFAULT_NOTE_FONT)}
+          value={shownSize === null ? 'auto' : String(shownSize)}
           onChange={(event) =>
             props.onFormat(
               event.target.value === 'auto'
@@ -169,7 +176,7 @@ export function SelectionToolbar(props: Props) {
         >
           <option value="auto">자동</option>
           {fontSizes.map((size) => (
-            <option key={size} value={size}>
+            <option key={size} value={size} disabled={size > largestFit}>
               {size}
             </option>
           ))}

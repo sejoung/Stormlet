@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOARD_KEY, LocalBoardStore } from '../../../src/adapters/storage/local-board-store';
 import { serializeBoard } from '../../../src/adapters/files/stormlet-format';
 import { boardOf, sticky } from '../../support/boards';
@@ -56,6 +56,58 @@ describe('LocalBoardStore', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('debounced saving', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+    const savedText = () => JSON.parse(localStorage.getItem(BOARD_KEY)!).stickies[0].text;
+
+    it('saves a pending edit when the page is hidden, but not when it becomes visible', () => {
+      const store = new LocalBoardStore();
+      const visibility = vi.spyOn(document, 'visibilityState', 'get');
+      store.apply([{ op: 'add', sticky: sticky('a') }]);
+      visibility.mockReturnValue('visible');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(localStorage.getItem(BOARD_KEY)).toBeNull();
+      visibility.mockReturnValue('hidden');
+      document.dispatchEvent(new Event('visibilitychange'));
+      expect(savedText()).toBe('a');
+      visibility.mockRestore();
+      store.dispose();
+    });
+
+    it('saves a pending edit on dispose and stops listening afterwards', () => {
+      const store = new LocalBoardStore();
+      store.apply([{ op: 'add', sticky: sticky('a') }]);
+      store.dispose();
+      expect(savedText()).toBe('a');
+      localStorage.clear();
+      window.dispatchEvent(new Event('pagehide'));
+      vi.runAllTimers();
+      expect(localStorage.getItem(BOARD_KEY)).toBeNull();
+    });
+
+    it('does not schedule a save for patches that change nothing', () => {
+      const store = new LocalBoardStore();
+      store.apply([{ op: 'set', id: 'missing', field: 'text', value: 'x' }]);
+      expect(vi.getTimerCount()).toBe(0);
+      store.flush();
+      expect(localStorage.getItem(BOARD_KEY)).toBeNull();
+      store.dispose();
+    });
+
+    it('drops its pending save when another tab saves first, so theirs is not overwritten', () => {
+      const store = new LocalBoardStore();
+      store.apply([{ op: 'add', sticky: sticky('a', { text: 'ours' }) }]);
+      const theirs = serializeBoard(boardOf(sticky('a', { text: 'theirs' })));
+      localStorage.setItem(BOARD_KEY, theirs);
+      window.dispatchEvent(new StorageEvent('storage', { key: BOARD_KEY, newValue: theirs }));
+      vi.runAllTimers();
+      expect(savedText()).toBe('theirs');
+      expect(store.load().stickies.a.text).toBe('theirs');
+      store.dispose();
+    });
   });
 
   it('starts empty when the saved board is unreadable', () => {

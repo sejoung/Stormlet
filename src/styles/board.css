@@ -60,9 +60,7 @@
   flex: 1;
   min-height: 0;
   min-width: 0;
-  overflow: auto;
-}
-.sticky-content.is-editing {
+  /* Text is always fitted to the note, so notes never scroll or show a scrollbar. */
   overflow: hidden;
 }
 .sticky-text {
@@ -95,9 +93,11 @@
   text-align: center;
   resize: none;
   outline: none;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  /*
+   * Typing a line the note has no room for yet scrolls to the caret for a moment before
+   * the font shrinks; hidden overflow keeps that from flashing a scrollbar.
+   */
+  overflow: hidden;
   overflow-wrap: anywhere;
   user-select: text;
 }

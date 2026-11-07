@@ -30,6 +30,64 @@ describe('note editing experience', () => {
     expect(note().querySelector('p')).toHaveStyle({ fontSize: '32px' });
   });
 
+  it('disables font sizes the text would overflow and caps a chosen size that no longer fits', async () => {
+    const user = userEvent.setup();
+    const long = '긴 메모 내용을 적어 봅니다 '.repeat(4);
+    const store = memoryStore(boardOf(sticky('a', { text: long, autoFont: false, fontSize: 64 })));
+    render(<App store={store} newId={ids()} />);
+    boardBounds();
+    const shown = () => parseFloat(note().querySelector('p')!.style.fontSize);
+    expect(shown()).toBeLessThan(64);
+    await user.click(note());
+    const sizes = within(screen.getByRole('toolbar', { name: '포스트잇 편집 도구' })).getByRole(
+      'combobox',
+      { name: '글자 크기' },
+    );
+    const option = (size: number) =>
+      within(sizes).getByRole<HTMLOptionElement>('option', { name: String(size) });
+    expect(sizes).toHaveValue(String(shown()));
+    expect(option(8).disabled).toBe(false);
+    expect(option(48).disabled).toBe(true);
+    expect(option(64).disabled).toBe(true);
+    const enabled = within(sizes)
+      .getAllByRole<HTMLOptionElement>('option')
+      .filter((item) => item.value !== 'auto' && !item.disabled)
+      .map((item) => Number(item.value));
+    expect(Math.max(...enabled)).toBeLessThanOrEqual(shown());
+    // A bigger note fits more, so the larger sizes come back and the chosen size is shown.
+    const handle = screen.getByRole('button', { name: '포스트잇 크기 조절' });
+    for (let step = 0; step < 15; step++) {
+      fireEvent.keyDown(handle, { key: 'ArrowRight' });
+      fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    }
+    expect(store.board.stickies.a.width).toBeGreaterThan(400);
+    expect(option(48).disabled).toBe(false);
+    expect(sizes).toHaveValue(String(shown()));
+    expect(shown()).toBeGreaterThan(Math.max(...enabled));
+  });
+
+  it('limits font sizes by the tightest selected note', async () => {
+    const user = userEvent.setup();
+    const long = '긴 메모 내용을 적어 봅니다 '.repeat(4);
+    const store = memoryStore(
+      boardOf(sticky('a', { text: '짧음' }), sticky('b', { text: long, x: 400 })),
+    );
+    render(<App store={store} newId={ids()} />);
+    boardBounds();
+    const sizeOption = (size: number) =>
+      within(screen.getByRole('combobox', { name: '글자 크기' })).getByRole<HTMLOptionElement>(
+        'option',
+        { name: String(size) },
+      );
+    await user.click(screen.getByRole('button', { name: /^도메인 이벤트: 짧음/ }));
+    expect(sizeOption(48).disabled).toBe(false);
+    await user.keyboard('{Shift>}');
+    await user.click(screen.getByRole('button', { name: /^도메인 이벤트: 긴 메모/ }));
+    await user.keyboard('{/Shift}');
+    expect(sizeOption(48).disabled).toBe(true);
+    expect(sizeOption(8).disabled).toBe(false);
+  });
+
   it('exports the latest unfinished draft with Ctrl+S', async () => {
     const user = userEvent.setup();
     const store = memoryStore(boardOf(sticky('a')));

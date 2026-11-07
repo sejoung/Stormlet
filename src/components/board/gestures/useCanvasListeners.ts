@@ -6,8 +6,6 @@ import { useLatest } from '../../common/useStableCallback';
 
 /** Space-bar panning is off while focus is on a control that uses Space itself. */
 const SPACE_OWNERS = `${TEXT_ENTRY}, button, [role="dialog"], [role="menu"]`;
-/** Scrollable note text keeps the wheel while it still has content to scroll. */
-const SCROLLABLE_TEXT = '.sticky-editor, .sticky-content';
 
 interface Options {
   element: RefObject<HTMLDivElement | null>;
@@ -57,9 +55,6 @@ export function useCanvasListeners(options: Options): boolean {
   useEffect(() => {
     const node = element.current!;
     const onWheel = (event: WheelEvent) => {
-      const content =
-        event.target instanceof Element ? event.target.closest(SCROLLABLE_TEXT) : null;
-      if (content && content.scrollHeight > content.clientHeight) return;
       event.preventDefault();
       const { view, onViewChange } = latest.current;
       onViewChange(

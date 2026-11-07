@@ -7,7 +7,7 @@ import { DRAFT_FIELD, useDraft } from '../common/drafts';
 import { isComposing } from '../common/keyboard';
 
 export function StickyText({ note, size }: { note: Sticky; size: StickySize }) {
-  const { ref, fontSize } = useFittedText(note.text, size, note);
+  const { ref, fontSize } = useFittedText(note.id, note.text, size, note);
   return (
     <div className="sticky-content">
       <p ref={ref} className="sticky-text" style={noteTextStyle(note, fontSize)}>
@@ -16,6 +16,13 @@ export function StickyText({ note, size }: { note: Sticky; size: StickySize }) {
     </div>
   );
 }
+
+/**
+ * The measuring copy is a paragraph, which drops a trailing empty line that the textarea
+ * still shows (the line the caret moves to after Shift+Enter). A zero-width space keeps
+ * that line, and gives an empty note one line, so both measure like the textarea.
+ */
+const measured = (text: string) => `${text}\u200b`;
 
 export function StickyEditor({
   note,
@@ -31,7 +38,7 @@ export function StickyEditor({
   const [text, setText] = useState(initial);
   const composing = useRef(false);
   const completed = useRef(false);
-  const { ref, fontSize } = useFittedText(text, size, note);
+  const { ref, fontSize } = useFittedText(note.id, text, size, note);
   const finish = () => {
     if (completed.current) return;
     completed.current = true;
@@ -59,7 +66,7 @@ export function StickyEditor({
           aria-hidden="true"
           style={noteTextStyle(note, fontSize)}
         >
-          {text || '\u200b'}
+          {measured(text)}
         </p>
         <textarea
           className="sticky-editor"

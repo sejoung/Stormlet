@@ -126,14 +126,6 @@
 .sticky.is-editing .note-reactions {
   visibility: hidden;
 }
-.sticky-content {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, currentColor 28%, transparent) transparent;
-}
-.sticky-editor {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, currentColor 28%, transparent) transparent;
-}
 .empty-hint {
   top: 45%;
   width: min(90%, 620px);
