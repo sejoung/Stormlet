@@ -20,10 +20,14 @@ import { ConnectionLayer } from '../connections/ConnectionLayer';
 import { useConnectionDrawing } from '../connections/useConnectionDrawing';
 import type { ConnectionInteraction } from '../connections/types';
 import { StickyNote } from './StickyNote';
+import { useFrameDrawing } from '../frames/useFrameDrawing';
+import { FrameItem } from '../frames/FrameItem';
+import type { FrameInteraction } from '../frames/types';
 
 interface Props {
   board: Board;
   links: ConnectionInteraction;
+  frames: FrameInteraction;
   view: View;
   selection: ReadonlySet<string>;
   editing: string | null;
@@ -51,6 +55,7 @@ export function BoardCanvas(props: Props) {
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const [space, setSpace] = useState(false);
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
+  const frameDrawing = useFrameDrawing({ board, view, element, tool, frames: props.frames });
   const cancelDrawing = drawing.cancel;
   useEffect(() => {
     const cancel = (event: KeyboardEvent) => {
@@ -111,6 +116,7 @@ export function BoardCanvas(props: Props) {
 
   const onBackgroundDown = (event: PointerEvent) => {
     if ((event.button !== 0 && event.button !== 1) || event.target !== event.currentTarget) return;
+    if (!space && frameDrawing.backgroundDown(event)) return;
     if (!space && event.button === 0 && drawing.backgroundDown(event)) return;
     if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
     if (event.button === 1 || space) event.preventDefault();
@@ -157,6 +163,7 @@ export function BoardCanvas(props: Props) {
   };
 
   const onPointerMove = (event: PointerEvent) => {
+    if (frameDrawing.move(event)) return;
     if (drawing.move(event)) return;
     if (!gesture || gesture.type === 'place') return;
     const point = local(event);
@@ -223,6 +230,7 @@ export function BoardCanvas(props: Props) {
   );
 
   const onPointerUp = (event: PointerEvent) => {
+    if (frameDrawing.up(event)) return;
     if (drawing.up(event)) return;
     if (gesture?.type === 'place') {
       const at = local(event);
@@ -247,7 +255,11 @@ export function BoardCanvas(props: Props) {
   };
 
   const dragging = gesture?.type === 'drag' ? gesture : null;
-  const displayed = previewBoard(board, gesture);
+  const framed = frameDrawing.preview(board);
+  const displayed = previewBoard(framed, gesture);
+  const displayedFrames = Object.values(displayed.frames ?? {}).sort(
+    (a, b) => b.width * b.height - a.width * a.height || a.id.localeCompare(b.id),
+  );
   const reconnect = (event: PointerEvent, id: string, end: 'from' | 'to') =>
     drawing.begin(event, undefined, { id, end });
   return (
@@ -272,13 +284,48 @@ export function BoardCanvas(props: Props) {
       onPointerCancel={() => {
         setGesture(null);
         cancelDrawing();
+        frameDrawing.cancel();
       }}
-      onLostPointerCapture={() => setGesture(null)}
+      onLostPointerCapture={() => {
+        setGesture(null);
+        frameDrawing.cancel();
+      }}
     >
       <div
         className="board-layer"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}
       >
+        {displayedFrames.map((frame, index) => (
+          <FrameItem
+            key={frame.id}
+            frame={frame}
+            selected={props.frames.selectedId === frame.id}
+            zIndex={index - displayedFrames.length}
+            onChange={props.frames.onChange}
+            onSelect={(id) => {
+              if (!space && tool === 'interact') props.frames.onSelect(id);
+            }}
+            onDown={(event, id, resize) => {
+              if (space || tool === 'hand' || event.button === 1) {
+                event.preventDefault();
+                event.stopPropagation();
+                element.current!.setPointerCapture(event.pointerId);
+                setGesture({ type: 'pan', last: local(event) });
+              } else if (tool === 'interact') frameDrawing.begin(event, id, resize);
+            }}
+          />
+        ))}
+        {frameDrawing.draft && (
+          <div
+            className="frame-draft"
+            style={{
+              left: frameDrawing.draft.x,
+              top: frameDrawing.draft.y,
+              width: frameDrawing.draft.width,
+              height: frameDrawing.draft.height,
+            }}
+          />
+        )}
         <ConnectionLayer
           board={displayed}
           zoom={view.zoom}
@@ -287,7 +334,7 @@ export function BoardCanvas(props: Props) {
           onReconnect={reconnect}
           onKeyboardReconnect={drawing.keyboardReconnect}
         />
-        {stackOrder(board).map((sticky, index) => (
+        {stackOrder(framed).map((sticky, index) => (
           <StickyNote
             key={sticky.id}
             sticky={sticky}

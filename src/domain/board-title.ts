@@ -1,4 +1,5 @@
 import type { Board } from './model';
+import type { Patch } from './patch';
 
 export const DEFAULT_BOARD_TITLE = '나의 아이디어 보드';
 export const MAX_BOARD_TITLE_LENGTH = 80;
@@ -11,6 +12,11 @@ export const normalizeBoardTitle = (value: string): string =>
     .slice(0, MAX_BOARD_TITLE_LENGTH) || DEFAULT_BOARD_TITLE;
 
 export const boardTitle = (board: Board): string => board.title ?? DEFAULT_BOARD_TITLE;
+
+export function renameBoard(board: Board, value: string): Patch[] {
+  const title = normalizeBoardTitle(value);
+  return title === boardTitle(board) ? [] : [{ op: 'title', value: title }];
+}
 
 /** Keep the visible title intact while removing characters forbidden in download names. */
 export const boardFileStem = (title: string): string =>

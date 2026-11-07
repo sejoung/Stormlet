@@ -5,6 +5,8 @@ import type { StickyColor } from '../../domain/model';
 import type { ConnectionStyle } from '../../domain/connections/model';
 import { COLOR_STYLES } from '../board/kinds';
 import { CreationFlyout, type ToolDefaults } from './CreationFlyout';
+import { FrameFlyout } from '../frames/FrameFlyout';
+import type { FrameInteraction } from '../frames/types';
 
 export function CreationToolbar({
   tool,
@@ -14,6 +16,7 @@ export function CreationToolbar({
   defaults,
   onStickyColor,
   onConnectionStyle,
+  frames,
 }: {
   tool: BoardTool;
   onTool(tool: BoardTool): void;
@@ -22,8 +25,9 @@ export function CreationToolbar({
   defaults: ToolDefaults;
   onStickyColor(color: StickyColor): void;
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
+  frames: FrameInteraction;
 }) {
-  const [panel, setPanel] = useState<'sticky' | 'connect' | null>(null);
+  const [panel, setPanel] = useState<'sticky' | 'connect' | 'frame' | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const open = panel && tool === panel ? panel : null;
   const close = () => setPanel(null);
@@ -50,7 +54,7 @@ export function CreationToolbar({
       document.removeEventListener('keydown', escape);
     };
   }, [open, onTool]);
-  const chooseTool = (next: 'sticky' | 'connect') => {
+  const chooseTool = (next: 'sticky' | 'connect' | 'frame') => {
     setPanel(open === next ? null : next);
     onTool(next);
   };
@@ -117,6 +121,19 @@ export function CreationToolbar({
             }
           />
         </button>
+        <button
+          type="button"
+          className="creation-tool"
+          aria-label="프레임 도구"
+          data-creation-tool="frame"
+          aria-haspopup="dialog"
+          aria-expanded={open === 'frame'}
+          aria-pressed={tool === 'frame'}
+          title="프레임 (F) · 드래그로 영역 지정"
+          onClick={() => chooseTool('frame')}
+        >
+          <Icon name="frame" />
+        </button>
         <span className="creation-divider" />
         <button
           type="button"
@@ -140,7 +157,8 @@ export function CreationToolbar({
           <Icon name="grid" />
         </button>
       </aside>
-      {open && (
+      {open === 'frame' && <FrameFlyout frames={frames} onClose={close} />}
+      {open && open !== 'frame' && (
         <CreationFlyout
           kind={open}
           defaults={defaults}

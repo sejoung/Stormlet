@@ -7,6 +7,7 @@ const paths = {
   pan: 'M8 12V6a2 2 0 0 1 4 0v6-8a2 2 0 0 1 4 0v8-6a2 2 0 0 1 4 0v9c0 5-3 7-7 7-3 0-5-2-7-5l-3-4a2 2 0 0 1 3-2l2 2Z',
   note: 'M4 3h16v13l-5 5H4V3Zm11 18v-5h5',
   plus: 'M12 5v14M5 12h14',
+  frame: 'M5 2v20M19 2v20M2 5h20M2 19h20',
   connect: 'M3 6h7v12h11m-5-5 5 5-5 5',
   line: 'M5 19 19 5',
   arrow: 'M5 19 19 5M11 5h8v8',

@@ -39,7 +39,7 @@ export function useShortcuts(handlers: Handlers) {
           mod &&
           key === 's' &&
           event.target instanceof Element &&
-          event.target.matches('.connection-label-input')
+          event.target.matches('.connection-label-input, .frame-title-input')
         ) {
           handlers.onSave();
           event.preventDefault();
@@ -75,6 +75,7 @@ export function useShortcuts(handlers: Handlers) {
       else if (!mod && key === 'h') handlers.onTool('hand');
       else if (!mod && key === 'n') handlers.onTool('sticky');
       else if (!mod && key === 'l') handlers.onTool('connect');
+      else if (!mod && key === 'f') handlers.onTool('frame');
       else if (key === 'f1' || key === '?') handlers.onHelp();
       else return;
       event.preventDefault();

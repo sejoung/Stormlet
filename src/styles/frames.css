@@ -1,0 +1,228 @@
+.board.tool-frame {
+  cursor: crosshair;
+}
+.board-frame {
+  position: absolute;
+  pointer-events: none;
+}
+.frame-background {
+  position: absolute;
+  inset: 0;
+  border: 1px solid color-mix(in srgb, var(--muted) 60%, transparent);
+  background: color-mix(in srgb, var(--frame-fill) 24%, transparent);
+}
+.board-frame.is-selected .frame-background {
+  border: 2px solid var(--focus);
+}
+.frame-edge {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+.edge-top,
+.edge-bottom {
+  left: 0;
+  width: 100%;
+  height: 10px;
+}
+.edge-top {
+  top: -5px;
+}
+.edge-bottom {
+  bottom: -5px;
+}
+.edge-left,
+.edge-right {
+  top: 0;
+  height: 100%;
+  width: 10px;
+}
+.edge-left {
+  left: -5px;
+}
+.edge-right {
+  right: -5px;
+}
+.frame-title,
+.frame-title-input {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 5px);
+  max-width: 100%;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font:
+    500 13px/18px system-ui,
+    sans-serif;
+  pointer-events: auto;
+}
+.frame-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: grab;
+  text-align: left;
+}
+.frame-title svg {
+  width: 12px;
+  height: 12px;
+}
+.frame-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.frame-title:hover {
+  background: var(--selected);
+}
+.frame-title-input {
+  width: 280px;
+  outline: 2px solid var(--focus);
+}
+.frame-resize {
+  pointer-events: auto;
+}
+.board-frame.is-locked .frame-edge,
+.board-frame.is-locked .frame-title {
+  cursor: default;
+}
+.board.tool-sticky .board-frame *,
+.board.tool-connect .board-frame *,
+.board.tool-frame .board-frame * {
+  pointer-events: none;
+}
+.frame-draft {
+  position: absolute;
+  z-index: 2147483646;
+  border: 2px dashed var(--focus);
+  background: color-mix(in srgb, var(--focus) 4%, transparent);
+  pointer-events: none;
+}
+.frame-toolbar {
+  position: absolute;
+  z-index: 42;
+  width: 324px;
+  max-width: calc(100% - 24px);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.frame-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.frame-tools > span {
+  margin-right: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+.frame-tools button {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  padding: 5px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+}
+.frame-tools button:hover:not(:disabled) {
+  background: var(--selected);
+}
+.frame-colors {
+  display: flex;
+  gap: 10px;
+  margin: 0 2px 14px;
+}
+.frame-colors button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgb(0 0 0 / 12%);
+  border-radius: 4px;
+}
+.no-fill {
+  background-image: linear-gradient(
+    135deg,
+    transparent 46%,
+    #da5360 48%,
+    #da5360 52%,
+    transparent 54%
+  );
+}
+.frame-colors button[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.frame-dimensions {
+  display: flex;
+  gap: 12px;
+}
+.frame-dimensions label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.frame-dimensions input {
+  width: 86px;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.flyout-frame {
+  width: 220px;
+}
+.frame-presets {
+  display: grid;
+  gap: 5px;
+}
+.frame-presets button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+}
+.frame-presets button:hover,
+.frame-presets button[aria-pressed='true'] {
+  background: var(--selected);
+}
+.frame-preset-shape {
+  width: 28px;
+  height: 20px;
+  border: 1px solid var(--muted);
+}
+.frame-preset-shape.is-wide {
+  height: 10px;
+}
+.frame-preset-shape.is-tall {
+  width: 12px;
+  height: 28px;
+  margin: 0 8px;
+}

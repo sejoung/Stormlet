@@ -16,6 +16,7 @@ interface Props {
   onArrange(action: Arrangement): void;
   onDuplicate(): void;
   onGroup(): void;
+  onFrame(): void;
   onReact(emoji: string): void;
   onMore(point: Point): void;
 }
@@ -183,6 +184,9 @@ export function SelectionToolbar(props: Props) {
         <span className="selection-divider" />
         <Tool label="포스트잇 복제" onClick={props.onDuplicate}>
           <Icon name="duplicate" />
+        </Tool>
+        <Tool label="프레임 만들기" onClick={props.onFrame}>
+          <Icon name="frame" />
         </Tool>
         {props.notes.length > 1 && (
           <Tool

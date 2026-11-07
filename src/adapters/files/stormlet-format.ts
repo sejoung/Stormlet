@@ -12,13 +12,15 @@ import { readDetails } from './note-details';
 import { normalizeBoardTitle } from '../../domain/board-title';
 import { readConnections } from './connections';
 import type { Connection } from '../../domain/connections/model';
+import { readFrames } from './frames';
+import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
 
 /**
  * The `.stormlet` file: readable JSON with stickies listed bottom to top. Unknown fields
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-export const FORMAT_VERSION = 6;
+export const FORMAT_VERSION = 7;
 export const FILE_EXTENSION = '.stormlet';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };
@@ -31,6 +33,7 @@ interface StormletFile {
   stickies: Sticky[];
   title?: string;
   connections?: Connection[];
+  frames?: Frame[];
 }
 
 export function serializeBoard(board: Board): string {
@@ -49,6 +52,18 @@ export function serializeBoard(board: Board): string {
     version: FORMAT_VERSION,
     ...(board.title === undefined ? {} : { title: board.title }),
     stickies,
+    ...(Object.keys(board.frames ?? {}).length
+      ? {
+          frames: Object.values(board.frames!)
+            .sort((a, b) => a.id.localeCompare(b.id))
+            .map(
+              (frame) =>
+                Object.fromEntries(
+                  ['id', ...FRAME_FIELDS].map((key) => [key, frame[key as keyof Frame]]),
+                ) as unknown as Frame,
+            ),
+        }
+      : {}),
     ...(Object.keys(board.connections ?? {}).length
       ? { connections: Object.values(board.connections!).sort((a, b) => a.id.localeCompare(b.id)) }
       : {}),
@@ -112,6 +127,7 @@ export function parseBoard(content: string): Board {
     version !== 3 &&
     version !== 4 &&
     version !== 5 &&
+    version !== 6 &&
     version !== FORMAT_VERSION
   )
     throw new FormatError('The file version is not supported by this Stormlet.');
@@ -127,6 +143,12 @@ export function parseBoard(content: string): Board {
     stickies[sticky.id] = sticky;
   });
   const board: Board = { ...(title === undefined ? {} : { title }), stickies };
+  try {
+    const frames = version >= 7 ? readFrames(file.frames) : {};
+    if (Object.keys(frames).length) board.frames = frames;
+  } catch {
+    throw new FormatError('The frames are malformed.');
+  }
   try {
     const connections = version >= 6 ? readConnections(file.connections, board) : {};
     if (Object.keys(connections).length) board.connections = connections;

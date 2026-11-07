@@ -1,4 +1,5 @@
 import { own } from './ids';
+import { FRAME_FIELDS, type Frame, type FramePatch, type FrameSetPatch } from './frames/model';
 import { STICKY_FIELDS, type Board, type Sticky, type StickyField } from './model';
 import {
   CONNECTION_FIELDS,
@@ -19,7 +20,8 @@ export type Patch =
   | SetPatch
   | { op: 'delete'; id: string }
   | { op: 'title'; value: string | undefined }
-  | ConnectionPatch;
+  | ConnectionPatch
+  | FramePatch;
 
 export interface Applied {
   board: Board;
@@ -40,7 +42,30 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
   let connections: Record<string, Connection> | null = null;
   const currentConnections = () => connections ?? board.connections ?? {};
   const writeConnections = () => (connections ??= { ...board.connections });
+  let frames: Record<string, Frame> | null = null;
+  const currentFrames = () => frames ?? board.frames ?? {};
+  const writeFrames = () => (frames ??= { ...board.frames });
   for (const patch of patches) {
+    if (patch.op === 'frame:add') {
+      const before = own(currentFrames(), patch.frame.id);
+      writeFrames()[patch.frame.id] = patch.frame;
+      inverse.push(
+        before ? { op: 'frame:add', frame: before } : { op: 'frame:delete', id: patch.frame.id },
+      );
+      continue;
+    }
+    if (patch.op === 'frame:delete' || patch.op === 'frame:set') {
+      const before = own(currentFrames(), patch.id);
+      if (!before) continue;
+      if (patch.op === 'frame:delete') {
+        delete writeFrames()[patch.id];
+        inverse.push({ op: 'frame:add', frame: before });
+      } else if (before[patch.field] !== patch.value) {
+        writeFrames()[patch.id] = { ...before, [patch.field]: patch.value };
+        inverse.push({ ...patch, value: before[patch.field] } as FrameSetPatch);
+      }
+      continue;
+    }
     if (patch.op === 'connection:add') {
       const before = own(currentConnections(), patch.connection.id);
       writeConnections()[patch.connection.id] = patch.connection;
@@ -88,9 +113,13 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
       inverse.push({ ...patch, value: before[patch.field] } as SetPatch);
     }
   }
-  if (!stickies && !connections && title === board.title)
+  if (!stickies && !connections && !frames && title === board.title)
     return { board, inverse: inverse.reverse() };
   const next: Board = { ...board, stickies: stickies ?? board.stickies };
+  if (frames) {
+    if (Object.keys(frames).length) next.frames = frames;
+    else delete next.frames;
+  }
   if (connections) {
     if (Object.keys(connections).length) next.connections = connections;
     else delete next.connections;
@@ -104,6 +133,21 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
 export function diffBoards(from: Board, to: Board): Patch[] {
   const patches: Patch[] = [];
   if (from.title !== to.title) patches.push({ op: 'title', value: to.title });
+  for (const id of Object.keys(from.frames ?? {}))
+    if (!own(to.frames ?? {}, id)) patches.push({ op: 'frame:delete', id });
+  for (const frame of Object.values(to.frames ?? {})) {
+    const before = own(from.frames ?? {}, frame.id);
+    if (!before) patches.push({ op: 'frame:add', frame });
+    else
+      for (const field of FRAME_FIELDS)
+        if (before[field] !== frame[field])
+          patches.push({
+            op: 'frame:set',
+            id: frame.id,
+            field,
+            value: frame[field],
+          } as FrameSetPatch);
+  }
   for (const id of Object.keys(from.connections ?? {}))
     if (!own(to.connections ?? {}, id)) patches.push({ op: 'connection:delete', id });
   for (const connection of Object.values(to.connections ?? {})) {

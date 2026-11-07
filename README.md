@@ -18,6 +18,9 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 - Connect notes with `L` or drag a side port; attached arrows follow moves and resizing
 - Straight, smoothly rounded elbow (default) and curved connections, arrowheads, color/width/dashes, labels, endpoint reattachment and locking
 - Copy or duplicate a flow with its internal connections; deleting a note also removes its incident lines, all undoable
+- Create transparent or colored frames with `F` and a drag, or wrap selected notes using “프레임 만들기”; choose horizontal or vertical lane presets
+- Rename frame titles with a double-click, resize the boundary, and move, duplicate or copy its contained notes, nested frames and internal connections together
+- Frame deletion keeps the contents; cutting transfers the whole frame and contents, and frame locking leaves individual notes editable
 - Bulk entry and spreadsheet paste (up to 50 rows × 100 columns, 3,000 characters per note)
 - Align, distribute and arrange notes in a grid; alignment guides, grouping and locking
 - Toggle emoji reactions and search note contents
@@ -27,7 +30,7 @@ Runs in the browser with no sign-in or server. Boards live in browser storage an
 - Undo and redo (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`)
 - Autosave in the browser, synced across tabs of the same browser
 - Double-click the board title to rename it (also Enter/F2); the title is autosaved and used as the download filename
-- Version 6 `.stormlet` files retain the title, notes, connections and their styles; versions 1–5 remain readable
+- Version 7 `.stormlet` files retain the title, notes, connections, frames and their styles; versions 1–6 remain readable
 - Keyboard help, responsive controls and dark mode
 
 Reactions toggle using a stable local identifier without a visible profile. Same-browser tab synchronization includes the board title.

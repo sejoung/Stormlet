@@ -4,7 +4,6 @@ import {
   deleteStickies,
   moveStickies,
   resizeStickies,
-  setColor,
   setText,
   type Move,
 } from '../domain/commands';
@@ -12,8 +11,7 @@ import type { StickySize } from '../domain/sticky-size';
 import { BoardContextMenu } from '../components/board/BoardContextMenu';
 import { own } from '../domain/ids';
 import { DEFAULT_STICKY_APPEARANCE } from '../domain/model';
-import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
-import { diffBoards } from '../domain/patch';
+import { boardTitle, renameBoard } from '../domain/board-title';
 import type { BoardStore } from '../domain/store';
 import { centeredAt } from '../engine/sticky-metrics';
 import { INITIAL_VIEW, toBoardPoint, zoomAround, type Point, type View } from '../engine/viewport';
@@ -21,30 +19,24 @@ import { BoardCanvas } from '../components/board/BoardCanvas';
 import type { BoardTool } from '../components/board/kinds';
 import { Toolbar } from '../components/toolbar/Toolbar';
 import { CreationToolbar } from '../components/toolbar/CreationToolbar';
-import { downloadText, readFileText } from '../adapters/files/download';
-import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
+import { useBoardFiles } from './useBoardFiles';
 import { useBoardSession } from './useBoardSession';
 import { useShortcuts } from './useShortcuts';
 import { useNoteActions } from './useNoteActions';
 import { useClipboard } from './useClipboard';
 import { reactionIdentity } from '../adapters/storage/web-storage';
-import { fitView } from '../engine/fit-view';
-import { SelectionToolbar } from '../components/selection/SelectionToolbar';
+import { fitBoard } from '../engine/fit-view';
+import { NoteSelection } from './NoteSelection';
+import { useFrameSession } from './frames/useFrameSession';
+import { ObjectToolbars } from './ObjectToolbars';
 import { BulkDialog } from '../components/dialogs/BulkDialog';
 import { HelpDialog } from '../components/dialogs/HelpDialog';
 import { BoardSearch } from '../components/toolbar/BoardSearch';
 import { BoardChrome } from '../components/board/BoardChrome';
 import { useCreationDefaults } from './useCreationDefaults';
 import { useConnectionSession } from './useConnectionSession';
-import { ConnectionToolbar } from '../components/connections/ConnectionToolbar';
-import { connectionGeometry } from '../engine/connections/geometry';
 
-interface Props {
-  store: BoardStore;
-  newId(): string;
-}
-
-export function App({ store, newId }: Props) {
+export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const { session, edit, undo, redo } = useBoardSession(store);
   const { board } = session;
   const defaults = useCreationDefaults();
@@ -52,6 +44,7 @@ export function App({ store, newId }: Props) {
   const [view, setView] = useState<View>(INITIAL_VIEW);
   const [tool, setTool] = useState<BoardTool>('interact');
   const [picked, setPicked] = useState<string[]>([]);
+  const [selectedFrame, setSelectedFrame] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [seed, setSeed] = useState<string | undefined>();
   const [reactor] = useState(reactionIdentity);
@@ -66,13 +59,31 @@ export function App({ store, newId }: Props) {
     board,
     edit,
     newId,
-    clearNotes: () => setPicked([]),
+    clearNotes: () => {
+      setPicked([]);
+      setSelectedFrame(null);
+    },
     onTool: () => setTool('interact'),
     onStatus: setStatus,
     style: defaults.connection,
   });
+  const frames = useFrameSession({
+    board,
+    selectedId: selectedFrame,
+    edit,
+    newId,
+    onSelect: setSelectedFrame,
+    clearObjects: () => {
+      flushEditor();
+      setPicked([]);
+      links.clear();
+      setEditing(null);
+    },
+    finishTool: () => setTool('interact'),
+  });
   const clearConnection = links.clear;
   const selectNotes = (ids: string[]) => {
+    frames.clear();
     links.clear();
     setPicked(ids);
   };
@@ -108,28 +119,37 @@ export function App({ store, newId }: Props) {
     center: () => toBoardPoint(view, center()),
   });
   const remove = () =>
-    links.selected ? links.remove() : edit((current) => deleteStickies(current, activeIds));
+    frames.selected
+      ? frames.remove()
+      : links.selected
+        ? links.remove()
+        : edit((current) => deleteStickies(current, activeIds));
   useClipboard({
     board,
     ids: activeIds,
-    onPaste: actions.pasteNotes,
+    frameId: frames.selectedId,
+    onPaste: (source) =>
+      Object.keys(source.frames ?? {}).length
+        ? frames.paste(source, toBoardPoint(view, center()))
+        : actions.pasteNotes(source),
     onText: actions.addCells,
-    onCut: remove,
+    onCut: () => (frames.selected ? frames.cut() : remove()),
     onStatus: setStatus,
   });
-  const fit = (ids?: string[]) => {
-    const rect = boardElement.current!.getBoundingClientRect();
-    const next = fitView(
-      [
-        ...Object.values(board.stickies).filter((s) => !ids || ids.includes(s.id)),
-        ...Object.values(board.connections ?? {})
-          .filter((line) => !ids || links.selectedId === line.id)
-          .flatMap((line) => connectionGeometry(board, line)?.bounds ?? []),
-      ],
-      rect.width,
-      rect.height,
+  const fit = (ids?: string[]) =>
+    setView(
+      (current) =>
+        fitBoard(
+          board,
+          boardElement.current!.getBoundingClientRect(),
+          ids ? { notes: ids, connection: links.selectedId, frame: frames.selectedId } : undefined,
+        ) ?? current,
     );
-    if (next) setView(next);
+  const chooseTool = (next: BoardTool) => {
+    flushEditor();
+    links.clear();
+    frames.clear();
+    setTool(next);
   };
   const startEdit = (id: string | null, initial?: string) => {
     if (id && board.stickies[id]?.locked) return;
@@ -138,6 +158,7 @@ export function App({ store, newId }: Props) {
   };
 
   const onAdd = (at: Point) => {
+    frames.clear();
     clearConnection();
     const id = newId();
     edit((current) =>
@@ -164,6 +185,7 @@ export function App({ store, newId }: Props) {
   const onContextMenu = useCallback(
     (id: string, point: Point) => {
       clearConnection();
+      setSelectedFrame(null);
       const ids = selection.has(id) ? [...selection] : [id];
       setPicked(ids);
       setMenu({ ids, point });
@@ -179,6 +201,9 @@ export function App({ store, newId }: Props) {
     [edit],
   );
   const flushEditor = () => {
+    const frameName = boardElement.current?.querySelector<HTMLInputElement>('.frame-title-input');
+    if (frames.selected && frameName)
+      frames.onChange(frames.selected.id, { title: frameName.value });
     const editor = boardElement.current?.querySelector<HTMLTextAreaElement>('.sticky-editor');
     if (editing && editor) onCommitText(editing, editor.value.trim());
     const label =
@@ -187,37 +212,31 @@ export function App({ store, newId }: Props) {
       );
     if (links.selected && label) links.onChange(links.selected.id, { label: label.value.trim() });
   };
-  const save = () => {
-    flushEditor();
-    const current = store.load();
-    downloadText(`${boardFileStem(boardTitle(current))}${FILE_EXTENSION}`, serializeBoard(current));
-  };
-
-  const onOpen = async (file: File) => {
-    try {
-      const opened = parseBoard(await readFileText(file));
-      const title = opened.title ?? normalizeBoardTitle(file.name.replace(/\.stormlet$/i, ''));
-      edit((current) => diffBoards(current, { ...opened, title }));
+  const { save, onOpen } = useBoardFiles({
+    store,
+    edit,
+    flushEditor,
+    onStatus: setStatus,
+    reset: () => {
       setPicked([]);
       setEditing(null);
       setMenu(null);
       links.clear();
-      setStatus(`${file.name}을(를) 열었습니다.`);
-    } catch (error) {
-      setStatus(`열 수 없는 파일입니다: ${(error as Error).message}`);
-    }
-  };
+      frames.clear();
+    },
+  });
 
   useShortcuts({
     onUndo: undo,
     onRedo: redo,
     onDelete: remove,
-    onTool: (tool) => {
-      links.clear();
-      setTool(tool);
-    },
+    onTool: chooseTool,
     onDuplicate: (offset, directional) =>
-      links.selected ? links.duplicate() : actions.duplicate(activeIds, offset, directional),
+      frames.selected
+        ? frames.onDuplicate(frames.selected.id, offset?.x ?? 32, offset?.y ?? 32)
+        : links.selected
+          ? links.duplicate()
+          : actions.duplicate(activeIds, offset, directional),
     onSelectAll: () =>
       selectNotes(
         Object.values(board.stickies)
@@ -226,17 +245,22 @@ export function App({ store, newId }: Props) {
       ),
     onGroup: actions.group,
     onLock: () =>
-      links.selected
-        ? links.onChange(links.selected.id, { locked: !links.selected.locked })
-        : actions.lock(),
+      frames.selected
+        ? frames.onChange(frames.selected.id, { locked: !frames.selected.locked })
+        : links.selected
+          ? links.onChange(links.selected.id, { locked: !links.selected.locked })
+          : actions.lock(),
     onFormat: actions.toggleFormat,
     onNudge: (offset) =>
-      onMove(selectedNotes.map((s) => ({ id: s.id, x: s.x + offset.x, y: s.y + offset.y }))),
+      frames.selected
+        ? frames.onMove(frames.selected.id, offset.x, offset.y)
+        : onMove(selectedNotes.map((s) => ({ id: s.id, x: s.x + offset.x, y: s.y + offset.y }))),
     onSearch: () => setSearchOpen(true),
     onFit: (selected) => fit(selected ? activeIds : undefined),
     onHelp: () => setDialog('help'),
     onSave: save,
     onEscape: () => {
+      frames.clear();
       setPicked([]);
       setTool('interact');
       links.clear();
@@ -247,12 +271,7 @@ export function App({ store, newId }: Props) {
     <div className="app">
       <Toolbar
         title={boardTitle(board)}
-        onRename={(value) =>
-          edit((current) => {
-            const title = normalizeBoardTitle(value);
-            return title === boardTitle(current) ? [] : [{ op: 'title', value: title }];
-          })
-        }
+        onRename={(value) => edit((current) => renameBoard(current, value))}
         canUndo={session.undo.length > 0}
         canRedo={session.redo.length > 0}
         status={status}
@@ -264,14 +283,12 @@ export function App({ store, newId }: Props) {
       />
       <main className="workspace">
         <CreationToolbar
+          frames={frames}
           defaults={defaults}
           onStickyColor={defaults.onStickyColor}
           onConnectionStyle={defaults.onConnection}
           tool={tool}
-          onTool={(tool) => {
-            links.clear();
-            setTool(tool);
-          }}
+          onTool={chooseTool}
           onAddCenter={() => onAdd(toBoardPoint(view, center()))}
           onBulk={() => {
             setTool('interact');
@@ -282,6 +299,7 @@ export function App({ store, newId }: Props) {
           <BoardCanvas
             board={board}
             links={links}
+            frames={frames}
             view={view}
             selection={selection}
             editing={editing}
@@ -301,46 +319,31 @@ export function App({ store, newId }: Props) {
             onDuplicate={actions.duplicate}
             onReact={(id, emoji) => actions.react(emoji, [id])}
           />
-          {links.selected && (
-            <ConnectionToolbar
-              key={links.selected.id}
-              board={board}
-              line={links.selected}
-              view={view}
-              editingLabel={links.editingLabel}
-              onChange={(values) => links.onChange(links.selected!.id, values)}
-              onDelete={links.remove}
-            />
-          )}
+          <ObjectToolbars
+            board={board}
+            view={view}
+            frames={frames}
+            links={links}
+            viewport={{
+              width: boardElement.current?.clientWidth ?? 900,
+              height: boardElement.current?.clientHeight ?? 700,
+            }}
+            onDeleteFrame={frames.remove}
+          />
           {!!selectedNotes.length && !menu && (
-            <SelectionToolbar
-              key={activeIds.join(',')}
+            <NoteSelection
               notes={selectedNotes}
+              ids={activeIds}
               view={view}
-              viewport={{
-                width: boardElement.current?.clientWidth ?? 900,
-                height: boardElement.current?.clientHeight ?? 700,
-              }}
-              onFormat={(details) => {
-                if (details.locked) flushEditor();
-                actions.format(details);
-              }}
-              onColor={(color) => edit((current) => setColor(current, activeIds, color))}
-              onResize={(size) => onResize(activeIds, size)}
-              onArrange={actions.arrange}
-              onDuplicate={() => {
+              element={boardElement}
+              actions={actions}
+              edit={edit}
+              onResize={onResize}
+              flushEditor={flushEditor}
+              onMenu={setMenu}
+              onFrame={() => {
                 flushEditor();
-                actions.duplicate();
-              }}
-              onGroup={() => actions.group()}
-              onReact={actions.react}
-              onMore={(point) => {
-                flushEditor();
-                const rect = boardElement.current!.getBoundingClientRect();
-                setMenu({
-                  ids: activeIds,
-                  point: { x: point.x + rect.left, y: point.y + rect.top },
-                });
+                frames.surround(activeIds);
               }}
             />
           )}
@@ -361,7 +364,9 @@ export function App({ store, newId }: Props) {
           )}
           <BoardChrome
             empty={
-              !Object.keys(board.stickies).length && !Object.keys(board.connections ?? {}).length
+              !Object.keys(board.stickies).length &&
+              !Object.keys(board.connections ?? {}).length &&
+              !Object.keys(board.frames ?? {}).length
             }
             tool={tool}
             zoom={view.zoom}

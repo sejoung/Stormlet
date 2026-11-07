@@ -1,5 +1,32 @@
-import type { Sticky } from '../domain/model';
+import type { Board, Sticky } from '../domain/model';
+import { connectionGeometry } from './connections/geometry';
 import { clampZoom, type View } from './viewport';
+
+export function fitBoard(
+  board: Board,
+  viewport: { width: number; height: number },
+  selected?: {
+    notes: string[];
+    connection: string | null;
+    frame: string | null;
+  },
+): View | null {
+  return fitView(
+    [
+      ...Object.values(board.frames ?? {}).filter(
+        (frame) => !selected || frame.id === selected.frame,
+      ),
+      ...Object.values(board.stickies).filter(
+        (note) => !selected || selected.notes.includes(note.id),
+      ),
+      ...Object.values(board.connections ?? {})
+        .filter((line) => !selected || line.id === selected.connection)
+        .flatMap((line) => connectionGeometry(board, line)?.bounds ?? []),
+    ],
+    viewport.width,
+    viewport.height,
+  );
+}
 
 export function fitView(
   notes: readonly Pick<Sticky, 'x' | 'y' | 'width' | 'height'>[],

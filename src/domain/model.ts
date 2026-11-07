@@ -1,9 +1,10 @@
 import type { StickySize } from './sticky-size';
 import type { NoteDetails } from './note-details';
 import type { Connection } from './connections/model';
+import type { Frame } from './frames/model';
 
 /**
- * The board model (ADR 0002). A board is a flat map of stickies keyed by a random ID; every
+ * The board model (ADR 0002). Notes, connections and frames are flat maps keyed by random IDs; every
  * property is its own field and order is a number, so concurrent edits of different fields
  * or stickies never collide and the model maps one-to-one onto a CRDT map later.
  */
@@ -95,6 +96,7 @@ export const STICKY_FIELDS: readonly StickyField[] = [
 export interface Board {
   title?: string;
   connections?: Readonly<Record<string, Connection>>;
+  frames?: Readonly<Record<string, Frame>>;
   stickies: Readonly<Record<string, Sticky>>;
 }
 

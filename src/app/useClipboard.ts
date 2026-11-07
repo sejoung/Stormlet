@@ -4,10 +4,12 @@ import { internalConnections } from '../domain/connections/commands';
 import { serializeBoard, parseBoard } from '../adapters/files/stormlet-format';
 import { textCells, type TextCell } from '../engine/paste';
 import { isTyping } from './useShortcuts';
+import { frameContents } from '../domain/frames/commands';
 
 interface Options {
   board: Board;
   ids: string[];
+  frameId?: string | null;
   onPaste(board: Board): void;
   onText(cells: TextCell[]): void;
   onCut(): void;
@@ -18,19 +20,40 @@ interface Options {
 export function useClipboard(options: Options) {
   useEffect(() => {
     const copy = (event: ClipboardEvent) => {
-      if (isTyping(event.target) || !event.clipboardData || !options.ids.length) return;
+      if (
+        isTyping(event.target) ||
+        !event.clipboardData ||
+        (!options.ids.length && !options.frameId)
+      )
+        return;
+      if (
+        options.frameId &&
+        event.type === 'cut' &&
+        options.board.frames?.[options.frameId]?.locked
+      )
+        return;
       const notes = stackOrder(options.board).filter((s) => options.ids.includes(s.id));
-      const board = {
-        stickies: Object.fromEntries(notes.map((s) => [s.id, s])),
-        connections: internalConnections(options.board, options.ids),
-      };
+      const board = options.frameId
+        ? frameContents(options.board, options.frameId)
+        : {
+            stickies: Object.fromEntries(notes.map((s) => [s.id, s])),
+            connections: internalConnections(options.board, options.ids),
+          };
       event.clipboardData.setData('application/x-stormlet', serializeBoard(board));
-      event.clipboardData.setData('text/plain', notes.map((s) => s.text).join('\n'));
+      event.clipboardData.setData(
+        'text/plain',
+        Object.values(board.stickies)
+          .map((s) => s.text)
+          .join('\n'),
+      );
       event.preventDefault();
       if (event.type === 'cut') options.onCut();
-      options.onStatus(
-        `${notes.length}개의 포스트잇을 ${event.type === 'cut' ? '잘랐습니다' : '복사했습니다'}.`,
-      );
+      if (options.frameId)
+        options.onStatus(event.type === 'cut' ? '프레임을 잘랐습니다.' : '프레임을 복사했습니다.');
+      else
+        options.onStatus(
+          `${notes.length}개의 포스트잇을 ${event.type === 'cut' ? '잘랐습니다' : '복사했습니다'}.`,
+        );
     };
     const paste = (event: ClipboardEvent) => {
       if (isTyping(event.target) || !event.clipboardData) return;
@@ -42,6 +65,7 @@ export function useClipboard(options: Options) {
         if (structured) {
           const board = parseBoard(structured);
           if (Object.keys(board.stickies).length > 5000) throw new Error('Too many notes');
+          if (Object.keys(board.frames ?? {}).length > 1000) throw new Error('Too many frames');
           options.onPaste(board);
         } else {
           options.onText(textCells(plain));
