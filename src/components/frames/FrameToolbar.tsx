@@ -1,8 +1,20 @@
-import { FRAME_COLORS, FRAME_BORDER_WIDTHS } from '../../domain/frames/model';
+import {
+  FRAME_COLORS,
+  FRAME_BORDER_WIDTHS,
+  MAX_FRAME_SIZE,
+  MIN_FRAME_SIZE,
+} from '../../domain/frames/model';
 import type { FrameInteraction } from './types';
 import type { View } from '../../engine/viewport';
 import { Icon } from '../toolbar/Icon';
 import { FRAME_STYLES } from './colors';
+
+/** Panel footprint and spacing used to keep it on screen beside the frame's title. */
+const PANEL = { width: 336, height: 204, margin: 12, above: 208, below: 32, minTop: 220 };
+const DIMENSIONS = [
+  { field: 'width', label: '너비' },
+  { field: 'height', label: '높이' },
+] as const;
 
 export function FrameToolbar({
   frames,
@@ -18,14 +30,21 @@ export function FrameToolbar({
   const frame = frames.selected;
   if (!frame) return null;
   const top = frame.y * view.zoom + view.y;
+  const left = frame.x * view.zoom + view.x;
   return (
     <div
       className="frame-toolbar"
       role="toolbar"
       aria-label="프레임 편집 도구"
       style={{
-        left: Math.max(12, Math.min(frame.x * view.zoom + view.x, viewport.width - 336)),
-        top: Math.max(12, Math.min(top >= 220 ? top - 208 : top + 32, viewport.height - 204)),
+        left: Math.max(PANEL.margin, Math.min(left, viewport.width - PANEL.width)),
+        top: Math.max(
+          PANEL.margin,
+          Math.min(
+            top >= PANEL.minTop ? top - PANEL.above : top + PANEL.below,
+            viewport.height - PANEL.height,
+          ),
+        ),
       }}
     >
       <div className="frame-tools">
@@ -89,15 +108,15 @@ export function FrameToolbar({
         </select>
       </label>
       <div className="frame-dimensions">
-        {(['width', 'height'] as const).map((field, i) => (
+        {DIMENSIONS.map(({ field, label }) => (
           <label key={field}>
-            {i === 0 ? '너비' : '높이'}
+            {label}
             <input
               key={`${frame.id}:${frame[field]}`}
               type="number"
-              aria-label={`프레임 ${i === 0 ? '너비' : '높이'}`}
-              min={i === 0 ? 160 : 120}
-              max={20000}
+              aria-label={`프레임 ${label}`}
+              min={MIN_FRAME_SIZE[field]}
+              max={MAX_FRAME_SIZE[field]}
               step={1}
               defaultValue={frame[field]}
               disabled={frame.locked}

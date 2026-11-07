@@ -36,10 +36,10 @@ test('creates square notes only with the tool and gives long text one scrolling 
   });
   expect(scrolling).toEqual(['sticky-editor']);
   await input.press('Enter');
-  await expect.poll(async () => (await saved(page)).stickies[0].text).toBe(text);
+  await expect.poll(async () => (await saved(page)).stickies[0]?.text).toBe(text);
   await canvas(page).dblclick({ position: { x: 1050, y: 650 } });
   await expect(note).toHaveCount(1);
   await page.reload();
   await expect(note).toHaveCount(1);
-  expect((await saved(page)).stickies[0].text).toBe(text);
+  expect((await saved(page)).stickies[0]?.text).toBe(text);
 });

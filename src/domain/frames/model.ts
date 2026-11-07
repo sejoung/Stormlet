@@ -32,12 +32,23 @@ export type FrameSetPatch = {
 export type FramePatch =
   { op: 'frame:add'; frame: Frame } | FrameSetPatch | { op: 'frame:delete'; id: string };
 
-export const DEFAULT_FRAME_SIZE = { width: 640, height: 400 };
+export type FrameSize = Pick<Frame, 'width' | 'height'>;
+export const DEFAULT_FRAME_SIZE: Readonly<FrameSize> = { width: 640, height: 400 };
+export const MIN_FRAME_SIZE: Readonly<FrameSize> = { width: 160, height: 120 };
+export const MAX_FRAME_SIZE: Readonly<FrameSize> = { width: 20000, height: 20000 };
 export const FRAME_TITLE_LIMIT = 100;
-export const frameTitle = (value: string) => value.trim().slice(0, FRAME_TITLE_LIMIT) || '프레임';
-export const clampFrameSize = (size: Pick<Frame, 'width' | 'height'>) => ({
-  width: Math.round(Math.max(160, Math.min(20000, size.width))),
-  height: Math.round(Math.max(120, Math.min(20000, size.height))),
+/** Name of a frame whose title was cleared, and the stem of numbered new frames. */
+export const DEFAULT_FRAME_TITLE = '프레임';
+export const frameTitle = (value: string) =>
+  value.trim().slice(0, FRAME_TITLE_LIMIT) || DEFAULT_FRAME_TITLE;
+export const isFrameBorderWidth = (value: unknown): value is number =>
+  (FRAME_BORDER_WIDTHS as readonly unknown[]).includes(value);
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.round(Math.max(min, Math.min(max, value)));
+export const clampFrameSize = (size: FrameSize): FrameSize => ({
+  width: clamp(size.width, MIN_FRAME_SIZE.width, MAX_FRAME_SIZE.width),
+  height: clamp(size.height, MIN_FRAME_SIZE.height, MAX_FRAME_SIZE.height),
 });
 
 export const contains = (outer: FrameBounds, inner: FrameBounds): boolean =>
@@ -46,8 +57,12 @@ export const contains = (outer: FrameBounds, inner: FrameBounds): boolean =>
   inner.x + inner.width <= outer.x + outer.width &&
   inner.y + inner.height <= outer.y + outer.height;
 
+export const frameArea = (frame: FrameSize): number => frame.width * frame.height;
+
+/** Outer frames first, so nested frames draw and hit-test above their containers. */
+export const byAreaDescending = (a: Frame, b: Frame): number =>
+  frameArea(b) - frameArea(a) || a.id.localeCompare(b.id);
+
 /** Equal-sized overlapping frames remain siblings, so they never contain one another. */
 export const containsFrame = (outer: Frame, inner: Frame): boolean =>
-  outer.id !== inner.id &&
-  contains(outer, inner) &&
-  outer.width * outer.height > inner.width * inner.height;
+  outer.id !== inner.id && contains(outer, inner) && frameArea(outer) > frameArea(inner);

@@ -1,6 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { STICKY_COLORS, type Sticky } from '../../domain/model';
-import { REACTION_EMOJI, type NoteDetails } from '../../domain/note-details';
+import {
+  DEFAULT_NOTE_FONT,
+  REACTION_EMOJI,
+  TEXT_ALIGNS,
+  type NoteDetails,
+  type TextAlign,
+} from '../../domain/note-details';
+import { boundsOf } from '../../domain/geometry/bounds';
+import { HORIZONTAL_KEYS, moveFocus } from '../common/keyboard';
 import type { Arrangement } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
@@ -61,25 +69,39 @@ const ARRANGEMENTS: [Arrangement, string][] = [
   ['grid', '격자로 정리'],
 ];
 
+const ALIGN_LABELS: Record<TextAlign, string> = { left: '왼쪽', center: '가운데', right: '오른쪽' };
+const FONT_SIZES = [12, 16, 24, 32, 48, 64];
+/** Rectangle notes keep their width and take this share of it as height. */
+const RECTANGLE_RATIO = 0.75;
+/** Toolbar footprint and gaps used to keep it on screen above or below the selection. */
+const PANEL = { width: 660, height: 300, margin: 12, above: 60, below: 16, minTop: 64 };
+
 /** Screen-space controls stay readable at every board zoom level. */
 export function SelectionToolbar(props: Props) {
   const [panel, setPanel] = useState<'color' | 'align' | 'emoji' | null>(null);
   const note = props.notes[0];
   const locked = props.notes.some((s) => s.locked);
   const grouped = props.notes.some((s) => s.groupId);
-  const left = Math.min(...props.notes.map((s) => s.x)) * props.view.zoom + props.view.x;
-  const top = Math.min(...props.notes.map((s) => s.y)) * props.view.zoom + props.view.y;
-  const bottom =
-    Math.max(...props.notes.map((s) => s.y + s.height)) * props.view.zoom + props.view.y;
+  const bounds = boundsOf(props.notes)!;
+  const { zoom, x, y } = props.view;
+  const left = bounds.left * zoom + x;
+  const top = bounds.top * zoom + y;
+  const bottom = bounds.bottom * zoom + y;
+  const fontSizes = [...new Set([...FONT_SIZES, ...(note.fontSize ? [note.fontSize] : [])])].sort(
+    (a, b) => a - b,
+  );
   const toggle = (next: typeof panel) => setPanel(panel === next ? null : next);
   return (
     <div
       className="selection-anchor"
       style={{
-        left: Math.max(12, Math.min(left, props.viewport.width - 660)),
+        left: Math.max(PANEL.margin, Math.min(left, props.viewport.width - PANEL.width)),
         top: Math.max(
-          12,
-          Math.min(top >= 64 ? top - 60 : bottom + 16, props.viewport.height - 300),
+          PANEL.margin,
+          Math.min(
+            top >= PANEL.minTop ? top - PANEL.above : bottom + PANEL.below,
+            props.viewport.height - PANEL.height,
+          ),
         ),
       }}
     >
@@ -88,24 +110,8 @@ export function SelectionToolbar(props: Props) {
         role="toolbar"
         aria-label="포스트잇 편집 도구"
         onKeyDown={(event) => {
-          if (
-            !(event.target instanceof HTMLButtonElement) ||
-            !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)
-          )
-            return;
-          event.preventDefault();
-          event.stopPropagation();
-          const items = [
-            ...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'),
-          ];
-          const index = items.indexOf(event.target);
-          const next =
-            event.key === 'Home'
-              ? 0
-              : event.key === 'End'
-                ? items.length - 1
-                : (index + (event.key === 'ArrowLeft' ? -1 : 1) + items.length) % items.length;
-          items[next]?.focus();
+          if (event.target instanceof HTMLButtonElement)
+            moveFocus(event, event.currentTarget, 'button:not(:disabled)', HORIZONTAL_KEYS);
         }}
         onPointerDown={(event) => {
           // Keep the text cursor when clicking formatting buttons.
@@ -152,7 +158,7 @@ export function SelectionToolbar(props: Props) {
         <select
           aria-label="글자 크기"
           disabled={locked}
-          value={note.autoFont !== false ? 'auto' : String(note.fontSize ?? 24)}
+          value={note.autoFont !== false ? 'auto' : String(note.fontSize ?? DEFAULT_NOTE_FONT)}
           onChange={(event) =>
             props.onFormat(
               event.target.value === 'auto'
@@ -162,13 +168,11 @@ export function SelectionToolbar(props: Props) {
           }
         >
           <option value="auto">자동</option>
-          {[...new Set([12, 16, 24, 32, 48, 64, ...(note.fontSize ? [note.fontSize] : [])])]
-            .sort((a, b) => a - b)
-            .map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
+          {fontSizes.map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
         </select>
         <Tool
           label="정렬과 배치"
@@ -239,7 +243,10 @@ export function SelectionToolbar(props: Props) {
                 <button
                   type="button"
                   onClick={() =>
-                    props.onResize({ width: note.width, height: Math.round(note.width * 0.75) })
+                    props.onResize({
+                      width: note.width,
+                      height: Math.round(note.width * RECTANGLE_RATIO),
+                    })
                   }
                 >
                   ▭ 직사각형
@@ -251,14 +258,14 @@ export function SelectionToolbar(props: Props) {
             <>
               <span className="popover-label">텍스트 정렬</span>
               <div className="shape-options">
-                {(['left', 'center', 'right'] as const).map((align, i) => (
+                {TEXT_ALIGNS.map((align) => (
                   <button
                     key={align}
                     type="button"
                     aria-pressed={(note.textAlign ?? 'center') === align}
                     onClick={() => props.onFormat({ textAlign: align })}
                   >
-                    {['왼쪽', '가운데', '오른쪽'][i]}
+                    {ALIGN_LABELS[align]}
                   </button>
                 ))}
               </div>

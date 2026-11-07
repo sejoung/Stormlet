@@ -24,6 +24,12 @@ const open = (node: Element, x = 400, y = 280) => {
 };
 
 describe('canvas context menus', () => {
+  it('disables select all when every note is locked', () => {
+    render(<App store={memoryStore(boardOf(sticky('a', { locked: true })))} newId={ids()} />);
+    const menu = open(boardBounds());
+    expect(within(menu).getByRole('menuitem', { name: /전체 선택/ })).toBeDisabled();
+  });
+
   it('opens on empty canvas, adds at the cursor under zoom and supports undo and redo from the menu', async () => {
     const user = userEvent.setup();
     const store = memoryStore();

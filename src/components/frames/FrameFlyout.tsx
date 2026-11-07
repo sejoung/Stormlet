@@ -1,8 +1,9 @@
 import type { FrameInteraction } from './types';
 import { Icon } from '../toolbar/Icon';
+import { DEFAULT_FRAME_SIZE } from '../../domain/frames/model';
 
 const PRESETS = [
-  { label: '자유 크기', width: 640, height: 400 },
+  { label: '자유 크기', ...DEFAULT_FRAME_SIZE },
   { label: '가로 레인', width: 1200, height: 280 },
   { label: '세로 레인', width: 320, height: 1000 },
 ];

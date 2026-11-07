@@ -4,6 +4,7 @@ import {
   isStickyKind,
   isStickyColor,
   KIND_COLORS,
+  stackOrder,
   type Board,
   type Sticky,
   STICKY_FIELDS,
@@ -36,40 +37,35 @@ interface StormletFile {
   frames?: Frame[];
 }
 
-export function serializeBoard(board: Board): string {
-  const stickies = Object.values(board.stickies)
-    .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1))
-    .map(
-      (sticky) =>
-        Object.fromEntries(
-          ['id', ...STICKY_FIELDS]
-            .filter((key) => sticky[key as keyof Sticky] !== undefined)
-            .map((key) => [key, sticky[key as keyof Sticky]]),
-        ) as unknown as Sticky,
-    );
+/** Known fields only, in a fixed order, so files diff cleanly and unknown keys never leak. */
+const pick = <T extends object>(item: T, fields: readonly string[]): T =>
+  Object.fromEntries(
+    ['id', ...fields]
+      .filter((key) => item[key as keyof T] !== undefined)
+      .map((key) => [key, item[key as keyof T]]),
+  ) as T;
+const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
+
+/** Indented for files people open; `compact` for copies only the app reads back. */
+export function serializeBoard(board: Board, { compact = false } = {}): string {
+  const frames = Object.values(board.frames ?? {});
+  const connections = Object.values(board.connections ?? {});
   const file: StormletFile = {
     format: FORMAT,
     version: FORMAT_VERSION,
     ...(board.title === undefined ? {} : { title: board.title }),
-    stickies,
-    ...(Object.keys(board.frames ?? {}).length
-      ? {
-          frames: Object.values(board.frames!)
-            .sort((a, b) => a.id.localeCompare(b.id))
-            .map(
-              (frame) =>
-                Object.fromEntries(
-                  ['id', ...FRAME_FIELDS].map((key) => [key, frame[key as keyof Frame]]),
-                ) as unknown as Frame,
-            ),
-        }
+    stickies: stackOrder(board).map((sticky) => pick(sticky, STICKY_FIELDS)),
+    ...(frames.length
+      ? { frames: frames.sort(byId).map((frame) => pick(frame, FRAME_FIELDS)) }
       : {}),
-    ...(Object.keys(board.connections ?? {}).length
-      ? { connections: Object.values(board.connections!).sort((a, b) => a.id.localeCompare(b.id)) }
-      : {}),
+    ...(connections.length ? { connections: connections.sort(byId) } : {}),
   };
-  return `${JSON.stringify(file, null, 2)}\n`;
+  return compact ? JSON.stringify(file) : `${JSON.stringify(file, null, 2)}\n`;
 }
+
+/** Every version from 1 up to this build's; newer files are refused instead of trimmed. */
+const isSupportedVersion = (version: unknown): version is number =>
+  Number.isInteger(version) && (version as number) >= 1 && (version as number) <= FORMAT_VERSION;
 
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
@@ -121,16 +117,7 @@ export function parseBoard(content: string): Board {
   const file = (data ?? {}) as Partial<StormletFile>;
   if (file.format !== FORMAT) throw new FormatError('The file is not a Stormlet board.');
   const version = file.version;
-  if (
-    version !== 1 &&
-    version !== 2 &&
-    version !== 3 &&
-    version !== 4 &&
-    version !== 5 &&
-    version !== 6 &&
-    version !== 7 &&
-    version !== FORMAT_VERSION
-  )
+  if (!isSupportedVersion(version))
     throw new FormatError('The file version is not supported by this Stormlet.');
   if (!Array.isArray(file.stickies)) throw new FormatError('The file has no stickies.');
   const title = version >= 5 ? file.title : undefined;

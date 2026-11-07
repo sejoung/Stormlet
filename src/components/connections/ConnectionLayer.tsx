@@ -2,69 +2,85 @@ import { useId, type PointerEvent } from 'react';
 import { endpointLabel, sameAttachment } from '../../domain/connections/endpoints';
 import type { Board } from '../../domain/model';
 import { CONNECTION_COLORS, type Connection } from '../../domain/connections/model';
+import { own } from '../../domain/ids';
+import { LINE_COLORS } from './colors';
+import { cx } from '../common/cx';
 import { connectionGeometry } from '../../engine/connections/geometry';
 import type { ConnectionInteraction } from './types';
 
-export const LINE_COLORS = {
-  slate: { color: '#697389', label: '회색' },
-  blue: { color: '#4262ff', label: '파란색' },
-  red: { color: '#da5360', label: '빨간색' },
-  green: { color: '#28936b', label: '초록색' },
-  purple: { color: '#9560ce', label: '보라색' },
+/** Lines drawn with the in-progress draft standing in for the line it is rewiring. */
+const withDraft = (board: Board, draft: Connection | null) => {
+  const lines = Object.values(board.connections ?? {}).filter((line) => line.id !== draft?.id);
+  if (draft) lines.push(draft);
+  return lines;
 };
+
+/** Draggable end handles of the selected line, drawn above the notes. */
+export function ConnectionEndpoints({
+  board,
+  zoom,
+  draft,
+  selectedId,
+  onReconnect,
+  onKeyboardReconnect,
+}: {
+  board: Board;
+  zoom: number;
+  draft: Connection | null;
+  selectedId: string | null;
+  onReconnect(event: PointerEvent, id: string, end: 'from' | 'to'): void;
+  onKeyboardReconnect(id: string, end: 'from' | 'to'): void;
+}) {
+  const selected =
+    draft && draft.id === selectedId
+      ? draft
+      : selectedId
+        ? own(board.connections ?? {}, selectedId)
+        : undefined;
+  const geometry = selected && !selected.locked ? connectionGeometry(board, selected) : null;
+  return (
+    <svg className="connection-layer connection-overlay" aria-label="연결선 끝점">
+      {selected &&
+        geometry &&
+        (['from', 'to'] as const).map((end) => (
+          <circle
+            key={end}
+            className="connection-endpoint"
+            data-connection-id={selected.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`연결선 ${end === 'from' ? '시작점' : '끝점'} 이동`}
+            cx={geometry[end].x}
+            cy={geometry[end].y}
+            r={6 / zoom}
+            onPointerDown={(event) => onReconnect(event, selected.id, end)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                onKeyboardReconnect(selected.id, end);
+              }
+              if (event.key === 'Escape') event.currentTarget.blur();
+            }}
+          />
+        ))}
+    </svg>
+  );
+}
 
 export function ConnectionLayer({
   board,
   zoom,
   draft,
   links,
-  onReconnect,
-  onKeyboardReconnect,
-  overlay = false,
 }: {
   board: Board;
   zoom: number;
   draft: Connection | null;
-  links: ConnectionInteraction;
-  overlay?: boolean;
-  onReconnect(event: PointerEvent, id: string, end: 'from' | 'to'): void;
-  onKeyboardReconnect(id: string, end: 'from' | 'to'): void;
+  links: Pick<ConnectionInteraction, 'selectedId' | 'onSelect' | 'onEditLabel'>;
 }) {
   const prefix = useId().replace(/:/g, '');
-  const lines = Object.values(board.connections ?? {}).filter((line) => line.id !== draft?.id);
-  if (draft) lines.push(draft);
-  const selected = lines.find((line) => line.id === links.selectedId);
-  const geometry = selected && connectionGeometry(board, selected);
-  if (overlay)
-    return (
-      <svg className="connection-layer connection-overlay" aria-label="연결선 끝점">
-        {selected &&
-          !selected.locked &&
-          geometry &&
-          (['from', 'to'] as const).map((end) => (
-            <circle
-              key={end}
-              className="connection-endpoint"
-              data-connection-id={selected.id}
-              role="button"
-              tabIndex={0}
-              aria-label={`연결선 ${end === 'from' ? '시작점' : '끝점'} 이동`}
-              cx={geometry[end].x}
-              cy={geometry[end].y}
-              r={6 / zoom}
-              onPointerDown={(event) => onReconnect(event, selected.id, end)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onKeyboardReconnect(selected.id, end);
-                }
-                if (event.key === 'Escape') event.currentTarget.blur();
-              }}
-            />
-          ))}
-      </svg>
-    );
+  const lines = withDraft(board, draft);
   return (
     <svg className="connection-layer" aria-label="흐름 연결선">
       <defs>
@@ -96,7 +112,11 @@ export function ConnectionLayer({
         return (
           <g
             key={line.id}
-            className={`connection${line.id === links.selectedId ? ' is-selected' : ''}${preview ? ' is-preview' : ''}`}
+            className={cx(
+              'connection',
+              line.id === links.selectedId && 'is-selected',
+              preview && 'is-preview',
+            )}
             role="button"
             aria-hidden={preview}
             tabIndex={preview ? -1 : 0}

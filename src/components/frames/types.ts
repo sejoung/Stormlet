@@ -1,11 +1,10 @@
-import type { Frame, FrameBounds } from '../../domain/frames/model';
-import type { StickySize } from '../../domain/sticky-size';
+import type { Frame, FrameBounds, FrameSize } from '../../domain/frames/model';
 
 export interface FrameInteraction {
   selectedId: string | null;
   selected: Frame | null;
-  size: StickySize;
-  onPreset(size: StickySize): void;
+  size: FrameSize;
+  onPreset(size: FrameSize): void;
   onSelect(id: string): void;
   onCreate(bounds: FrameBounds): void;
   onChange(id: string, values: Partial<Omit<Frame, 'id'>>): void;

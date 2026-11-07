@@ -1,9 +1,13 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { ALL_ARROW_KEYS, moveFocus } from '../common/keyboard';
 import { STICKY_COLORS, type StickyColor } from '../../domain/model';
-import type { ConnectionStyle } from '../../domain/connections/model';
+import {
+  CONNECTION_COLORS,
+  CONNECTION_WIDTHS,
+  type ConnectionStyle,
+} from '../../domain/connections/model';
 import { COLOR_STYLES } from '../board/kinds';
-import { LINE_COLORS } from '../connections/ConnectionLayer';
-import { CONNECTION_COLORS } from '../../domain/connections/model';
+import { LINE_COLORS } from '../connections/colors';
 import { Icon } from './Icon';
 
 export interface ToolDefaults {
@@ -16,6 +20,9 @@ const LINE_PRESETS = [
   { label: '꺾인 화살표', icon: 'connect', path: 'elbow', endArrow: true },
   { label: '곡선 화살표', icon: 'curve', path: 'curve', endArrow: true },
 ] as const;
+/** The colour grid has two columns, so Up/Down move a whole row. */
+const COLOR_GRID_COLUMNS = 2;
+const CHOICE = '[data-default-choice]';
 
 export function CreationFlyout({
   kind,
@@ -33,29 +40,14 @@ export function CreationFlyout({
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     (
-      ref.current?.querySelector<HTMLButtonElement>('[data-default-choice][aria-pressed="true"]') ??
-      ref.current?.querySelector<HTMLButtonElement>('[data-default-choice]')
+      ref.current?.querySelector<HTMLButtonElement>(`${CHOICE}[aria-pressed="true"]`) ??
+      ref.current?.querySelector<HTMLButtonElement>(CHOICE)
     )?.focus();
   }, [kind]);
-  const navigate = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
-      return;
-    event.preventDefault();
-    event.stopPropagation();
-    const items = [...ref.current!.querySelectorAll<HTMLButtonElement>('[data-default-choice]')];
-    const index = items.indexOf(event.currentTarget);
-    const delta = kind === 'sticky' && ['ArrowUp', 'ArrowDown'].includes(event.key) ? 2 : 1;
-    const next =
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? items.length - 1
-          : (index +
-              (['ArrowUp', 'ArrowLeft'].includes(event.key) ? -delta : delta) +
-              items.length) %
-            items.length;
-    items[next]?.focus();
-  };
+  const navigate = (event: KeyboardEvent<HTMLButtonElement>) =>
+    moveFocus(event, ref.current!, CHOICE, ALL_ARROW_KEYS, (key) =>
+      kind === 'sticky' && (key === 'ArrowUp' || key === 'ArrowDown') ? COLOR_GRID_COLUMNS : 1,
+    );
   return (
     <div
       ref={ref}
@@ -144,7 +136,7 @@ export function CreationFlyout({
                 value={defaults.connection.width}
                 onChange={(event) => onConnectionStyle({ width: Number(event.target.value) })}
               >
-                {[1, 2, 3, 4, 6].map((width) => (
+                {CONNECTION_WIDTHS.map((width) => (
                   <option key={width} value={width}>
                     {width}px
                   </option>

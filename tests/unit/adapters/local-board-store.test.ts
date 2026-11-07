@@ -11,6 +11,7 @@ describe('LocalBoardStore', () => {
     const store = new LocalBoardStore();
     store.apply([{ op: 'title', value: '새 보드' }]);
     store.apply([{ op: 'add', sticky: sticky('a') }]);
+    store.flush();
     const reopened = new LocalBoardStore();
     expect(reopened.load().title).toBe('새 보드');
     const listener = vi.fn();
@@ -34,6 +35,24 @@ describe('LocalBoardStore', () => {
     const reopened = new LocalBoardStore();
     expect(reopened.load()).toEqual(boardOf(sticky('a')));
     reopened.dispose();
+  });
+
+  it('batches saves until the delay passes or the page is hidden', () => {
+    vi.useFakeTimers();
+    try {
+      const store = new LocalBoardStore();
+      store.apply([{ op: 'add', sticky: sticky('a') }]);
+      store.apply([{ op: 'set', id: 'a', field: 'text', value: 'later' }]);
+      expect(localStorage.getItem(BOARD_KEY)).toBeNull();
+      vi.advanceTimersByTime(250);
+      expect(JSON.parse(localStorage.getItem(BOARD_KEY)!).stickies[0].text).toBe('later');
+      store.apply([{ op: 'set', id: 'a', field: 'text', value: 'hidden' }]);
+      window.dispatchEvent(new Event('pagehide'));
+      expect(JSON.parse(localStorage.getItem(BOARD_KEY)!).stickies[0].text).toBe('hidden');
+      store.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('starts empty when the saved board is unreadable', () => {

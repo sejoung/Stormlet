@@ -1,45 +1,57 @@
 import type { Board } from '../../domain/model';
 import type { Endpoint } from '../../domain/connections/model';
 import type { Point } from '../viewport';
+import type { Rect } from '../../domain/geometry/bounds';
+import { frameArea } from '../../domain/frames/model';
 
+/** Screen pixels within which a dragged end attaches to a note or frame. */
+const ATTACH_DISTANCE = 14;
+
+/** Distance from `point` to the outside of `rect`; zero when the point is inside. */
+const outsideDistance = (rect: Rect, point: Point) =>
+  Math.hypot(
+    Math.max(rect.x - point.x, 0, point.x - rect.x - rect.width),
+    Math.max(rect.y - point.y, 0, point.y - rect.y - rect.height),
+  );
+
+/** Distance to the nearest edge from inside, so a click deep in a large frame stays free. */
+const frameDistance = (frame: Rect, point: Point) =>
+  outsideDistance(frame, point) ||
+  Math.min(
+    point.x - frame.x,
+    frame.x + frame.width - point.x,
+    point.y - frame.y,
+    frame.y + frame.height - point.y,
+  );
+
+/**
+ * The note or frame an end dropped at `point` attaches to. Notes win ties over frames, the
+ * topmost note wins among notes and the smallest frame among frames; one pass, no sorting.
+ */
 export function snapEndpoint(board: Board, point: Point, zoom: number, free = false): Endpoint {
-  if (free) return { x: Math.round(point.x), y: Math.round(point.y) };
-  let best = 14 / zoom;
-  let id: string | null = null;
-  let frameId: string | null = null;
-  for (const frame of Object.values(board.frames ?? {}).sort(
-    (a, b) => b.width * b.height - a.width * a.height,
-  )) {
-    const dx = Math.max(frame.x - point.x, 0, point.x - frame.x - frame.width);
-    const dy = Math.max(frame.y - point.y, 0, point.y - frame.y - frame.height);
-    const distance =
-      dx || dy
-        ? Math.hypot(dx, dy)
-        : Math.min(
-            point.x - frame.x,
-            frame.x + frame.width - point.x,
-            point.y - frame.y,
-            frame.y + frame.height - point.y,
-          );
-    if (distance <= best) {
+  const loose = { x: Math.round(point.x), y: Math.round(point.y) };
+  if (free) return loose;
+  let best = ATTACH_DISTANCE / zoom;
+  let frame: { id: string; area: number } | null = null;
+  for (const candidate of Object.values(board.frames ?? {})) {
+    const distance = frameDistance(candidate, point);
+    const area = frameArea(candidate);
+    if (distance < best || (distance === best && area <= (frame?.area ?? Infinity))) {
       best = distance;
-      frameId = frame.id;
+      frame = { id: candidate.id, area };
     }
   }
-  for (const note of Object.values(board.stickies).sort((a, b) => a.z - b.z)) {
-    const dx = Math.max(note.x - point.x, 0, point.x - note.x - note.width);
-    const dy = Math.max(note.y - point.y, 0, point.y - note.y - note.height);
-    const distance = Math.hypot(dx, dy);
-    if (distance <= best) {
+  let note: { id: string; z: number } | null = null;
+  for (const candidate of Object.values(board.stickies)) {
+    const distance = outsideDistance(candidate, point);
+    if (distance < best || (distance === best && (!note || candidate.z >= note.z))) {
       best = distance;
-      id = note.id;
+      note = { id: candidate.id, z: candidate.z };
     }
   }
-  return id
-    ? { stickyId: id, side: 'auto' }
-    : frameId
-      ? { frameId, side: 'auto' }
-      : { x: Math.round(point.x), y: Math.round(point.y) };
+  if (note) return { stickyId: note.id, side: 'auto' };
+  if (frame) return { frameId: frame.id, side: 'auto' };
+  return loose;
 }
 
 export function constrainEndpoint(start: Point, end: Point): Point {

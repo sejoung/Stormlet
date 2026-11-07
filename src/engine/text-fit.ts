@@ -1,9 +1,9 @@
 import type { StickySize } from '../domain/sticky-size';
+import { MAX_NOTE_FONT, MIN_NOTE_FONT } from '../domain/note-details';
 
+export { MAX_NOTE_FONT, MIN_NOTE_FONT };
 export const NOTE_PADDING = 12;
 export const NOTE_LINE_HEIGHT = 1.15;
-export const MIN_NOTE_FONT = 8;
-export const MAX_NOTE_FONT = 144;
 
 /** Conservative layout before the browser can measure the actual font. */
 function estimatedFit(text: string, font: number, width: number, height: number): boolean {

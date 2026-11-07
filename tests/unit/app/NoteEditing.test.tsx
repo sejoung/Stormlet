@@ -15,6 +15,21 @@ vi.mock('../../../src/adapters/files/download', async (original) => ({
 }));
 
 describe('note editing experience', () => {
+  it('keeps a chosen font size after reloading and editing the note', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore(boardOf(sticky('a', { autoFont: false, fontSize: 32 })));
+    render(<App store={store} newId={ids()} />);
+    boardBounds();
+    expect(note().querySelector('p')).toHaveStyle({ fontSize: '32px' });
+    await user.dblClick(note());
+    fireEvent.change(screen.getByRole('textbox', { name: '스티키 내용' }), {
+      target: { value: '고정 크기 유지' },
+    });
+    await user.keyboard('{Enter}');
+    expect(store.board.stickies.a.text).toBe('고정 크기 유지');
+    expect(note().querySelector('p')).toHaveStyle({ fontSize: '32px' });
+  });
+
   it('exports the latest unfinished draft with Ctrl+S', async () => {
     const user = userEvent.setup();
     const store = memoryStore(boardOf(sticky('a')));

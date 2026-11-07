@@ -1,20 +1,25 @@
-import type { Board } from '../model';
+import type { Board, Sticky } from '../model';
 import { own } from '../ids';
-import type { Endpoint } from './model';
+import { DEFAULT_FRAME_TITLE, type Frame } from '../frames/model';
+import { frameOf, matchEndpoint, stickyOf, type Endpoint } from './model';
 
-export const endpointObject = (board: Board, end: Endpoint) =>
-  'stickyId' in end
-    ? own(board.stickies, end.stickyId)
-    : 'frameId' in end
-      ? own(board.frames ?? {}, end.frameId)
-      : undefined;
+/** Label of an attached note without text; shown wherever a connection names its ends. */
+export const EMPTY_NOTE_LABEL = '빈 메모';
+
+export const endpointObject = (board: Board, end: Endpoint): Sticky | Frame | undefined =>
+  matchEndpoint<Sticky | Frame | undefined>(end, {
+    sticky: (id) => own(board.stickies, id),
+    frame: (id) => own(board.frames ?? {}, id),
+    free: () => undefined,
+  });
 
 export const sameAttachment = (a: Endpoint, b: Endpoint): boolean =>
-  ('stickyId' in a && 'stickyId' in b && a.stickyId === b.stickyId) ||
-  ('frameId' in a && 'frameId' in b && a.frameId === b.frameId);
+  (stickyOf(a) !== undefined && stickyOf(a) === stickyOf(b)) ||
+  (frameOf(a) !== undefined && frameOf(a) === frameOf(b));
 
-export function endpointLabel(board: Board, end: Endpoint, fallback: string): string {
-  if ('stickyId' in end) return own(board.stickies, end.stickyId)?.text || '빈 메모';
-  if ('frameId' in end) return own(board.frames ?? {}, end.frameId)?.title || '프레임';
-  return fallback;
-}
+export const endpointLabel = (board: Board, end: Endpoint, fallback: string): string =>
+  matchEndpoint(end, {
+    sticky: (id) => own(board.stickies, id)?.text || EMPTY_NOTE_LABEL,
+    frame: (id) => own(board.frames ?? {}, id)?.title || DEFAULT_FRAME_TITLE,
+    free: () => fallback,
+  });

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState, type PointerEvent, type RefObject } from 'react';
+import { useEffect, useMemo, useState, type PointerEvent, type RefObject } from 'react';
 import { own } from '../../domain/ids';
-import { stackOrder, type Board } from '../../domain/model';
+import { byStackOrder, type Board } from '../../domain/model';
 import type { Move } from '../../domain/commands';
 import { clampStickySize, type StickySize } from '../../domain/sticky-size';
 import { groupSelection } from '../../domain/note-actions';
+import type { ConnectionSide } from '../../domain/connections/model';
 import { snapOffset } from '../../engine/snapping';
 import {
   panBy,
@@ -14,22 +15,28 @@ import {
   type View,
 } from '../../engine/viewport';
 import type { BoardTool } from './kinds';
-import { rectangle, previewBoard, type Gesture } from './board-gestures';
+import { rectangle, intersects, pickedNotes, previewBoard, type Gesture } from './board-gestures';
 import { BoardOverlays } from './BoardOverlays';
-import { ConnectionLayer } from '../connections/ConnectionLayer';
+import { ConnectionEndpoints, ConnectionLayer } from '../connections/ConnectionLayer';
 import { useConnectionDrawing } from '../connections/useConnectionDrawing';
 import type { ConnectionInteraction } from '../connections/types';
 import { StickyNote } from './StickyNote';
 import { useFrameDrawing } from '../frames/useFrameDrawing';
 import { FrameLayer } from '../frames/FrameLayer';
 import type { FrameInteraction } from '../frames/types';
-import { canvasTarget, type CanvasTarget } from '../menus/CanvasContextMenu';
+import { canvasTarget, closestData, type CanvasTarget } from '../menus/CanvasContextMenu';
+import { useLatest, useStableCallback } from '../common/useStableCallback';
+import { clientCenter, clientToLocal } from '../common/points';
+import { isMenuKey, TEXT_ENTRY } from '../common/keyboard';
+import { cx } from '../common/cx';
+import type { Size } from '../common/useElementSize';
 
 interface Props {
   board: Board;
   links: ConnectionInteraction;
   frames: FrameInteraction;
   view: View;
+  viewport: Size;
   selection: ReadonlySet<string>;
   editing: string | null;
   seed?: string;
@@ -51,6 +58,8 @@ interface Props {
 }
 
 const DRAG_THRESHOLD = 3;
+/** Space-bar panning is off while focus is on a control that uses Space itself. */
+const SPACE_OWNERS = `${TEXT_ENTRY}, button, [role="dialog"], [role="menu"]`;
 
 export function BoardCanvas(props: Props) {
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
@@ -58,54 +67,46 @@ export function BoardCanvas(props: Props) {
   const [space, setSpace] = useState(false);
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
   const frameDrawing = useFrameDrawing({ board, view, element, tool, frames: props.frames });
-  const cancelDrawing = drawing.cancel;
-  const cancelGestures = () => {
+  const local = (event: { clientX: number; clientY: number }) =>
+    clientToLocal(element.current!, event);
+
+  const cancelGestures = useStableCallback(() => {
     setGesture(null);
     frameDrawing.cancel();
-    cancelDrawing();
-  };
+    drawing.cancel();
+  });
+
+  // One place cancels every in-progress gesture: Escape, or the window losing focus.
   useEffect(() => {
-    const cancel = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setGesture(null);
-        cancelDrawing();
-      }
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') cancelGestures();
       if (
         event.code === 'Space' &&
-        !(
-          event.target instanceof Element &&
-          event.target.closest('input, textarea, select, button, [role="dialog"], [role="menu"]')
-        )
+        !(event.target instanceof Element && event.target.closest(SPACE_OWNERS))
       ) {
         event.preventDefault();
         setSpace(true);
       }
     };
-    const release = (event: KeyboardEvent) => {
+    const keyup = (event: KeyboardEvent) => {
       if (event.code === 'Space') setSpace(false);
     };
     const blur = () => {
       setSpace(false);
-      setGesture(null);
-      cancelDrawing();
+      cancelGestures();
     };
-    window.addEventListener('keydown', cancel);
-    window.addEventListener('keyup', release);
+    window.addEventListener('keydown', keydown);
+    window.addEventListener('keyup', keyup);
     window.addEventListener('blur', blur);
     return () => {
-      window.removeEventListener('keydown', cancel);
-      window.removeEventListener('keyup', release);
+      window.removeEventListener('keydown', keydown);
+      window.removeEventListener('keyup', keyup);
       window.removeEventListener('blur', blur);
     };
-  }, [cancelDrawing]);
-  const local = useCallback(
-    (event: { clientX: number; clientY: number }): Point => {
-      const rect = element.current!.getBoundingClientRect();
-      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-    },
-    [element],
-  );
+  }, [cancelGestures]);
 
+  // Registered once; reads the latest view instead of re-subscribing on every pan and zoom.
+  const latest = useLatest({ view, onViewChange });
   useEffect(() => {
     const node = element.current!;
     const onWheel = (event: WheelEvent) => {
@@ -115,24 +116,33 @@ export function BoardCanvas(props: Props) {
           : null;
       if (content && content.scrollHeight > content.clientHeight) return;
       event.preventDefault();
-      onViewChange(zoomAround(view, view.zoom * wheelZoomFactor(event.deltaY), local(event)));
+      const { view: current, onViewChange: change } = latest.current;
+      change(
+        zoomAround(
+          current,
+          current.zoom * wheelZoomFactor(event.deltaY),
+          clientToLocal(node, event),
+        ),
+      );
     };
     node.addEventListener('wheel', onWheel, { passive: false });
     return () => node.removeEventListener('wheel', onWheel);
-  }, [view, onViewChange, local, element]);
+  }, [element, latest]);
+
+  const startPan = (event: PointerEvent) => setGesture({ type: 'pan', last: local(event) });
 
   const onBackgroundDown = (event: PointerEvent) => {
     if ((event.button !== 0 && event.button !== 1) || event.target !== event.currentTarget) return;
     if (!space && frameDrawing.backgroundDown(event)) return;
     if (!space && event.button === 0 && drawing.backgroundDown(event)) return;
     if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
+    const panning = space || tool === 'hand' || event.button === 1;
     if (event.button === 1 || space) event.preventDefault();
     element.current!.setPointerCapture(event.pointerId);
     if (tool === 'interact' && !space && !event.shiftKey && event.button === 0) onSelect([]);
     if (tool === 'sticky' && event.button === 0 && !space)
       setGesture({ type: 'place', start: local(event) });
-    else if (space || tool === 'hand' || event.button === 1)
-      setGesture({ type: 'pan', last: local(event) });
+    else if (panning) startPan(event);
     else {
       const at = toBoardPoint(view, local(event));
       const keep = event.shiftKey ? [...selection] : [];
@@ -141,176 +151,172 @@ export function BoardCanvas(props: Props) {
     }
   };
 
-  const onStickyDown = (event: PointerEvent, id: string) => {
+  const onStickyDown = useStableCallback((event: PointerEvent, id: string) => {
     if (!space && tool !== 'hand' && drawing.backgroundDown(event, { stickyId: id, side: 'auto' }))
       return;
     if (event.button !== 0 || editing === id) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
-    if (space || tool === 'hand') {
-      setGesture({ type: 'pan', last: local(event) });
-      return;
-    }
-    const group = groupSelection(board, [id]);
-    let ids = selection.has(id) ? [...selection] : group;
-    if (event.shiftKey || event.metaKey || event.ctrlKey)
-      ids = selection.has(id)
-        ? ids.filter((other) => !group.includes(other))
-        : [...selection, ...group];
+    if (space || tool === 'hand') return startPan(event);
+    const ids = pickedNotes(board, selection, id, event.shiftKey || event.metaKey || event.ctrlKey);
     onSelect(ids);
     if (board.stickies[id].locked) return;
     setGesture({
       type: 'drag',
-      ids: ids.filter((other) => !board.stickies[other]?.locked),
+      ids: ids.filter((other) => !own(board.stickies, other)?.locked),
       start: local(event),
       offset: { x: 0, y: 0 },
       duplicate: event.altKey,
     });
-  };
+  });
 
   const onPointerMove = (event: PointerEvent) => {
     if (frameDrawing.move(event)) return;
     if (drawing.move(event)) return;
     if (!gesture || gesture.type === 'place') return;
     const point = local(event);
-    if (gesture.type === 'pan') {
-      onViewChange(panBy(view, point.x - gesture.last.x, point.y - gesture.last.y));
-      setGesture({ ...gesture, last: point });
-    } else if (gesture.type === 'marquee') {
-      const at = toBoardPoint(view, point);
-      const box = rectangle(gesture.start, at);
-      const inside = Object.values(board.stickies).filter(
-        (sticky) =>
-          sticky.x < box.left + box.width &&
-          sticky.x + sticky.width > box.left &&
-          sticky.y < box.top + box.height &&
-          sticky.y + sticky.height > box.top,
-      );
-      onSelect(
-        groupSelection(board, [
-          ...new Set([...gesture.keep, ...inside.filter((s) => !s.locked).map(({ id }) => id)]),
-        ]),
-      );
-      setGesture({ ...gesture, point: at });
-    } else if (gesture.type === 'resize') {
-      setGesture({
-        ...gesture,
-        size: clampStickySize({
-          width: gesture.original.width + (point.x - gesture.start.x) / view.zoom,
-          height: gesture.original.height + (point.y - gesture.start.y) / view.zoom,
-        }),
-      });
-    } else {
-      const dx = point.x - gesture.start.x;
-      const dy = point.y - gesture.start.y;
-      if (Math.hypot(dx, dy) < DRAG_THRESHOLD && !gesture.offset.x && !gesture.offset.y) return;
-      const next = snapOffset(
-        board,
-        gesture.ids,
-        { x: dx / view.zoom, y: dy / view.zoom },
-        view.zoom,
-      );
-      setGesture({ ...gesture, ...next });
+    switch (gesture.type) {
+      case 'pan':
+        onViewChange(panBy(view, point.x - gesture.last.x, point.y - gesture.last.y));
+        return setGesture({ ...gesture, last: point });
+      case 'marquee': {
+        const at = toBoardPoint(view, point);
+        const box = rectangle(gesture.start, at);
+        const inside = Object.values(board.stickies)
+          .filter((sticky) => !sticky.locked && intersects(sticky, box))
+          .map(({ id }) => id);
+        onSelect(groupSelection(board, [...new Set([...gesture.keep, ...inside])]));
+        return setGesture({ ...gesture, point: at });
+      }
+      case 'resize':
+        return setGesture({
+          ...gesture,
+          size: clampStickySize({
+            width: gesture.original.width + (point.x - gesture.start.x) / view.zoom,
+            height: gesture.original.height + (point.y - gesture.start.y) / view.zoom,
+          }),
+        });
+      case 'drag': {
+        const dx = point.x - gesture.start.x;
+        const dy = point.y - gesture.start.y;
+        const started = gesture.offset.x || gesture.offset.y;
+        if (!started && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+        const offset = { x: dx / view.zoom, y: dy / view.zoom };
+        return setGesture({ ...gesture, ...snapOffset(board, gesture.ids, offset, view.zoom) });
+      }
     }
   };
 
-  const onResizeStart = useCallback(
-    (event: PointerEvent, id: string) => {
-      if (event.button !== 0) return;
-      const sticky = own(board.stickies, id);
-      if (!sticky || sticky.locked) return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.currentTarget.setPointerCapture(event.pointerId);
-      onSelect([id]);
-      const { width, height } = sticky;
-      setGesture({
-        type: 'resize',
-        id,
-        start: local(event),
-        original: { width, height },
-        size: { width, height },
-      });
-    },
-    [board, local, onSelect],
-  );
+  const onResizeStart = useStableCallback((event: PointerEvent, id: string) => {
+    if (event.button !== 0) return;
+    const sticky = own(board.stickies, id);
+    if (!sticky || sticky.locked) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    onSelect([id]);
+    const { width, height } = sticky;
+    setGesture({
+      type: 'resize',
+      id,
+      start: local(event),
+      original: { width, height },
+      size: { width, height },
+    });
+  });
+
+  const finishGesture = (event: PointerEvent, current: Gesture) => {
+    if (current.type === 'place') {
+      const at = local(event);
+      if (Math.hypot(at.x - current.start.x, at.y - current.start.y) < DRAG_THRESHOLD)
+        props.onAdd(toBoardPoint(view, at));
+    } else if (current.type === 'resize') props.onResize([current.id], current.size);
+    else if (current.type === 'drag' && (current.offset.x || current.offset.y)) {
+      if (current.duplicate) return props.onDuplicate(current.ids, current.offset);
+      props.onMove(
+        current.ids.flatMap((id) => {
+          const sticky = own(board.stickies, id);
+          return sticky
+            ? [{ id, x: sticky.x + current.offset.x, y: sticky.y + current.offset.y }]
+            : [];
+        }),
+      );
+    }
+  };
 
   const onPointerUp = (event: PointerEvent) => {
     if (frameDrawing.up(event)) return;
     if (drawing.up(event)) return;
-    if (gesture?.type === 'place') {
-      const at = local(event);
-      if (Math.hypot(at.x - gesture.start.x, at.y - gesture.start.y) < DRAG_THRESHOLD) {
-        props.onAdd(toBoardPoint(view, at));
-      }
-    } else if (gesture?.type === 'resize') {
-      props.onResize([gesture.id], gesture.size);
-    } else if (gesture?.type === 'drag' && (gesture.offset.x || gesture.offset.y)) {
-      if (gesture.duplicate) props.onDuplicate(gesture.ids, gesture.offset);
-      else
-        props.onMove(
-          gesture.ids.flatMap((id) => {
-            const sticky = own(board.stickies, id);
-            return sticky
-              ? [{ id, x: sticky.x + gesture.offset.x, y: sticky.y + gesture.offset.y }]
-              : [];
-          }),
-        );
-    }
+    if (gesture) finishGesture(event, gesture);
     setGesture(null);
   };
 
+  // Stable handlers keep memoized notes from re-rendering on every pointer move.
+  const onConnect = useStableCallback((event: PointerEvent, id: string, side: ConnectionSide) =>
+    drawing.begin(event, { stickyId: id, side }),
+  );
+  const onKeyboardConnect = useStableCallback((id: string, side: ConnectionSide) =>
+    drawing.keyboardStart({ stickyId: id, side }),
+  );
+  const onNoteMenu = useStableCallback(props.onContextMenu);
+  const onReact = useStableCallback(props.onReact);
+  const onStartEdit = useStableCallback(props.onStartEdit);
+  const onCommitText = useStableCallback(props.onCommitText);
+  const onResize = useStableCallback(props.onResize);
+  const reconnect = useStableCallback((event: PointerEvent, id: string, end: 'from' | 'to') =>
+    drawing.begin(event, undefined, { id, end }),
+  );
+
   const dragging = gesture?.type === 'drag' ? gesture : null;
+  const moving = useMemo(
+    () => new Set(dragging && !dragging.duplicate ? dragging.ids : []),
+    [dragging],
+  );
   const framed = frameDrawing.preview(board);
   const displayed = previewBoard(framed, gesture);
-  const reconnect = (event: PointerEvent, id: string, end: 'from' | 'to') =>
-    drawing.begin(event, undefined, { id, end });
+  const notes = useMemo(() => Object.values(framed.stickies).sort(byStackOrder), [framed.stickies]);
+  const openMenu = (point: Point, target: CanvasTarget) => {
+    cancelGestures();
+    props.onCanvasMenu(point, target);
+  };
   return (
     <div
       ref={element}
-      className={`board tool-${space ? 'hand' : tool}${gesture?.type === 'pan' ? ' is-panning' : ''}`}
+      className={cx(
+        'board',
+        `tool-${space ? 'hand' : tool}`,
+        gesture?.type === 'pan' && 'is-panning',
+      )}
       role="application"
       aria-label="포스트잇 보드"
       tabIndex={0}
       onKeyDownCapture={(event) => {
-        if (
-          event.target === event.currentTarget &&
-          (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))
-        ) {
+        if (event.target === event.currentTarget && isMenuKey(event)) {
           event.preventDefault();
           event.stopPropagation();
-          cancelGestures();
-          const rect = element.current!.getBoundingClientRect();
-          props.onCanvasMenu({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, {});
-          return;
+          return openMenu(clientCenter(element.current!), {});
         }
         if (!drawing.active || event.key !== 'Enter' || !(event.target instanceof Element)) return;
-        const id = event.target.closest('[data-sticky-id]')?.getAttribute('data-sticky-id');
-        const frameId = event.target.closest('[data-frame-id]')?.getAttribute('data-frame-id');
-        if (id || frameId) {
+        const stickyId = closestData(event.target, 'data-sticky-id');
+        const frameId = closestData(event.target, 'data-frame-id');
+        if (stickyId || frameId) {
           event.preventDefault();
           event.stopPropagation();
           drawing.confirm(
-            id ? { stickyId: id, side: 'auto' } : { frameId: frameId!, side: 'auto' },
+            stickyId ? { stickyId, side: 'auto' } : { frameId: frameId!, side: 'auto' },
           );
         }
       }}
       onPointerDown={onBackgroundDown}
       onContextMenu={(event) => {
-        if (
-          event.target instanceof Element &&
-          event.target.closest('input,textarea,[contenteditable]')
-        )
-          return;
+        if (event.target instanceof Element && event.target.closest(TEXT_ENTRY)) return;
         event.preventDefault();
-        cancelGestures();
-        const rect = element.current!.getBoundingClientRect();
         const point =
           event.clientX || event.clientY
             ? { x: event.clientX, y: event.clientY }
-            : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        props.onCanvasMenu(point, canvasTarget(event.target));
+            : clientCenter(element.current!);
+        openMenu(point, canvasTarget(event.target));
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -335,7 +341,7 @@ export function BoardCanvas(props: Props) {
             event.preventDefault();
             event.stopPropagation();
             element.current!.setPointerCapture(event.pointerId);
-            setGesture({ type: 'pan', last: local(event) });
+            startPan(event);
           }}
         />
         <ConnectionLayer
@@ -343,53 +349,42 @@ export function BoardCanvas(props: Props) {
           zoom={view.zoom}
           draft={drawing.draft}
           links={props.links}
-          onReconnect={reconnect}
-          onKeyboardReconnect={drawing.keyboardReconnect}
         />
-        {stackOrder(framed).map((sticky, index) => (
+        {notes.map((sticky, index) => (
           <StickyNote
             key={sticky.id}
             sticky={sticky}
             zIndex={index + 1}
             resized={gesture?.type === 'resize' && gesture.id === sticky.id ? gesture.size : null}
-            onResize={props.onResize}
-            onContextMenu={props.onContextMenu}
+            onResize={onResize}
+            onContextMenu={onNoteMenu}
             onResizeStart={onResizeStart}
             selected={selection.has(sticky.id)}
             editing={editing === sticky.id}
             seed={props.seed}
             reactor={props.reactor}
             dimmed={!!props.matches && !props.matches.has(sticky.id)}
-            onReact={props.onReact}
+            onReact={onReact}
             showPorts={
               !editing &&
               !space &&
               tool !== 'hand' &&
               (selection.has(sticky.id) || tool === 'connect')
             }
-            onConnect={(event, side) => drawing.begin(event, { stickyId: sticky.id, side })}
-            onKeyboardConnect={(side) => drawing.keyboardStart({ stickyId: sticky.id, side })}
-            offset={
-              dragging?.ids.includes(sticky.id) && !dragging.duplicate ? dragging.offset : null
-            }
+            onConnect={onConnect}
+            onKeyboardConnect={onKeyboardConnect}
+            offset={moving.has(sticky.id) ? dragging!.offset : null}
             onPointerDown={onStickyDown}
-            onStartEdit={props.onStartEdit}
-            onCommitText={props.onCommitText}
+            onStartEdit={onStartEdit}
+            onCommitText={onCommitText}
           />
         ))}
-        <BoardOverlays
-          board={board}
-          gesture={gesture}
-          view={view}
-          width={element.current?.clientWidth ?? 0}
-          height={element.current?.clientHeight ?? 0}
-        />
-        <ConnectionLayer
-          overlay
+        <BoardOverlays board={board} gesture={gesture} view={view} viewport={props.viewport} />
+        <ConnectionEndpoints
           board={displayed}
           zoom={view.zoom}
           draft={drawing.draft}
-          links={props.links}
+          selectedId={props.links.selectedId}
           onReconnect={reconnect}
           onKeyboardReconnect={drawing.keyboardReconnect}
         />

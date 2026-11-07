@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Board } from '../../domain/model';
-import type { Patch } from '../../domain/patch';
 import { own } from '../../domain/ids';
 import {
   addFrame,
@@ -11,87 +10,85 @@ import {
   frameContents,
   cloneFrameContents,
   cutFrameContents,
+  type BoardSlice,
 } from '../../domain/frames/commands';
-import { DEFAULT_FRAME_SIZE } from '../../domain/frames/model';
+import { DEFAULT_FRAME_SIZE, frameArea, type FrameSize } from '../../domain/frames/model';
+import type { Point } from '../../engine/viewport';
 import type { FrameInteraction } from '../../components/frames/types';
+import type { Edit, EditWith } from '../useBoardSession';
+
+/** How far a duplicated frame lands from its original. */
+export const FRAME_DUPLICATE_OFFSET = 32;
+
+/** The selected frame, creation defaults and the commands the app runs on frames. */
+export interface FrameSession extends FrameInteraction {
+  cut(): void;
+  remove(): void;
+  surround(ids: readonly string[]): void;
+  paste(source: BoardSlice, at: Point): void;
+}
 
 export function useFrameSession({
   board,
   selectedId,
   edit,
+  editWith,
   newId,
   onSelect,
-  clearObjects,
-  finishTool,
+  onCreated,
 }: {
   board: Board;
   selectedId: string | null;
-  edit(change: (board: Board) => Patch[]): void;
+  edit: Edit;
+  editWith: EditWith;
   newId(): string;
-  onSelect(id: string | null): void;
-  clearObjects(): void;
-  finishTool(): void;
-}) {
-  const [size, onPreset] = useState(DEFAULT_FRAME_SIZE);
+  onSelect(id: string): void;
+  /** A new frame was drawn; drawing tools hand back to selection. */
+  onCreated(): void;
+}): FrameSession {
+  const [size, onPreset] = useState<FrameSize>(DEFAULT_FRAME_SIZE);
   const selected = selectedId ? (own(board.frames ?? {}, selectedId) ?? null) : null;
-  const select = (id: string) => {
-    clearObjects();
-    onSelect(id);
+  /** Copy `source` by (dx, dy) and select the copy of `rootId`. */
+  const copy = (source: (current: Board) => BoardSlice, rootId: string, dx: number, dy: number) => {
+    const { frameIds } = editWith((current) =>
+      cloneFrameContents(source(current), current, newId, dx, dy),
+    );
+    const id = frameIds.get(rootId);
+    if (id) onSelect(id);
   };
-  const interaction: FrameInteraction = {
+  const onCreate = (bounds: Parameters<FrameInteraction['onCreate']>[0]) => {
+    const id = newId();
+    edit((current) => addFrame(current, id, bounds));
+    onSelect(id);
+    onCreated();
+  };
+  return {
     selectedId: selected?.id ?? null,
     selected,
     size,
     onPreset,
-    onSelect: select,
-    onCreate: (bounds) => {
-      const id = newId();
-      edit((current) => addFrame(current, id, bounds));
-      select(id);
-      finishTool();
-    },
+    onSelect,
+    onCreate,
     onChange: (id, values) => edit((current) => updateFrame(current, id, values)),
     onMove: (id, dx, dy) => edit((current) => moveFrame(current, id, dx, dy)),
-    onDuplicate: (id, dx = 32, dy = 32) => {
-      let copy: string | undefined;
-      edit((current) => {
-        const cloned = cloneFrameContents(frameContents(current, id), current, newId, dx, dy);
-        copy = cloned.frameIds.get(id);
-        return cloned.patches;
-      });
-      if (copy) select(copy);
-    },
-  };
-  return {
-    ...interaction,
-    clear: () => onSelect(null),
+    onDuplicate: (id, dx = FRAME_DUPLICATE_OFFSET, dy = FRAME_DUPLICATE_OFFSET) =>
+      copy((current) => frameContents(current, id), id, dx, dy),
     cut: () => {
       if (selected) edit((current) => cutFrameContents(current, selected.id));
     },
     remove: () => {
       if (selected) edit((current) => deleteFrame(current, selected.id));
     },
-    surround: (ids: string[]) => {
+    surround: (ids) => {
       const bounds = boundsAroundNotes(board, ids);
-      if (bounds) interaction.onCreate(bounds);
+      if (bounds) onCreate(bounds);
     },
-    paste: (source: Board, at: { x: number; y: number }) => {
+    /** The largest pasted frame is the root; it lands centred on `at`. */
+    paste: (source, at) => {
       const list = Object.values(source.frames ?? {});
       if (!list.length) return;
-      const root = list.reduce((a, b) => (a.width * a.height > b.width * b.height ? a : b));
-      let copy: string | undefined;
-      edit((current) => {
-        const cloned = cloneFrameContents(
-          source,
-          current,
-          newId,
-          at.x - root.x - root.width / 2,
-          at.y - root.y - root.height / 2,
-        );
-        copy = cloned.frameIds.get(root.id);
-        return cloned.patches;
-      });
-      if (copy) select(copy);
+      const root = list.reduce((a, b) => (frameArea(a) > frameArea(b) ? a : b));
+      copy(() => source, root.id, at.x - root.x - root.width / 2, at.y - root.y - root.height / 2);
     },
   };
 }

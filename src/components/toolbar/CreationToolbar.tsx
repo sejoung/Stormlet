@@ -8,6 +8,13 @@ import { CreationFlyout, type ToolDefaults } from './CreationFlyout';
 import { FrameFlyout } from '../frames/FrameFlyout';
 import type { FrameInteraction } from '../frames/types';
 
+/** The connection tool shows the shape new lines will get. */
+function connectionIcon({ path, endArrow }: ConnectionStyle) {
+  if (path === 'elbow') return 'connect';
+  if (path === 'curve') return 'curve';
+  return endArrow ? 'arrow' : 'line';
+}
+
 export function CreationToolbar({
   tool,
   onTool,
@@ -109,17 +116,7 @@ export function CreationToolbar({
           title="연결선 (L) · 포스트잇·프레임을 차례로 클릭"
           onClick={() => chooseTool('connect')}
         >
-          <Icon
-            name={
-              defaults.connection.path === 'elbow'
-                ? 'connect'
-                : defaults.connection.path === 'curve'
-                  ? 'curve'
-                  : defaults.connection.endArrow
-                    ? 'arrow'
-                    : 'line'
-            }
-          />
+          <Icon name={connectionIcon(defaults.connection)} />
         </button>
         <button
           type="button"

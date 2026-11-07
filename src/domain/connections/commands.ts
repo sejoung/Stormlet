@@ -2,9 +2,10 @@ import { own } from '../ids';
 import type { Board } from '../model';
 import type { Patch } from '../patch';
 import { endpointObject, sameAttachment } from './endpoints';
-import { isFreeEndpoint } from './model';
 import {
   DEFAULT_CONNECTION,
+  isFreeEndpoint,
+  joinsStickies,
   type Connection,
   type Endpoint,
   type ConnectionSetPatch,
@@ -60,13 +61,7 @@ export function internalConnections(
   const selected = new Set(ids);
   return Object.fromEntries(
     Object.values(board.connections ?? {})
-      .filter(
-        (line) =>
-          'stickyId' in line.from &&
-          'stickyId' in line.to &&
-          selected.has(line.from.stickyId) &&
-          selected.has(line.to.stickyId),
-      )
+      .filter((line) => joinsStickies(line, selected))
       .map((line) => [line.id, line]),
   );
 }

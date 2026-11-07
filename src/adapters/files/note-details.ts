@@ -1,4 +1,10 @@
-import type { NoteDetails, Reaction } from '../../domain/note-details';
+import {
+  MAX_NOTE_FONT,
+  MIN_NOTE_FONT,
+  TEXT_ALIGNS,
+  type NoteDetails,
+  type Reaction,
+} from '../../domain/note-details';
 
 /** Validate optional v4 fields without retaining unknown imported properties. */
 export function readDetails(item: Record<string, unknown>): NoteDetails {
@@ -10,8 +16,11 @@ export function readDetails(item: Record<string, unknown>): NoteDetails {
   };
   for (const key of ['bold', 'italic', 'underline', 'autoFont', 'locked'] as const)
     accept(key, (v) => typeof v === 'boolean');
-  accept('textAlign', (v) => ['left', 'center', 'right'].includes(v as string));
-  accept('fontSize', (v) => typeof v === 'number' && Number.isFinite(v) && v >= 8 && v <= 144);
+  accept('textAlign', (v) => (TEXT_ALIGNS as readonly unknown[]).includes(v));
+  accept(
+    'fontSize',
+    (v) => typeof v === 'number' && Number.isFinite(v) && v >= MIN_NOTE_FONT && v <= MAX_NOTE_FONT,
+  );
   accept('groupId', (v) => v === null || (typeof v === 'string' && /^[\w-]{1,128}$/.test(v)));
   accept(
     'reactions',

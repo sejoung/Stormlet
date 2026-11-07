@@ -102,15 +102,24 @@ export interface Board {
 
 export const emptyBoard = (): Board => ({ stickies: {} });
 
+/** Whether the board has no notes, connections or frames. */
+export const isEmptyBoard = (board: Board): boolean =>
+  !Object.keys(board.stickies).length &&
+  !Object.keys(board.connections ?? {}).length &&
+  !Object.keys(board.frames ?? {}).length;
+
 export const isStickyKind = (value: unknown): value is StickyKind =>
   typeof value === 'string' && (STICKY_KINDS as readonly string[]).includes(value);
 
 export const isStickyColor = (value: unknown): value is StickyColor =>
   typeof value === 'string' && (STICKY_COLORS as readonly string[]).includes(value);
 
+/** Bottom-to-top comparator: higher `z` draws on top, ties fall back to the ID. */
+export const byStackOrder = (a: Sticky, b: Sticky): number => a.z - b.z || (a.id < b.id ? -1 : 1);
+
 /** Stickies from bottom to top. */
 export const stackOrder = (board: Board): Sticky[] =>
-  Object.values(board.stickies).sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
+  Object.values(board.stickies).sort(byStackOrder);
 
 export const topZ = (board: Board): number =>
   Object.values(board.stickies).reduce((max, sticky) => Math.max(max, sticky.z), 0);

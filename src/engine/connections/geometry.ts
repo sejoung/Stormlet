@@ -10,33 +10,51 @@ export interface Anchor extends Point {
   ny: number;
 }
 
+/** Gap between an object's edge and where its line starts, so arrowheads stay visible. */
+const ANCHOR_GAP = 6;
+/** Length range of the first and last leg that leaves an object perpendicular to its side. */
+const LEG = { min: 32, max: 120 };
+/** Extra drop for an elbow that would otherwise run along a shared row. */
+const SAME_ROW_DETOUR = 48;
+/** Shorter lines than this are treated as a click, not a connection. */
+export const MIN_CONNECTION_LENGTH = 4;
+
+const NORMALS: Record<Exclude<ConnectionSide, 'auto'>, { nx: number; ny: number }> = {
+  top: { nx: 0, ny: -1 },
+  right: { nx: 1, ny: 0 },
+  bottom: { nx: 0, ny: 1 },
+  left: { nx: -1, ny: 0 },
+};
+
+/** The side facing `(dx, dy)`, weighed by the object's proportions. */
+function facingSide(dx: number, dy: number, size: { width: number; height: number }) {
+  const horizontal = Math.abs(dx) / size.width >= Math.abs(dy) / size.height;
+  if (horizontal) return dx >= 0 ? 'right' : 'left';
+  return dy >= 0 ? 'bottom' : 'top';
+}
+
 export function endpointCenter(board: Board, endpoint: Endpoint): Point | null {
   if (isFreeEndpoint(endpoint)) return endpoint;
-  const note = endpointObject(board, endpoint);
-  return note ? { x: note.x + note.width / 2, y: note.y + note.height / 2 } : null;
+  const item = endpointObject(board, endpoint);
+  return item ? { x: item.x + item.width / 2, y: item.y + item.height / 2 } : null;
 }
 
 export function endpointAnchor(board: Board, endpoint: Endpoint, toward: Point): Anchor | null {
-  const center = endpointCenter(board, endpoint);
-  if (!center) return null;
-  const dx = toward.x - center.x,
-    dy = toward.y - center.y;
-  let side: ConnectionSide = isFreeEndpoint(endpoint) ? 'auto' : endpoint.side;
-  const note = endpointObject(board, endpoint);
-  if (side === 'auto')
-    side =
-      Math.abs(dx) / (note?.width ?? 1) >= Math.abs(dy) / (note?.height ?? 1)
-        ? dx >= 0
-          ? 'right'
-          : 'left'
-        : dy >= 0
-          ? 'bottom'
-          : 'top';
-  const nx = side === 'right' ? 1 : side === 'left' ? -1 : 0;
-  const ny = side === 'bottom' ? 1 : side === 'top' ? -1 : 0;
+  if (isFreeEndpoint(endpoint)) {
+    const side = facingSide(toward.x - endpoint.x, toward.y - endpoint.y, { width: 1, height: 1 });
+    return { x: endpoint.x, y: endpoint.y, ...NORMALS[side] };
+  }
+  const item = endpointObject(board, endpoint);
+  if (!item) return null;
+  const center = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
+  const side =
+    endpoint.side === 'auto'
+      ? facingSide(toward.x - center.x, toward.y - center.y, item)
+      : endpoint.side;
+  const { nx, ny } = NORMALS[side];
   return {
-    x: center.x + nx * (note ? note.width / 2 + 6 : 0),
-    y: center.y + ny * (note ? note.height / 2 + 6 : 0),
+    x: center.x + nx * (item.width / 2 + ANCHOR_GAP),
+    y: center.y + ny * (item.height / 2 + ANCHOR_GAP),
     nx,
     ny,
   };
@@ -58,61 +76,87 @@ function halfway(points: Point[]): Point {
   return points[0];
 }
 
+/** Waypoints of an orthogonal route that leaves and enters both objects perpendicularly. */
+function elbowPoints(from: Anchor, to: Anchor, p: Point, q: Point): Point[] {
+  const facingX =
+    from.nx && to.nx && from.nx * (to.x - from.x) >= 0 && to.nx * (from.x - to.x) >= 0;
+  const facingY =
+    from.ny && to.ny && from.ny * (to.y - from.y) >= 0 && to.ny * (from.y - to.y) >= 0;
+  if (facingX) {
+    const x = (from.x + to.x) / 2;
+    return [from, { x, y: from.y }, { x, y: to.y }, to];
+  }
+  if (facingY) {
+    const y = (from.y + to.y) / 2;
+    return [from, { x: from.x, y }, { x: to.x, y }, to];
+  }
+  if (from.nx && to.ny) return [from, p, { x: q.x, y: p.y }, q, to];
+  if (from.ny && to.nx) return [from, p, { x: p.x, y: q.y }, q, to];
+  const y = (p.y + q.y) / 2 + (from.y === to.y ? SAME_ROW_DETOUR : 0);
+  return [from, p, { x: p.x, y }, { x: q.x, y }, q, to];
+}
+
+const line = (from: Point, to: Point) => `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
+
+function pointBounds(points: readonly Point[]) {
+  const x = Math.min(...points.map((point) => point.x));
+  const y = Math.min(...points.map((point) => point.y));
+  return {
+    x,
+    y,
+    width: Math.max(1, ...points.map((point) => point.x - x)),
+    height: Math.max(1, ...points.map((point) => point.y - y)),
+  };
+}
+
 export function connectionGeometry(board: Board, connection: Connection) {
-  const a = endpointCenter(board, connection.from),
-    b = endpointCenter(board, connection.to);
+  const a = endpointCenter(board, connection.from);
+  const b = endpointCenter(board, connection.to);
   if (!a || !b) return null;
-  const from = endpointAnchor(board, connection.from, b)!,
-    to = endpointAnchor(board, connection.to, a)!;
-  if (Math.hypot(to.x - from.x, to.y - from.y) < 0.01)
+  const from = endpointAnchor(board, connection.from, b)!;
+  const to = endpointAnchor(board, connection.to, a)!;
+  const length = Math.hypot(to.x - from.x, to.y - from.y);
+  if (length < 0.01)
     return {
-      path: `M ${from.x} ${from.y} L ${to.x} ${to.y}`,
+      path: line(from, to),
       from,
       to,
       label: { x: from.x, y: from.y },
       bounds: { x: from.x, y: from.y, width: 1, height: 1 },
     };
-  const distance = Math.max(32, Math.min(120, Math.hypot(to.x - from.x, to.y - from.y) / 2));
+  const distance = Math.max(LEG.min, Math.min(LEG.max, length / 2));
   const p = { x: from.x + from.nx * distance, y: from.y + from.ny * distance };
   const q = { x: to.x + to.nx * distance, y: to.y + to.ny * distance };
-  let points: Point[] = [from, to];
-  let path = `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
-  let label = halfway(points);
   if (connection.path === 'curve') {
-    path = `M ${from.x} ${from.y} C ${p.x} ${p.y} ${q.x} ${q.y} ${to.x} ${to.y}`;
-    label = {
-      x: (from.x + p.x * 3 + q.x * 3 + to.x) / 8,
-      y: (from.y + p.y * 3 + q.y * 3 + to.y) / 8,
+    const points = [from, p, q, to];
+    return {
+      path: `M ${from.x} ${from.y} C ${p.x} ${p.y} ${q.x} ${q.y} ${to.x} ${to.y}`,
+      from,
+      to,
+      // The cubic Bézier's point at t = 0.5.
+      label: {
+        x: (from.x + p.x * 3 + q.x * 3 + to.x) / 8,
+        y: (from.y + p.y * 3 + q.y * 3 + to.y) / 8,
+      },
+      bounds: pointBounds(points),
     };
-    points = [from, p, q, to];
-  } else if (connection.path === 'elbow') {
-    if (from.nx && to.nx && from.nx * (to.x - from.x) >= 0 && to.nx * (from.x - to.x) >= 0) {
-      const x = (from.x + to.x) / 2;
-      points = [from, { x, y: from.y }, { x, y: to.y }, to];
-    } else if (from.ny && to.ny && from.ny * (to.y - from.y) >= 0 && to.ny * (from.y - to.y) >= 0) {
-      const y = (from.y + to.y) / 2;
-      points = [from, { x: from.x, y }, { x: to.x, y }, to];
-    } else if (from.nx && to.ny) points = [from, p, { x: q.x, y: p.y }, q, to];
-    else if (from.ny && to.nx) points = [from, p, { x: p.x, y: q.y }, q, to];
-    else {
-      const y = (p.y + q.y) / 2 + (from.y === to.y ? 48 : 0);
-      points = [from, p, { x: p.x, y }, { x: q.x, y }, q, to];
-    }
-    path = roundedPolyline(points);
-    label = halfway(points);
   }
-  const x = Math.min(...points.map((point) => point.x)),
-    y = Math.min(...points.map((point) => point.y));
+  const points = connection.path === 'elbow' ? elbowPoints(from, to, p, q) : [from, to];
   return {
-    path,
+    path: connection.path === 'elbow' ? roundedPolyline(points) : line(from, to),
     from,
     to,
-    label,
-    bounds: {
-      x,
-      y,
-      width: Math.max(1, ...points.map((point) => point.x - x)),
-      height: Math.max(1, ...points.map((point) => point.y - y)),
-    },
+    label: halfway(points),
+    bounds: pointBounds(points),
   };
+}
+
+/** Whether a line between these ends is long enough to be a connection rather than a click. */
+export function isDrawable(board: Board, connection: Connection): boolean {
+  const geometry = connectionGeometry(board, connection);
+  return (
+    !!geometry &&
+    Math.hypot(geometry.from.x - geometry.to.x, geometry.from.y - geometry.to.y) >=
+      MIN_CONNECTION_LENGTH
+  );
 }

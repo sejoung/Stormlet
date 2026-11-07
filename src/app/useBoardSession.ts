@@ -12,6 +12,14 @@ import {
   type Step,
 } from '../application/session';
 
+/** A local edit: a command run against the latest board. */
+export type Edit = (change: (board: Board) => Patch[]) => void;
+/**
+ * A local edit that also reports what it did (the IDs it created, say). The command runs
+ * synchronously against the latest board, so its result is ready when this returns.
+ */
+export type EditWith = <T extends { patches: readonly Patch[] }>(change: (board: Board) => T) => T;
+
 /**
  * Connects the editing session to a store: local steps go to the store as patches, and the
  * store's outside changes come back in without touching this editor's history.
@@ -42,11 +50,21 @@ export function useBoardSession(store: BoardStore) {
     [store, commit],
   );
 
+  const editWith = useCallback<EditWith>(
+    (change) => {
+      const result = change(latest.current.board);
+      run((current) => edit(current, result.patches));
+      return result;
+    },
+    [run],
+  );
+
   return {
     session,
-    edit: useCallback(
-      (change: (board: Board) => Patch[]) => run((current) => edit(current, change(current.board))),
-      [run],
+    editWith,
+    edit: useCallback<Edit>(
+      (change) => void editWith((board) => ({ patches: change(board) })),
+      [editWith],
     ),
     undo: useCallback(() => run(undo), [run]),
     redo: useCallback(() => run(redo), [run]),

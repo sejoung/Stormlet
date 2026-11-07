@@ -28,8 +28,8 @@ export async function writeClipboard(content: ClipboardContent): Promise<void> {
 export async function readClipboard(): Promise<ClipboardContent> {
   if (navigator.clipboard?.read) {
     const items = await navigator.clipboard.read();
-    let structured = '',
-      plain = '';
+    let structured = '';
+    let plain = '';
     for (const item of items) {
       if (item.types.includes(CUSTOM)) structured = await (await item.getType(CUSTOM)).text();
       if (item.types.includes('text/plain'))

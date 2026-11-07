@@ -3,8 +3,29 @@ import type { Board } from '../../domain/model';
 import { DEFAULT_CONNECTION, type Endpoint, type Connection } from '../../domain/connections/model';
 import { endpointAnchor } from '../../engine/connections/geometry';
 import { constrainEndpoint, snapEndpoint } from '../../engine/connections/snapping';
-import { toBoardPoint, type Point, type View } from '../../engine/viewport';
+import type { Point, View } from '../../engine/viewport';
+import { own } from '../../domain/ids';
 import type { ConnectionInteraction } from './types';
+import { clientToBoard } from '../common/points';
+import { TEXT_ENTRY } from '../common/keyboard';
+
+type End = 'from' | 'to';
+
+/** What the canvas needs from a connection being drawn or rewired. */
+export interface ConnectionDrawing {
+  /** The line as it would be created now, for preview; `null` when not drawing. */
+  draft: Connection | null;
+  active: boolean;
+  cancel(): void;
+  /** Start (or, for a click-click line, finish) at a background, note or frame press. */
+  backgroundDown(event: PointerEvent, source?: Endpoint): boolean;
+  begin(event: PointerEvent, source?: Endpoint, existing?: { id: string; end: End }): boolean;
+  move(event: PointerEvent): boolean;
+  up(event: PointerEvent): boolean;
+  keyboardStart(endpoint: Endpoint): void;
+  keyboardReconnect(id: string, end: End): void;
+  confirm(endpoint: Endpoint): void;
+}
 
 interface Draft {
   from: Endpoint;
@@ -12,8 +33,12 @@ interface Draft {
   pointer: Point;
   pressed: boolean;
   moved: boolean;
-  existing?: { id: string; end: 'from' | 'to' };
+  existing?: { id: string; end: End };
 }
+/** Pointer travel (screen px) after which a press becomes a drag instead of a click. */
+const DRAG_START = 4;
+/** Tool shortcut keys; pressing one abandons a line in progress. */
+const TOOL_KEYS = ['v', 'h', 'n', 'l'];
 interface Options {
   board: Board;
   view: View;
@@ -22,7 +47,13 @@ interface Options {
   links: ConnectionInteraction;
 }
 
-export function useConnectionDrawing({ board, view, element, tool, links }: Options) {
+export function useConnectionDrawing({
+  board,
+  view,
+  element,
+  tool,
+  links,
+}: Options): ConnectionDrawing {
   const current = useRef<Draft | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const put = (next: Draft | null) => {
@@ -47,8 +78,8 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
     const keyboard = (event: KeyboardEvent) => {
       if (
         !event.defaultPrevented &&
-        ['v', 'h', 'n', 'l'].includes(event.key.toLowerCase()) &&
-        !(event.target instanceof Element && event.target.closest('input, textarea, select'))
+        TOOL_KEYS.includes(event.key.toLowerCase()) &&
+        !(event.target instanceof Element && event.target.closest(TEXT_ENTRY))
       )
         cancel();
     };
@@ -61,10 +92,8 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
       window.removeEventListener('keydown', keyboard);
     };
   }, [cancel]);
-  const point = (event: { clientX: number; clientY: number }) => {
-    const rect = element.current!.getBoundingClientRect();
-    return toBoardPoint(view, { x: event.clientX - rect.left, y: event.clientY - rect.top });
-  };
+  const point = (event: { clientX: number; clientY: number }) =>
+    clientToBoard(element.current!, view, event);
   const target = (event: PointerEvent, state?: Draft): Endpoint => {
     let at = point(event);
     const fixed = state && (state.existing?.end === 'from' ? state.to : state.from);
@@ -91,7 +120,7 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
     }
     element.current!.setPointerCapture(event.pointerId);
     const from = source ?? target(event);
-    const line = existing ? board.connections?.[existing.id] : null;
+    const line = existing ? own(board.connections ?? {}, existing.id) : null;
     put({
       from: line?.from ?? from,
       to: line?.to ?? from,
@@ -113,7 +142,7 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
     const moved =
       state.moved ||
       (state.pressed &&
-        Math.hypot(event.clientX - state.pointer.x, event.clientY - state.pointer.y) >= 4);
+        Math.hypot(event.clientX - state.pointer.x, event.clientY - state.pointer.y) >= DRAG_START);
     put({ ...state, [state.existing?.end === 'from' ? 'from' : 'to']: end, moved });
     return true;
   };
@@ -133,7 +162,7 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
     ? {
         ...DEFAULT_CONNECTION,
         ...links.style,
-        ...(draft.existing ? board.connections?.[draft.existing.id] : {}),
+        ...(draft.existing ? own(board.connections ?? {}, draft.existing.id) : {}),
         id: draft.existing?.id ?? '',
         from: draft.from,
         to: draft.to,
@@ -147,8 +176,8 @@ export function useConnectionDrawing({ board, view, element, tool, links }: Opti
     move,
     up,
     keyboardStart,
-    keyboardReconnect: (id: string, end: 'from' | 'to') => {
-      const line = board.connections?.[id];
+    keyboardReconnect: (id: string, end: End) => {
+      const line = own(board.connections ?? {}, id);
       if (!line || line.locked) return;
       put({
         from: line.from,

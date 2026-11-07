@@ -2,26 +2,27 @@ import type { Board } from '../../domain/model';
 import type { View } from '../../engine/viewport';
 import { COLOR_STYLES } from './kinds';
 import { rectangle, type Gesture } from './board-gestures';
+import { own } from '../../domain/ids';
+import type { Size } from '../common/useElementSize';
 
 export function BoardOverlays({
   board,
   gesture,
   view,
-  width,
-  height,
+  viewport,
 }: {
   board: Board;
   gesture: Gesture | null;
   view: View;
-  width: number;
-  height: number;
+  viewport: Size;
 }) {
   const dragging = gesture?.type === 'drag' ? gesture : null;
   return (
     <>
       {dragging?.duplicate &&
         dragging.ids.map((id) => {
-          const note = board.stickies[id];
+          const note = own(board.stickies, id);
+          if (!note) return null;
           return (
             <div
               key={`copy-${id}`}
@@ -47,14 +48,22 @@ export function BoardOverlays({
         <div
           className="alignment-guide guide-vertical"
           aria-hidden="true"
-          style={{ left: dragging.guides.x, top: -view.y / view.zoom, height: height / view.zoom }}
+          style={{
+            left: dragging.guides.x,
+            top: -view.y / view.zoom,
+            height: viewport.height / view.zoom,
+          }}
         />
       )}
       {dragging?.guides?.y !== undefined && (
         <div
           className="alignment-guide guide-horizontal"
           aria-hidden="true"
-          style={{ top: dragging.guides.y, left: -view.x / view.zoom, width: width / view.zoom }}
+          style={{
+            top: dragging.guides.y,
+            left: -view.x / view.zoom,
+            width: viewport.width / view.zoom,
+          }}
         />
       )}
     </>

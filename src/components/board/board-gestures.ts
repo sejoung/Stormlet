@@ -1,4 +1,7 @@
 import type { Board } from '../../domain/model';
+import { own } from '../../domain/ids';
+import { groupSelection } from '../../domain/note-actions';
+import type { Rect } from '../../domain/geometry/bounds';
 import type { StickySize } from '../../domain/sticky-size';
 import type { Point } from '../../engine/viewport';
 import type { Guides } from '../../engine/snapping';
@@ -24,25 +27,44 @@ export const rectangle = (a: Point, b: Point) => ({
   height: Math.abs(a.y - b.y),
 });
 
-/** Connections use the same temporary positions and sizes as the note rendering. */
+/** Click a note to select it (and its group); modifier-click toggles it in the selection. */
+export function pickedNotes(
+  board: Board,
+  selection: ReadonlySet<string>,
+  id: string,
+  toggle: boolean,
+): string[] {
+  const group = groupSelection(board, [id]);
+  if (!toggle) return selection.has(id) ? [...selection] : group;
+  if (!selection.has(id)) return [...selection, ...group];
+  const grouped = new Set(group);
+  return [...selection].filter((other) => !grouped.has(other));
+}
+
+/** Whether a note overlaps a marquee `box` at all. */
+export const intersects = (note: Rect, box: ReturnType<typeof rectangle>): boolean =>
+  note.x < box.left + box.width &&
+  note.x + note.width > box.left &&
+  note.y < box.top + box.height &&
+  note.y + note.height > box.top;
+
+/**
+ * Connections use the same temporary positions and sizes as the note rendering. Only the
+ * notes being changed are replaced; every other note keeps its identity.
+ */
 export function previewBoard(board: Board, gesture: Gesture | null): Board {
   if (gesture?.type === 'resize') {
-    const note = board.stickies[gesture.id];
+    const note = own(board.stickies, gesture.id);
     return note
       ? { ...board, stickies: { ...board.stickies, [note.id]: { ...note, ...gesture.size } } }
       : board;
   }
   if (gesture?.type !== 'drag' || gesture.duplicate) return board;
-  const picked = new Set(gesture.ids);
-  return {
-    ...board,
-    stickies: Object.fromEntries(
-      Object.values(board.stickies).map((note) => [
-        note.id,
-        picked.has(note.id)
-          ? { ...note, x: note.x + gesture.offset.x, y: note.y + gesture.offset.y }
-          : note,
-      ]),
-    ),
-  };
+  const { offset } = gesture;
+  const stickies = { ...board.stickies };
+  for (const id of gesture.ids) {
+    const note = own(board.stickies, id);
+    if (note) stickies[id] = { ...note, x: note.x + offset.x, y: note.y + offset.y };
+  }
+  return { ...board, stickies };
 }

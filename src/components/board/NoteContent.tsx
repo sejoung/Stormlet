@@ -2,21 +2,15 @@ import { useRef, useState, type KeyboardEvent } from 'react';
 import type { Sticky } from '../../domain/model';
 import type { StickySize } from '../../domain/sticky-size';
 import { MAX_NOTE_LENGTH } from '../../domain/note-details';
-import { useFittedText } from './useFittedText';
+import { noteTextStyle, useFittedText } from './useFittedText';
+import { DRAFT_FIELD, useDraft } from '../common/drafts';
+import { isComposing } from '../common/keyboard';
 
 export function StickyText({ note, size }: { note: Sticky; size: StickySize }) {
   const { ref, fontSize } = useFittedText(note.text, size, note);
   return (
     <div className="sticky-content">
-      <p
-        ref={ref}
-        className="sticky-text"
-        style={{
-          fontSize,
-          textAlign: note.textAlign ?? 'center',
-          textDecoration: note.underline ? 'underline' : 'none',
-        }}
-      >
+      <p ref={ref} className="sticky-text" style={noteTextStyle(note, fontSize)}>
         {note.text}
       </p>
     </div>
@@ -43,12 +37,13 @@ export function StickyEditor({
     completed.current = true;
     onDone(text.trim());
   };
+  useDraft(finish);
   const onKeyDown = (event: KeyboardEvent) => {
     // Formatting keys belong to the note toolbar, native editing keys stay in the textarea.
     if ((event.ctrlKey || event.metaKey) && ['b', 'i', 'u', 's'].includes(event.key.toLowerCase()))
       return;
     event.stopPropagation();
-    if (composing.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
+    if (composing.current || isComposing(event)) return;
     if (event.key === 'Escape' || (event.key === 'Enter' && !event.shiftKey)) {
       event.preventDefault();
       finish();
@@ -62,22 +57,15 @@ export function StickyEditor({
           ref={ref}
           className="sticky-text sticky-measure"
           aria-hidden="true"
-          style={{
-            fontSize,
-            textAlign: note.textAlign ?? 'center',
-            textDecoration: note.underline ? 'underline' : 'none',
-          }}
+          style={noteTextStyle(note, fontSize)}
         >
           {text || '\u200b'}
         </p>
         <textarea
           className="sticky-editor"
           aria-label="스티키 내용"
-          style={{
-            fontSize,
-            textAlign: note.textAlign ?? 'center',
-            textDecoration: note.underline ? 'underline' : 'none',
-          }}
+          data-draft={DRAFT_FIELD.note}
+          style={noteTextStyle(note, fontSize)}
           // Focus follows an explicit edit or creation action.
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus

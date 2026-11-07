@@ -1,15 +1,22 @@
 import { own } from './ids';
-import { stackOrder, topZ, type Board, type Sticky, type StickyField } from './model';
+import { byStackOrder, topZ, type Board, type Sticky, type StickyField } from './model';
 import type { NoteDetails } from './note-details';
 import type { Patch, SetPatch } from './patch';
-import type { Connection } from './connections/model';
+import { joinsStickies, type Connection, type Endpoint } from './connections/model';
+import { boundsOf, boundsHeight, boundsWidth, rectOf, type Bounds } from './geometry/bounds';
+
+/** Space between notes that an arrangement or a duplicate lays out side by side. */
+export const NOTE_GAP = 24;
+
+/** Fields a locked note still accepts: unlocking it, and reacting to it. */
+const LOCK_EXEMPT: ReadonlySet<string> = new Set(['locked', 'reactions']);
 
 export function updateNotes(board: Board, ids: readonly string[], values: NoteDetails): Patch[] {
   return ids.flatMap((id) => {
     const note = own(board.stickies, id);
     if (!note) return [];
     return Object.entries(values)
-      .filter(([field]) => !note.locked || field === 'locked' || field === 'reactions')
+      .filter(([field]) => !note.locked || LOCK_EXEMPT.has(field))
       .map(([field, value]) => ({ op: 'set', id, field: field as StickyField, value }) as SetPatch);
   });
 }
@@ -17,9 +24,11 @@ export function updateNotes(board: Board, ids: readonly string[], values: NoteDe
 /** Expands a selection to whole groups, preserving stacking order. */
 export function groupSelection(board: Board, ids: readonly string[]): string[] {
   const picked = new Set(ids);
-  const groups = new Set(ids.flatMap((id) => board.stickies[id]?.groupId ?? []));
-  return stackOrder(board)
+  const groups = new Set(ids.flatMap((id) => own(board.stickies, id)?.groupId ?? []));
+  // Filter before sorting: only the selection is ordered, not the whole board.
+  return Object.values(board.stickies)
     .filter((s) => picked.has(s.id) || (s.groupId && groups.has(s.groupId)))
+    .sort(byStackOrder)
     .map((s) => s.id);
 }
 
@@ -32,42 +41,37 @@ export function cloneNotes(
   sourceConnections: Readonly<Record<string, Connection>> = board.connections ?? {},
 ): { patches: Patch[]; ids: string[] } {
   const groups = new Map<string, string>();
+  const groupCopy = (groupId: string) => {
+    if (!groups.has(groupId)) groups.set(groupId, newId());
+    return groups.get(groupId)!;
+  };
   const top = topZ(board);
-  const copies = notes.map((note, index): Sticky => {
-    if (note.groupId && !groups.has(note.groupId)) groups.set(note.groupId, newId());
-    return {
-      ...note,
-      id: newId(),
-      x: Math.round(note.x + dx),
-      y: Math.round(note.y + dy),
-      z: top + index + 1,
-      locked: false,
-      groupId: note.groupId ? groups.get(note.groupId)! : null,
-      reactions: [],
-    };
-  });
+  const copies = notes.map((note, index): Sticky => ({
+    ...note,
+    id: newId(),
+    x: Math.round(note.x + dx),
+    y: Math.round(note.y + dy),
+    z: top + index + 1,
+    locked: false,
+    groupId: note.groupId ? groupCopy(note.groupId) : null,
+    reactions: [],
+  }));
   const mapping = new Map(notes.map((note, i) => [note.id, copies[i].id]));
-  const connections = Object.values(sourceConnections).flatMap((line): Patch[] => {
-    if (
-      !('stickyId' in line.from) ||
-      !('stickyId' in line.to) ||
-      !mapping.has(line.from.stickyId) ||
-      !mapping.has(line.to.stickyId)
-    )
-      return [];
-    return [
-      {
-        op: 'connection:add',
-        connection: {
-          ...line,
-          id: newId(),
-          from: { ...line.from, stickyId: mapping.get(line.from.stickyId)! },
-          to: { ...line.to, stickyId: mapping.get(line.to.stickyId)! },
-          locked: false,
-        },
+  const copied = new Set(mapping.keys());
+  const remap = (end: Endpoint): Endpoint =>
+    'stickyId' in end ? { ...end, stickyId: mapping.get(end.stickyId)! } : end;
+  const connections = Object.values(sourceConnections)
+    .filter((line) => joinsStickies(line, copied))
+    .map((line): Patch => ({
+      op: 'connection:add',
+      connection: {
+        ...line,
+        id: newId(),
+        from: remap(line.from),
+        to: remap(line.to),
+        locked: false,
       },
-    ];
-  });
+    }));
   return {
     patches: [...copies.map((sticky): Patch => ({ op: 'add', sticky })), ...connections],
     ids: copies.map((s) => s.id),
@@ -83,11 +87,11 @@ export function reactToNotes(
   return ids.flatMap((id) => {
     const note = own(board.stickies, id);
     if (!note) return [];
-    const reactions = [...(note.reactions ?? [])];
-    const previous = reactions.find((r) => r.emoji === emoji);
-    const people = previous?.people.includes(person)
-      ? previous.people.filter((p) => p !== person)
-      : [...(previous?.people ?? []), person];
+    const reactions = note.reactions ?? [];
+    const previous = reactions.find((r) => r.emoji === emoji)?.people ?? [];
+    const people = previous.includes(person)
+      ? previous.filter((p) => p !== person)
+      : [...previous, person];
     const next = reactions.filter((r) => r.emoji !== emoji);
     if (people.length) next.push({ emoji, people });
     return updateNotes(board, [id], { reactions: next });
@@ -97,63 +101,97 @@ export function reactToNotes(
 export type Arrangement =
   'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'horizontal' | 'vertical' | 'grid';
 
+/** A group or a single note, moved as one block. */
+interface Unit extends Bounds {
+  items: Sticky[];
+}
+
+/** Everything a placement rule needs about the selection as a whole. */
+interface Layout {
+  area: Bounds;
+  units: readonly Unit[];
+  /** Equal free space between neighbours for the distribute actions. */
+  gap: { x: number; y: number };
+  cell: { width: number; height: number };
+  columns: number;
+}
+
+type Place = (
+  unit: Unit,
+  index: number,
+  layout: Layout,
+  cursor: { x: number; y: number },
+) => {
+  x: number;
+  y: number;
+};
+
+const PLACEMENTS: Record<Arrangement, Place> = {
+  left: (u, _, { area }) => ({ x: area.left, y: u.top }),
+  center: (u, _, { area }) => ({ x: (area.left + area.right - boundsWidth(u)) / 2, y: u.top }),
+  right: (u, _, { area }) => ({ x: area.right - boundsWidth(u), y: u.top }),
+  top: (u, _, { area }) => ({ x: u.left, y: area.top }),
+  middle: (u, _, { area }) => ({ x: u.left, y: (area.top + area.bottom - boundsHeight(u)) / 2 }),
+  bottom: (u, _, { area }) => ({ x: u.left, y: area.bottom - boundsHeight(u) }),
+  horizontal: (u, _, { gap }, cursor) => {
+    const at = { x: cursor.x, y: u.top };
+    cursor.x += boundsWidth(u) + gap.x;
+    return at;
+  },
+  vertical: (u, _, { gap }, cursor) => {
+    const at = { x: u.left, y: cursor.y };
+    cursor.y += boundsHeight(u) + gap.y;
+    return at;
+  },
+  grid: (_, index, { area, cell, columns }) => ({
+    x: area.left + (index % columns) * cell.width,
+    y: area.top + Math.floor(index / columns) * cell.height,
+  }),
+};
+
+/** Distribute actions walk the units in the order they already appear along their axis. */
+const ORDER: Partial<Record<Arrangement, (a: Unit, b: Unit) => number>> = {
+  horizontal: (a, b) => a.left - b.left,
+  vertical: (a, b) => a.top - b.top,
+};
+
 export function arrangeNotes(board: Board, ids: readonly string[], action: Arrangement): Patch[] {
   const notes = ids
     .map((id) => own(board.stickies, id))
     .filter((s): s is Sticky => !!s && !s.locked);
   // A group moves as one; internal layout is changed only after ungrouping.
-  const units = new Map<string, Sticky[]>();
+  const grouped = new Map<string, Sticky[]>();
   for (const note of notes) {
     const key = note.groupId ?? note.id;
-    units.set(key, [...(units.get(key) ?? []), note]);
+    const items = grouped.get(key);
+    if (items) items.push(note);
+    else grouped.set(key, [note]);
   }
-  const boxes = [...units.values()].map((items) => ({
-    items,
-    x: Math.min(...items.map((s) => s.x)),
-    y: Math.min(...items.map((s) => s.y)),
-    right: Math.max(...items.map((s) => s.x + s.width)),
-    bottom: Math.max(...items.map((s) => s.y + s.height)),
-  }));
-  if (boxes.length < 2) return [];
-  const left = Math.min(...boxes.map((b) => b.x)),
-    top = Math.min(...boxes.map((b) => b.y));
-  const right = Math.max(...boxes.map((b) => b.right)),
-    bottom = Math.max(...boxes.map((b) => b.bottom));
-  const horizontal = action === 'horizontal';
-  if (action === 'horizontal' || action === 'vertical')
-    boxes.sort((a, b) => (horizontal ? a.x - b.x : a.y - b.y));
-  const total = boxes.reduce((sum, b) => sum + (horizontal ? b.right - b.x : b.bottom - b.y), 0);
-  const gap = ((horizontal ? right - left : bottom - top) - total) / (boxes.length - 1);
-  const cellWidth = Math.max(...boxes.map((b) => b.right - b.x)) + 24;
-  const cellHeight = Math.max(...boxes.map((b) => b.bottom - b.y)) + 24;
-  let cursor = horizontal ? left : top;
-  return boxes.flatMap((b, index): Patch[] => {
-    const width = b.right - b.x,
-      height = b.bottom - b.y;
-    let x = b.x,
-      y = b.y;
-    if (action === 'left') x = left;
-    if (action === 'center') x = (left + right - width) / 2;
-    if (action === 'right') x = right - width;
-    if (action === 'top') y = top;
-    if (action === 'middle') y = (top + bottom - height) / 2;
-    if (action === 'bottom') y = bottom - height;
-    if (action === 'horizontal') {
-      x = cursor;
-      cursor += width + gap;
-    }
-    if (action === 'vertical') {
-      y = cursor;
-      cursor += height + gap;
-    }
-    if (action === 'grid') {
-      const columns = Math.ceil(Math.sqrt(boxes.length));
-      x = left + (index % columns) * cellWidth;
-      y = top + Math.floor(index / columns) * cellHeight;
-    }
-    return b.items.flatMap((note): Patch[] => [
-      { op: 'set', id: note.id, field: 'x', value: Math.round(note.x + x - b.x) },
-      { op: 'set', id: note.id, field: 'y', value: Math.round(note.y + y - b.y) },
+  const units: Unit[] = [...grouped.values()].map((items) => ({ items, ...boundsOf(items)! }));
+  const area = boundsOf(units.map(rectOf));
+  if (units.length < 2 || !area) return [];
+  const order = ORDER[action];
+  if (order) units.sort(order);
+  const sum = (size: (u: Unit) => number) => units.reduce((total, u) => total + size(u), 0);
+  const layout: Layout = {
+    area,
+    units,
+    gap: {
+      x: (boundsWidth(area) - sum(boundsWidth)) / (units.length - 1),
+      y: (boundsHeight(area) - sum(boundsHeight)) / (units.length - 1),
+    },
+    cell: {
+      width: Math.max(...units.map(boundsWidth)) + NOTE_GAP,
+      height: Math.max(...units.map(boundsHeight)) + NOTE_GAP,
+    },
+    columns: Math.ceil(Math.sqrt(units.length)),
+  };
+  const cursor = { x: area.left, y: area.top };
+  return units.flatMap((unit, index): Patch[] => {
+    const at = PLACEMENTS[action](unit, index, layout, cursor);
+    return unit.items.flatMap((note): Patch[] => [
+      { op: 'set', id: note.id, field: 'x', value: Math.round(note.x + at.x - unit.left) },
+      { op: 'set', id: note.id, field: 'y', value: Math.round(note.y + at.y - unit.top) },
     ]);
   });
 }

@@ -1,9 +1,33 @@
 import type { Board } from '../domain/model';
+import { own } from '../domain/ids';
+import { boundsOf } from '../domain/geometry/bounds';
 import type { Point } from './viewport';
 
 export interface Guides {
   x?: number;
   y?: number;
+}
+
+/** Screen pixels within which an edge or centre snaps to another note's. */
+const SNAP_DISTANCE = 8;
+
+/** Left/centre/right (or top/middle/bottom) lines a guide can align to. */
+const lines = (start: number, size: number) => [start, start + size / 2, start + size];
+
+interface Snap {
+  delta: number;
+  guide: number;
+}
+
+/** Closest alignment of any `sources` line to any `targets` line within `limit`. */
+function nearest(sources: readonly number[], targets: readonly number[], limit: number) {
+  let best = null as Snap | null;
+  for (const target of targets)
+    for (const source of sources) {
+      const delta = target - source;
+      if (Math.abs(delta) < Math.abs(best?.delta ?? limit)) best = { delta, guide: target };
+    }
+  return best;
 }
 
 export function snapOffset(
@@ -13,34 +37,20 @@ export function snapOffset(
   zoom: number,
 ): { offset: Point; guides: Guides } {
   const picked = new Set(ids);
-  const notes = ids.map((id) => board.stickies[id]).filter(Boolean);
-  if (!notes.length) return { offset, guides: {} };
-  const left = Math.min(...notes.map((s) => s.x)),
-    top = Math.min(...notes.map((s) => s.y));
-  const right = Math.max(...notes.map((s) => s.x + s.width)),
-    bottom = Math.max(...notes.map((s) => s.y + s.height));
-  const xs = [left, (left + right) / 2, right].map((x) => x + offset.x);
-  const ys = [top, (top + bottom) / 2, bottom].map((y) => y + offset.y);
-  let dx = 8 / zoom,
-    dy = 8 / zoom;
-  const next = { ...offset },
-    guides: Guides = {};
+  const bounds = boundsOf(ids.flatMap((id) => own(board.stickies, id) ?? []));
+  if (!bounds) return { offset, guides: {} };
+  const xs = lines(bounds.left, bounds.right - bounds.left).map((x) => x + offset.x);
+  const ys = lines(bounds.top, bounds.bottom - bounds.top).map((y) => y + offset.y);
+  let x = null as Snap | null;
+  let y = null as Snap | null;
+  const limit = SNAP_DISTANCE / zoom;
   for (const note of Object.values(board.stickies)) {
     if (picked.has(note.id)) continue;
-    for (const x of [note.x, note.x + note.width / 2, note.x + note.width])
-      for (const source of xs)
-        if (Math.abs(x - source) < Math.abs(dx)) {
-          dx = x - source;
-          next.x = offset.x + dx;
-          guides.x = x;
-        }
-    for (const y of [note.y, note.y + note.height / 2, note.y + note.height])
-      for (const source of ys)
-        if (Math.abs(y - source) < Math.abs(dy)) {
-          dy = y - source;
-          next.y = offset.y + dy;
-          guides.y = y;
-        }
+    x = nearest(xs, lines(note.x, note.width), Math.abs(x?.delta ?? limit)) ?? x;
+    y = nearest(ys, lines(note.y, note.height), Math.abs(y?.delta ?? limit)) ?? y;
   }
-  return { offset: next, guides };
+  return {
+    offset: { x: offset.x + (x?.delta ?? 0), y: offset.y + (y?.delta ?? 0) },
+    guides: { ...(x && { x: x.guide }), ...(y && { y: y.guide }) },
+  };
 }

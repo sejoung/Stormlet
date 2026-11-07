@@ -1,38 +1,48 @@
 import type { Point } from '../viewport';
 
+/** Distance kept from the canvas edges. */
+const EDGE_MARGIN = 12;
+/** Distance kept from the line's ends when the panel sits beside them. */
+const LINE_GAP = 24;
+/** Radius around an endpoint handle that the panel must not cover. */
+const HANDLE_CLEARANCE = 16;
+
 /** Keep the edit panel inside the canvas and clear of both draggable line endpoints. */
 export function connectionToolbarPosition(
   endpoints: readonly [Point, Point],
   size: { width: number; height: number },
   viewport: { width: number; height: number },
 ): Point {
-  const left = Math.min(...endpoints.map((p) => p.x)),
-    right = Math.max(...endpoints.map((p) => p.x));
-  const top = Math.min(...endpoints.map((p) => p.y)),
-    bottom = Math.max(...endpoints.map((p) => p.y));
-  const x = (left + right - size.width) / 2,
-    y = (top + bottom - size.height) / 2;
+  const [a, b] = endpoints;
+  const left = Math.min(a.x, b.x);
+  const right = Math.max(a.x, b.x);
+  const top = Math.min(a.y, b.y);
+  const bottom = Math.max(a.y, b.y);
+  const x = (left + right - size.width) / 2;
+  const y = (top + bottom - size.height) / 2;
+  const maxX = viewport.width - size.width - EDGE_MARGIN;
+  const maxY = viewport.height - size.height - EDGE_MARGIN;
   const candidates = [
-    { x, y: top - size.height - 24 },
-    { x, y: bottom + 24 },
-    { x: right + 24, y },
-    { x: left - size.width - 24, y },
-    { x: 12, y: 12 },
-    { x: viewport.width - size.width - 12, y: viewport.height - size.height - 12 },
-  ].map((at) => ({
-    x: Math.max(12, Math.min(at.x, viewport.width - size.width - 12)),
-    y: Math.max(12, Math.min(at.y, viewport.height - size.height - 12)),
-  }));
-  const overlaps = (at: Point) =>
-    endpoints.filter(
+    { x, y: top - size.height - LINE_GAP },
+    { x, y: bottom + LINE_GAP },
+    { x: right + LINE_GAP, y },
+    { x: left - size.width - LINE_GAP, y },
+    { x: EDGE_MARGIN, y: EDGE_MARGIN },
+    { x: maxX, y: maxY },
+  ].map((at) => {
+    const placed = {
+      x: Math.max(EDGE_MARGIN, Math.min(at.x, maxX)),
+      y: Math.max(EDGE_MARGIN, Math.min(at.y, maxY)),
+    };
+    const covered = endpoints.filter(
       (p) =>
-        p.x >= at.x - 16 &&
-        p.x <= at.x + size.width + 16 &&
-        p.y >= at.y - 16 &&
-        p.y <= at.y + size.height + 16,
+        p.x >= placed.x - HANDLE_CLEARANCE &&
+        p.x <= placed.x + size.width + HANDLE_CLEARANCE &&
+        p.y >= placed.y - HANDLE_CLEARANCE &&
+        p.y <= placed.y + size.height + HANDLE_CLEARANCE,
     ).length;
-  return (
-    candidates.find((at) => overlaps(at) === 0) ??
-    candidates.sort((a, b) => overlaps(a) - overlaps(b))[0]
-  );
+    return { placed, covered };
+  });
+  // The first candidate that covers nothing, else the one that covers least (first on ties).
+  return candidates.reduce((best, next) => (next.covered < best.covered ? next : best)).placed;
 }

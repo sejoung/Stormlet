@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
 import { MAX_BOARD_TITLE_LENGTH } from '../../domain/board-title';
+import { useInlineEdit } from '../common/useInlineEdit';
+import { isComposing } from '../common/keyboard';
 
 export function BoardTitle({
   title,
@@ -10,22 +11,10 @@ export function BoardTitle({
   onRename(title: string): void;
   onSave(): void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(title);
-  const done = useRef(false);
-  const button = useRef<HTMLButtonElement>(null);
-  const begin = () => {
-    done.current = false;
-    setDraft(title);
-    setEditing(true);
-  };
-  const finish = (commit: boolean, restoreFocus = false) => {
-    if (done.current) return;
-    done.current = true;
-    if (commit) onRename(draft);
-    setEditing(false);
-    if (restoreFocus) queueMicrotask(() => button.current?.focus());
-  };
+  const { editing, draft, setDraft, trigger, begin, finish } = useInlineEdit<HTMLButtonElement>(
+    title,
+    onRename,
+  );
   return (
     <div className="board-caption">
       {editing ? (
@@ -42,7 +31,7 @@ export function BoardTitle({
           onBlur={() => finish(true)}
           onKeyDown={(event) => {
             event.stopPropagation();
-            if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+            if (isComposing(event)) return;
             if (event.key === 'Escape') {
               event.preventDefault();
               finish(false, true);
@@ -58,7 +47,7 @@ export function BoardTitle({
         />
       ) : (
         <button
-          ref={button}
+          ref={trigger}
           type="button"
           className="board-title"
           aria-label={`보드 이름: ${title}`}

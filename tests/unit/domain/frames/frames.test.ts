@@ -59,6 +59,24 @@ describe('frames', () => {
     const locked = applyPatches(source, updateFrame(source, 'root', { locked: true })).board;
     expect(cutFrameContents(locked, 'root')).toEqual([]);
   });
+  it('numbers new frames past every existing number, so titles never repeat', () => {
+    const board = boardOf();
+    const first = applyPatches(board, addFrame(board, 'a', frame('a'))).board;
+    expect(first.frames?.a.title).toBe('프레임 1');
+    const second = applyPatches(first, addFrame(first, 'b', frame('b'))).board;
+    const afterDelete = applyPatches(second, deleteFrame(second, 'a')).board;
+    expect(
+      applyPatches(afterDelete, addFrame(afterDelete, 'c', frame('c'))).board.frames?.c.title,
+    ).toBe('프레임 3');
+  });
+
+  it('moves frames to whole board units', () => {
+    const source = board();
+    const moved = applyPatches(source, moveFrame(source, 'root', 10.4, -0.6)).board;
+    expect(moved.frames?.root).toMatchObject({ x: 10, y: -1 });
+    expect(moved.stickies.a).toMatchObject({ x: 50, y: 39 });
+  });
+
   it('creates transparent frames, clamps dimensions and refuses invalid input', () => {
     const empty = boardOf();
     const added = applyPatches(

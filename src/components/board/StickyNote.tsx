@@ -7,19 +7,15 @@ import { StickyText, StickyEditor } from './NoteContent';
 import { Icon } from '../toolbar/Icon';
 import { ConnectionPorts } from '../connections/ConnectionPorts';
 import type { ConnectionSide } from '../../domain/connections/model';
-
-const RESIZE_KEYS: Record<string, [number, number]> = {
-  ArrowRight: [20, 0],
-  ArrowLeft: [-20, 0],
-  ArrowUp: [0, -20],
-  ArrowDown: [0, 20],
-};
+import { ARROW_DELTAS, isMenuKey } from '../common/keyboard';
+import { clientCenter } from '../common/points';
+import { cx } from '../common/cx';
 
 interface Props {
   sticky: Sticky;
   showPorts: boolean;
-  onConnect(event: PointerEvent, side: ConnectionSide): void;
-  onKeyboardConnect(side: ConnectionSide): void;
+  onConnect(event: PointerEvent, id: string, side: ConnectionSide): void;
+  onKeyboardConnect(id: string, side: ConnectionSide): void;
   selected: boolean;
   editing: boolean;
   seed?: string;
@@ -37,6 +33,7 @@ interface Props {
   onReact(id: string, emoji: string): void;
 }
 
+/** Every handler takes the note's ID, so one stable function serves all notes and `memo` holds. */
 export const StickyNote = memo(function StickyNote(props: Props) {
   const { sticky, selected, editing, offset } = props;
   const size = props.resized ?? sticky;
@@ -50,7 +47,14 @@ export const StickyNote = memo(function StickyNote(props: Props) {
   };
   return (
     <div
-      className={`sticky${selected ? ' is-selected' : ''}${offset ? ' is-dragging' : ''}${editing ? ' is-editing' : ''}${sticky.locked ? ' is-locked' : ''}${props.dimmed ? ' is-dimmed' : ''}`}
+      className={cx(
+        'sticky',
+        selected && 'is-selected',
+        offset && 'is-dragging',
+        editing && 'is-editing',
+        sticky.locked && 'is-locked',
+        props.dimmed && 'is-dimmed',
+      )}
       role="button"
       tabIndex={0}
       aria-label={`${label}: ${sticky.text || '빈 스티키'}`}
@@ -89,14 +93,10 @@ export const StickyNote = memo(function StickyNote(props: Props) {
             props.onStartEdit(sticky.id, event.key);
           }
         }
-        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+        if (isMenuKey(event)) {
           event.preventDefault();
           event.stopPropagation();
-          const rect = event.currentTarget.getBoundingClientRect();
-          props.onContextMenu(sticky.id, {
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-          });
+          props.onContextMenu(sticky.id, clientCenter(event.currentTarget));
         }
       }}
     >
@@ -111,7 +111,10 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         <StickyText note={sticky} size={size} />
       )}
       {props.showPorts && (
-        <ConnectionPorts onStart={props.onConnect} onKeyboardStart={props.onKeyboardConnect} />
+        <ConnectionPorts
+          onStart={(event, side) => props.onConnect(event, sticky.id, side)}
+          onKeyboardStart={(side) => props.onKeyboardConnect(sticky.id, side)}
+        />
       )}
       {sticky.locked && (
         <span className="note-lock" aria-label="잠긴 메모">
@@ -148,7 +151,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
           onPointerDown={(event) => props.onResizeStart(event, sticky.id)}
           onDoubleClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => {
-            const delta = RESIZE_KEYS[event.key];
+            const delta = ARROW_DELTAS[event.key];
             if (!delta) return;
             event.preventDefault();
             event.stopPropagation();

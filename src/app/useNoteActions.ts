@@ -4,115 +4,127 @@ import {
   arrangeNotes,
   reactToNotes,
   updateNotes,
+  NOTE_GAP,
   type Arrangement,
 } from '../domain/note-actions';
+import { addStickies } from '../domain/commands';
 import {
+  byStackOrder,
   stackOrder,
-  topZ,
   type Board,
   type StickyColor,
   DEFAULT_STICKY_APPEARANCE,
 } from '../domain/model';
+import { own } from '../domain/ids';
+import { boundsOf, boundsHeight, boundsWidth } from '../domain/geometry/bounds';
 import type { NoteDetails } from '../domain/note-details';
-import type { Patch } from '../domain/patch';
 import type { Point } from '../engine/viewport';
-import type { TextCell } from '../engine/paste';
+import { cellPositions, MAX_PASTE_NOTES, type TextCell } from '../engine/paste';
+import type { Edit, EditWith } from './useBoardSession';
+
+/** Formatting toggles that have a keyboard shortcut. */
+export type FormatToggle = 'bold' | 'italic' | 'underline';
+
+/** Default offset of a duplicate from its original. */
+const DUPLICATE_OFFSET: Point = { x: NOTE_GAP, y: NOTE_GAP };
+
+/** Commands on the active notes (the selection, or the note being edited). */
+export interface NoteActions {
+  format(details: NoteDetails): void;
+  /** Copy `sourceIds` by `offset`; `directional` treats it as a step of whole selections. */
+  duplicate(sourceIds?: readonly string[], offset?: Point, directional?: boolean): void;
+  pasteNotes(pasted: Board, at?: Point): void;
+  addCells(cells: readonly TextCell[], at?: Point): void;
+  /** Group the notes, or ungroup when any is grouped (or when `ungroup` says so). */
+  group(ungroup?: boolean): void;
+  arrange(action: Arrangement): void;
+  react(emoji: string, target?: readonly string[]): void;
+  lock(): void;
+  toggleFormat(field: FormatToggle): void;
+}
 
 interface Options {
   board: Board;
-  ids: string[];
+  ids: readonly string[];
   reactor: string;
   stickyColor: StickyColor;
   newId(): string;
-  edit(change: (board: Board) => Patch[]): void;
-  onSelect(ids: string[]): void;
+  edit: Edit;
+  editWith: EditWith;
+  onSelect(ids: readonly string[]): void;
   onStatus(message: string): void;
   center(): Point;
 }
 
-export function useNoteActions(options: Options) {
-  const { board, ids, reactor, newId, edit, onSelect } = options;
+export function useNoteActions(options: Options): NoteActions {
+  const { board, ids, reactor, newId, edit, editWith, onSelect, onStatus } = options;
   const format = (details: NoteDetails) => edit((current) => updateNotes(current, ids, details));
-  const duplicate = (sourceIds = ids, offset: Point = { x: 24, y: 24 }, directional = false) => {
-    let created: string[] = [];
-    edit((current) => {
-      const source = stackOrder(current).filter((note) => sourceIds.includes(note.id));
-      if (!source.length) return [];
-      const width =
-        Math.max(...source.map((s) => s.x + s.width)) - Math.min(...source.map((s) => s.x));
-      const height =
-        Math.max(...source.map((s) => s.y + s.height)) - Math.min(...source.map((s) => s.y));
-      const next = cloneNotes(
-        current,
-        source,
-        newId,
-        directional ? offset.x * (width + 24) : offset.x,
-        directional ? offset.y * (height + 24) : offset.y,
-      );
-      created = next.ids;
-      return next.patches;
-    });
+  /** Clone `notes` by (dx, dy), select the copies and say how many were added. */
+  const copyNotes = (
+    clone: (current: Board) => ReturnType<typeof cloneNotes>,
+    announce: boolean,
+  ) => {
+    const { ids: created } = editWith(clone);
     onSelect(created);
-  };
-  const pasteNotes = (pasted: Board, at = options.center()) => {
-    const notes = stackOrder(pasted);
-    if (!notes.length) return;
-    const left = Math.min(...notes.map((s) => s.x)),
-      top = Math.min(...notes.map((s) => s.y));
-    let created: string[] = [];
-    edit((current) => {
-      const next = cloneNotes(current, notes, newId, at.x - left, at.y - top, pasted.connections);
-      created = next.ids;
-      return next.patches;
-    });
-    onSelect(created);
-    options.onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
-  };
-  const addCells = (cells: TextCell[], at = options.center()) => {
-    if (!cells.length) return;
-    const created = cells.slice(0, 5000).map((cell) => ({ ...cell, id: newId() }));
-    const columns = Math.ceil(Math.sqrt(created.length));
-    // Plain text lists become a compact grid; spreadsheet cells preserve their positions.
-    const sheet = cells.some((cell) => cell.column > 0);
-    edit((current) => {
-      const top = topZ(current);
-      return created.map((cell, index): Patch => ({
-        op: 'add',
-        sticky: {
-          id: cell.id,
-          ...DEFAULT_STICKY_APPEARANCE,
-          color: options.stickyColor,
-          ...DEFAULT_STICKY_SIZE,
-          text: cell.text,
-          x: Math.round(
-            at.x + (sheet ? cell.column : index % columns) * (DEFAULT_STICKY_SIZE.width + 24),
-          ),
-          y: Math.round(
-            at.y +
-              (sheet ? cell.row : Math.floor(index / columns)) * (DEFAULT_STICKY_SIZE.height + 24),
-          ),
-          z: top + index + 1,
-        },
-      }));
-    });
-    onSelect(created.map((cell) => cell.id));
-    options.onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
-  };
-  const group = (ungroup = ids.some((id) => board.stickies[id]?.groupId)) => {
-    if (!ungroup && ids.length < 2) return;
-    format({ groupId: ungroup ? null : newId() });
+    if (announce) onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
   };
   return {
     format,
-    duplicate,
-    pasteNotes,
-    addCells,
-    group,
-    arrange: (action: Arrangement) => edit((current) => arrangeNotes(current, ids, action)),
-    react: (emoji: string, target = ids) =>
+    duplicate: (sourceIds = ids, offset = DUPLICATE_OFFSET, directional = false) =>
+      copyNotes((current) => {
+        const picked = new Set(sourceIds);
+        const source = Object.values(current.stickies)
+          .filter((note) => picked.has(note.id))
+          .sort(byStackOrder);
+        const bounds = boundsOf(source);
+        if (!bounds) return { patches: [], ids: [] };
+        // Alt+arrow steps by a whole selection plus a gap, so copies line up edge to edge.
+        const step = directional
+          ? { x: boundsWidth(bounds) + NOTE_GAP, y: boundsHeight(bounds) + NOTE_GAP }
+          : { x: 1, y: 1 };
+        return cloneNotes(current, source, newId, offset.x * step.x, offset.y * step.y);
+      }, false),
+    pasteNotes: (pasted, at = options.center()) => {
+      const notes = stackOrder(pasted);
+      const bounds = boundsOf(notes);
+      if (!bounds) return;
+      copyNotes(
+        (current) =>
+          cloneNotes(
+            current,
+            notes,
+            newId,
+            at.x - bounds.left,
+            at.y - bounds.top,
+            pasted.connections,
+          ),
+        true,
+      );
+    },
+    addCells: (cells, at = options.center()) => {
+      if (!cells.length) return;
+      const kept = cells.slice(0, MAX_PASTE_NOTES);
+      const positions = cellPositions(kept, at, DEFAULT_STICKY_SIZE, NOTE_GAP);
+      const created = kept.map((cell, index) => ({
+        id: newId(),
+        ...DEFAULT_STICKY_APPEARANCE,
+        color: options.stickyColor,
+        ...DEFAULT_STICKY_SIZE,
+        text: cell.text,
+        ...positions[index],
+      }));
+      edit((current) => addStickies(current, created));
+      onSelect(created.map((note) => note.id));
+      onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
+    },
+    group: (ungroup = ids.some((id) => own(board.stickies, id)?.groupId)) => {
+      if (!ungroup && ids.length < 2) return;
+      format({ groupId: ungroup ? null : newId() });
+    },
+    arrange: (action) => edit((current) => arrangeNotes(current, ids, action)),
+    react: (emoji, target = ids) =>
       edit((current) => reactToNotes(current, target, emoji, reactor)),
-    lock: () => format({ locked: !ids.some((id) => board.stickies[id]?.locked) }),
-    toggleFormat: (field: 'bold' | 'italic' | 'underline') =>
-      format({ [field]: !board.stickies[ids[0]]?.[field] }),
+    lock: () => format({ locked: !ids.some((id) => own(board.stickies, id)?.locked) }),
+    toggleFormat: (field) => format({ [field]: !own(board.stickies, ids[0] ?? '')?.[field] }),
   };
 }

@@ -1,88 +1,75 @@
-import { useCallback, useState } from 'react';
 import { own } from '../domain/ids';
 import type { Board } from '../domain/model';
-import type { Patch } from '../domain/patch';
 import { addConnection, deleteConnections, updateConnection } from '../domain/connections/commands';
 import {
   DEFAULT_CONNECTION,
+  type Connection,
   type ConnectionStyle,
-  type Endpoint,
 } from '../domain/connections/model';
-import { connectionGeometry } from '../engine/connections/geometry';
+import { isDrawable } from '../engine/connections/geometry';
 import type { ConnectionInteraction } from '../components/connections/types';
+import type { Edit, EditWith } from './useBoardSession';
+
+/** The selected connection and the commands the app runs on it. */
+export interface ConnectionSession extends ConnectionInteraction {
+  selected: Connection | null;
+  editingLabel: boolean;
+  remove(): void;
+  duplicate(): void;
+}
 
 export function useConnectionSession({
   board,
   edit,
+  editWith,
   newId,
-  clearNotes,
-  onTool,
+  selectedId,
+  editingLabel,
+  onSelect,
+  onLabelDone,
+  onCreated,
   onStatus,
   style,
 }: {
   board: Board;
-  edit(change: (board: Board) => Patch[]): void;
+  edit: Edit;
+  editWith: EditWith;
   newId(): string;
-  clearNotes(): void;
-  onTool(): void;
+  selectedId: string | null;
+  editingLabel: boolean;
+  onSelect(id: string, editingLabel?: boolean): void;
+  onLabelDone(id: string): void;
+  /** A new connection was drawn; drawing tools hand back to selection. */
+  onCreated(): void;
   onStatus(message: string): void;
   style: ConnectionStyle;
-}) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [editingLabel, setEditingLabel] = useState(false);
+}): ConnectionSession {
   const selected = selectedId ? (own(board.connections ?? {}, selectedId) ?? null) : null;
-  const clear = useCallback(() => {
-    setSelectedId(null);
-    setEditingLabel(false);
-  }, []);
-  const onSelect = (id: string) => {
-    clearNotes();
-    setSelectedId(id);
-    setEditingLabel(false);
-  };
-  const interaction: ConnectionInteraction = {
+  return {
     style,
+    selected,
     selectedId: selected?.id ?? null,
-    onSelect,
-    onEditLabel: (id) => {
-      onSelect(id);
-      setEditingLabel(true);
-    },
-    onCreate: (from: Endpoint, to: Endpoint) => {
+    editingLabel,
+    onSelect: (id) => onSelect(id),
+    onEditLabel: (id) => onSelect(id, true),
+    onCreate: (from, to) => {
       const id = newId();
-      let created = false;
-      edit((current) => {
-        const geometry = connectionGeometry(current, {
-          id,
-          from,
-          to,
-          ...DEFAULT_CONNECTION,
-          ...style,
-        });
-        const patches =
-          geometry &&
-          Math.hypot(geometry.from.x - geometry.to.x, geometry.from.y - geometry.to.y) >= 4
-            ? addConnection(current, id, from, to, style)
-            : [];
-        created = patches.length > 0;
-        return patches;
-      });
-      if (created) {
-        onSelect(id);
-        onTool();
-      } else onStatus('서로 다른 메모나 떨어진 두 지점을 연결해 주세요.');
-      return created;
+      const line = { id, from, to, ...DEFAULT_CONNECTION, ...style };
+      const { patches } = editWith((current) => ({
+        patches: isDrawable(current, line) ? addConnection(current, id, from, to, style) : [],
+      }));
+      if (!patches.length) {
+        onStatus('서로 다른 메모나 떨어진 두 지점을 연결해 주세요.');
+        return false;
+      }
+      onSelect(id);
+      onCreated();
+      return true;
     },
     onChange: (id, values) => {
       edit((current) => updateConnection(current, id, values));
-      if ('label' in values) setEditingLabel(false);
+      if ('label' in values) onLabelDone(id);
     },
-  };
-  return {
-    ...interaction,
-    selected,
-    editingLabel,
-    clear,
     remove: () => {
       if (selected) edit((current) => deleteConnections(current, [selected.id]));
     },

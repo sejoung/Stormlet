@@ -1,9 +1,16 @@
-import { useCallback, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useCallback, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { FRAME_TITLE_LIMIT, type Frame } from '../../domain/frames/model';
 import { Icon } from '../toolbar/Icon';
 import { FRAME_STYLES } from './colors';
 import { ConnectionPorts } from '../connections/ConnectionPorts';
 import type { ConnectionSide } from '../../domain/connections/model';
+import { useInlineEdit } from '../common/useInlineEdit';
+import { ARROW_DELTAS, isComposing } from '../common/keyboard';
+import { DRAFT_FIELD } from '../common/drafts';
+import { cx } from '../common/cx';
+
+const EDGE_LABELS = { top: '위쪽', right: '오른쪽', bottom: '아래쪽', left: '왼쪽' } as const;
+const EDGES = Object.keys(EDGE_LABELS) as (keyof typeof EDGE_LABELS)[];
 
 export function FrameItem({
   frame,
@@ -28,33 +35,31 @@ export function FrameItem({
   onConnect(event: PointerEvent, side: ConnectionSide): void;
   onKeyboardConnect(side: ConnectionSide): void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(frame.title);
-  const done = useRef(false);
-  const titleButton = useRef<HTMLButtonElement>(null);
+  const title = useInlineEdit<HTMLButtonElement>(frame.title, (draft) =>
+    onChange(frame.id, { title: draft }),
+  );
   const focusInput = useCallback((node: HTMLInputElement | null) => {
-    if (node) {
-      node.focus();
-      node.select();
-    }
+    node?.focus();
+    node?.select();
   }, []);
   const start = () => {
     if (frame.locked || !editable) return;
-    done.current = false;
-    setDraft(frame.title);
-    setEditing(true);
+    title.begin();
     onSelect(frame.id);
   };
-  const finish = (save: boolean, restore = false) => {
-    if (done.current) return;
-    done.current = true;
-    if (save) onChange(frame.id, { title: draft });
-    setEditing(false);
-    if (restore) queueMicrotask(() => titleButton.current?.focus());
+  const startOnKey = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === 'F2') {
+      event.preventDefault();
+      start();
+    }
+  };
+  // Keyboard clicks (detail 0) select; pointer presses are handled by `onDown`.
+  const selectOnKeyboardClick = (event: { detail: number }) => {
+    if (!event.detail) onSelect(frame.id);
   };
   return (
     <div
-      className={`board-frame${selected ? ' is-selected' : ''}${frame.locked ? ' is-locked' : ''}`}
+      className={cx('board-frame', selected && 'is-selected', frame.locked && 'is-locked')}
       data-frame-id={frame.id}
       style={
         {
@@ -69,69 +74,56 @@ export function FrameItem({
       }
     >
       <div className="frame-background" />
-      {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
+      {EDGES.map((side) => (
         <button
           key={side}
           type="button"
           className={`frame-edge edge-${side}`}
-          aria-label={`프레임 테두리: ${frame.title} · ${{ top: '위쪽', right: '오른쪽', bottom: '아래쪽', left: '왼쪽' }[side]}`}
+          aria-label={`프레임 테두리: ${frame.title} · ${EDGE_LABELS[side]}`}
           aria-pressed={selected}
           onPointerDown={(event) => onDown(event, frame.id)}
-          onClick={(event) => {
-            if (!event.detail) onSelect(frame.id);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === 'F2') {
-              event.preventDefault();
-              start();
-            }
-          }}
+          onClick={selectOnKeyboardClick}
+          onKeyDown={startOnKey}
         />
       ))}
-      {editing ? (
+      {title.editing ? (
         <input
           className="frame-title-input"
           aria-label="프레임 이름"
-          value={draft}
+          data-draft={DRAFT_FIELD.label}
+          value={title.draft}
           maxLength={FRAME_TITLE_LIMIT}
           ref={focusInput}
           onPointerDown={(event) => event.stopPropagation()}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={() => finish(true)}
+          onChange={(event) => title.setDraft(event.target.value)}
+          onBlur={() => title.finish(true)}
           onKeyDown={(event) => {
-            if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+            if (isComposing(event)) return;
             if (event.key === 'Enter' || event.key === 'Escape') {
               event.preventDefault();
               event.stopPropagation();
-              finish(event.key === 'Enter', true);
+              title.finish(event.key === 'Enter', true);
             }
           }}
         />
       ) : (
         <button
-          ref={titleButton}
+          ref={title.trigger}
           type="button"
           className="frame-title"
           aria-label={`프레임: ${frame.title}`}
           aria-pressed={selected}
           title="더블클릭으로 이름 수정"
           onPointerDown={(event) => onDown(event, frame.id)}
-          onClick={(event) => {
-            if (!event.detail) onSelect(frame.id);
-          }}
+          onClick={selectOnKeyboardClick}
           onDoubleClick={start}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === 'F2') {
-              event.preventDefault();
-              start();
-            }
-          }}
+          onKeyDown={startOnKey}
         >
           {frame.locked && <Icon name="lock" />}
           <span>{frame.title}</span>
         </button>
       )}
-      {showPorts && !editing && (
+      {showPorts && !title.editing && (
         <ConnectionPorts onStart={onConnect} onKeyboardStart={onKeyboardConnect} />
       )}
       {selected && !frame.locked && editable && (
@@ -141,22 +133,11 @@ export function FrameItem({
           aria-label="프레임 크기 조절"
           onPointerDown={(event) => onDown(event, frame.id, true)}
           onKeyDown={(event) => {
-            const delta = (
-              {
-                ArrowRight: [20, 0],
-                ArrowLeft: [-20, 0],
-                ArrowDown: [0, 20],
-                ArrowUp: [0, -20],
-              } as Record<string, number[]>
-            )[event.key];
-            if (delta) {
-              event.preventDefault();
-              event.stopPropagation();
-              onChange(frame.id, {
-                width: frame.width + delta[0],
-                height: frame.height + delta[1],
-              });
-            }
+            const delta = ARROW_DELTAS[event.key];
+            if (!delta) return;
+            event.preventDefault();
+            event.stopPropagation();
+            onChange(frame.id, { width: frame.width + delta[0], height: frame.height + delta[1] });
           }}
         />
       )}

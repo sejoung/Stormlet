@@ -55,6 +55,8 @@ test('copies a whole frame through the menu and pastes independent contents', as
   await menu.getByRole('menuitem', { name: /붙여넣기/ }).click();
   await expect(page.locator('[data-frame-id]')).toHaveCount(2);
   await expect(page.locator('[data-sticky-id]')).toHaveCount(2);
+  // Saving is batched, so wait for the pasted copy to reach storage.
+  await expect.poll(async () => (await saved(page)).frames?.length).toBe(2);
   const data = await saved(page),
     copy = data.frames!.find((item) => item.id !== 'f')!;
   expect(copy).toMatchObject({ x: 800, y: 400, title: '그룹' });

@@ -1,8 +1,9 @@
 import type { PointerEvent } from 'react';
 import type { Board } from '../../domain/model';
+import { byAreaDescending } from '../../domain/frames/model';
 import type { BoardTool } from '../board/kinds';
-import type { useConnectionDrawing } from '../connections/useConnectionDrawing';
-import type { useFrameDrawing } from './useFrameDrawing';
+import type { ConnectionDrawing } from '../connections/useConnectionDrawing';
+import type { FrameDrawing } from './useFrameDrawing';
 import type { FrameInteraction } from './types';
 import { FrameItem } from './FrameItem';
 
@@ -17,15 +18,14 @@ export function FrameLayer({
 }: {
   board: Board;
   frames: FrameInteraction;
-  drawing: ReturnType<typeof useConnectionDrawing>;
-  frameDrawing: ReturnType<typeof useFrameDrawing>;
+  drawing: Pick<ConnectionDrawing, 'active' | 'begin' | 'backgroundDown' | 'keyboardStart'>;
+  frameDrawing: Pick<FrameDrawing, 'begin' | 'draft'>;
   tool: BoardTool;
   space: boolean;
   onPan(event: PointerEvent): void;
 }) {
-  const ordered = Object.values(board.frames ?? {}).sort(
-    (a, b) => b.width * b.height - a.width * a.height || a.id.localeCompare(b.id),
-  );
+  const ordered = Object.values(board.frames ?? {}).sort(byAreaDescending);
+  const interacting = !space && tool === 'interact' && !drawing.active;
   return (
     <>
       {ordered.map((frame, index) => (
@@ -34,7 +34,7 @@ export function FrameLayer({
           frame={frame}
           selected={frames.selectedId === frame.id}
           zIndex={index - ordered.length}
-          editable={!space && tool === 'interact' && !drawing.active}
+          editable={interacting}
           showPorts={
             !space && tool !== 'hand' && (frames.selectedId === frame.id || tool === 'connect')
           }
@@ -42,7 +42,7 @@ export function FrameLayer({
           onKeyboardConnect={(side) => drawing.keyboardStart({ frameId: frame.id, side })}
           onChange={frames.onChange}
           onSelect={(id) => {
-            if (!space && tool === 'interact' && !drawing.active) frames.onSelect(id);
+            if (interacting) frames.onSelect(id);
           }}
           onDown={(event, id, resize) => {
             if (

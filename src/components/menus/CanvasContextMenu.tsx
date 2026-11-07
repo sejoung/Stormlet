@@ -8,13 +8,16 @@ export interface CanvasTarget {
   frameId?: string;
   connectionId?: string;
 }
-export function canvasTarget(target: EventTarget): CanvasTarget {
-  if (!(target instanceof Element)) return {};
-  const frameId = target.closest('[data-frame-id]')?.getAttribute('data-frame-id') ?? undefined;
-  const connectionId =
-    target.closest('[data-connection-id]')?.getAttribute('data-connection-id') ?? undefined;
-  return { frameId, connectionId };
-}
+/** The value of `attribute` on `target` or its nearest ancestor that has it. */
+export const closestData = (target: EventTarget, attribute: string): string | undefined =>
+  target instanceof Element
+    ? (target.closest(`[${attribute}]`)?.getAttribute(attribute) ?? undefined)
+    : undefined;
+
+export const canvasTarget = (target: EventTarget): CanvasTarget => ({
+  frameId: closestData(target, 'data-frame-id'),
+  connectionId: closestData(target, 'data-connection-id'),
+});
 
 export function CanvasContextMenu({
   point,

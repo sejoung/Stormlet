@@ -2,8 +2,8 @@ import { isStickyId } from '../../domain/ids';
 import {
   FRAME_COLORS,
   FRAME_TITLE_LIMIT,
-  FRAME_BORDER_WIDTHS,
   DEFAULT_FRAME_BORDER_WIDTH,
+  isFrameBorderWidth,
   clampFrameSize,
   type Frame,
 } from '../../domain/frames/model';
@@ -25,7 +25,7 @@ export function readFrames(raw: unknown, legacy = false): Record<string, Frame> 
       title.length > FRAME_TITLE_LIMIT ||
       ![x, y, width, height].every((v) => typeof v === 'number' && Number.isFinite(v)) ||
       !(FRAME_COLORS as readonly unknown[]).includes(color) ||
-      !(FRAME_BORDER_WIDTHS as readonly unknown[]).includes(borderWidth) ||
+      !isFrameBorderWidth(borderWidth) ||
       typeof locked !== 'boolean'
     )
       throw new Error('Malformed frame.');

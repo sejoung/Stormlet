@@ -1,16 +1,19 @@
 import type { RefObject } from 'react';
-import type { Board, Sticky } from '../domain/model';
-import type { Patch } from '../domain/patch';
+import type { Sticky } from '../domain/model';
 import type { StickySize } from '../domain/sticky-size';
 import { setColor } from '../domain/commands';
 import type { Point, View } from '../engine/viewport';
 import { SelectionToolbar } from '../components/selection/SelectionToolbar';
-import type { useNoteActions } from './useNoteActions';
+import { localToClient } from '../components/common/points';
+import type { Size } from '../components/common/useElementSize';
+import type { NoteActions } from './useNoteActions';
+import type { Edit } from './useBoardSession';
 
 export function NoteSelection({
   notes,
   ids,
   view,
+  viewport,
   element,
   actions,
   edit,
@@ -20,14 +23,15 @@ export function NoteSelection({
   onFrame,
 }: {
   notes: Sticky[];
-  ids: string[];
+  ids: readonly string[];
   view: View;
+  viewport: Size;
   element: RefObject<HTMLDivElement | null>;
-  actions: ReturnType<typeof useNoteActions>;
-  edit(change: (board: Board) => Patch[]): void;
-  onResize(ids: string[], size: StickySize): void;
+  actions: Pick<NoteActions, 'format' | 'arrange' | 'duplicate' | 'group' | 'react'>;
+  edit: Edit;
+  onResize(ids: readonly string[], size: StickySize): void;
   flushEditor(): void;
-  onMenu(menu: { ids: string[]; point: Point }): void;
+  onMenu(menu: { ids: readonly string[]; point: Point }): void;
   onFrame(): void;
 }) {
   return (
@@ -35,10 +39,7 @@ export function NoteSelection({
       key={ids.join(',')}
       notes={notes}
       view={view}
-      viewport={{
-        width: element.current?.clientWidth ?? 900,
-        height: element.current?.clientHeight ?? 700,
-      }}
+      viewport={viewport}
       onFormat={(details) => {
         if (details.locked) flushEditor();
         actions.format(details);
@@ -55,8 +56,7 @@ export function NoteSelection({
       onReact={actions.react}
       onMore={(point) => {
         flushEditor();
-        const rect = element.current!.getBoundingClientRect();
-        onMenu({ ids, point: { x: point.x + rect.left, y: point.y + rect.top } });
+        onMenu({ ids, point: localToClient(element, point) });
       }}
     />
   );

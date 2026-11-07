@@ -5,6 +5,8 @@ import {
   CONNECTION_COLORS,
   CONNECTION_PATHS,
   CONNECTION_SIDES,
+  MAX_CONNECTION_LABEL_LENGTH,
+  isConnectionWidth,
   type Connection,
   type ConnectionSide,
   type Endpoint,
@@ -45,17 +47,17 @@ export function readConnections(raw: unknown, board: Board): Record<string, Conn
       Object.hasOwn(connections, id) ||
       !(CONNECTION_PATHS as readonly unknown[]).includes(path) ||
       !(CONNECTION_COLORS as readonly unknown[]).includes(color) ||
-      ![1, 2, 3, 4, 6].includes(width as number) ||
+      !isConnectionWidth(width) ||
       typeof startArrow !== 'boolean' ||
       typeof endArrow !== 'boolean' ||
       typeof dashed !== 'boolean' ||
       typeof label !== 'string' ||
-      label.length > 300 ||
+      label.length > MAX_CONNECTION_LABEL_LENGTH ||
       (locked !== undefined && typeof locked !== 'boolean')
     )
       throw new Error('Malformed connection.');
-    const from = readEndpoint(item.from),
-      to = readEndpoint(item.to);
+    const from = readEndpoint(item.from);
+    const to = readEndpoint(item.to);
     if (!validEndpoints(board, from, to)) throw new Error('Dangling or self connection.');
     connections[id] = {
       id,

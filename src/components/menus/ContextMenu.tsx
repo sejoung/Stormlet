@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Point } from '../../engine/viewport';
+import { moveFocus, TEXT_ENTRY, VERTICAL_KEYS } from '../common/keyboard';
+
+const MENU_ITEM = '[role="menuitem"]:not(:disabled)';
 
 export function ContextMenu({
   point,
@@ -18,11 +21,11 @@ export function ContextMenu({
   useLayoutEffect(() => {
     if (!element.current!.contains(document.activeElement))
       previous.current = document.activeElement;
-    const node = element.current!,
-      rect = node.getBoundingClientRect();
+    const node = element.current!;
+    const rect = node.getBoundingClientRect();
     node.style.left = `${Math.max(8, Math.min(point.x, window.innerWidth - rect.width - 8))}px`;
     node.style.top = `${Math.max(8, Math.min(point.y, window.innerHeight - rect.height - 8))}px`;
-    node.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus();
+    node.querySelector<HTMLButtonElement>(MENU_ITEM)?.focus();
   }, [point]);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -65,25 +68,8 @@ export function ContextMenu({
           onClose();
           return;
         }
-        if (
-          (event.target as HTMLElement).closest('input,select,textarea') ||
-          !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
-        )
-          return;
-        event.preventDefault();
-        const items = [
-          ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
-            '[role="menuitem"]:not(:disabled)',
-          ),
-        ];
-        const index = items.indexOf(document.activeElement as HTMLButtonElement);
-        const next =
-          event.key === 'Home'
-            ? 0
-            : event.key === 'End'
-              ? items.length - 1
-              : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
-        items[next]?.focus();
+        if ((event.target as HTMLElement).closest(TEXT_ENTRY)) return;
+        moveFocus(event, event.currentTarget, MENU_ITEM, VERTICAL_KEYS);
       }}
     >
       {children}
