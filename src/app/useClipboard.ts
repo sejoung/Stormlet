@@ -127,7 +127,7 @@ export function useClipboard(options: Options): Clipboard {
         structured: event.clipboardData.getData(STORMLET_TYPE),
         plain: event.clipboardData.getData('text/plain'),
       };
-      if (!content.structured && !content.plain && !cached.current) return;
+      if (!content.structured && !content.plain) return;
       event.preventDefault();
       accept(latest.current, content, cached.current);
     };

@@ -37,14 +37,17 @@ describe('LocalBoardStore', () => {
     reopened.dispose();
   });
 
-  it('batches saves until the delay passes or the page is hidden', () => {
+  it('saves once edits pause, or at once when the page is hidden', () => {
     vi.useFakeTimers();
     try {
       const store = new LocalBoardStore();
       store.apply([{ op: 'add', sticky: sticky('a') }]);
+      vi.advanceTimersByTime(200);
+      // A new edit restarts the wait rather than saving on the first edit's schedule.
       store.apply([{ op: 'set', id: 'a', field: 'text', value: 'later' }]);
+      vi.advanceTimersByTime(200);
       expect(localStorage.getItem(BOARD_KEY)).toBeNull();
-      vi.advanceTimersByTime(250);
+      vi.advanceTimersByTime(50);
       expect(JSON.parse(localStorage.getItem(BOARD_KEY)!).stickies[0].text).toBe('later');
       store.apply([{ op: 'set', id: 'a', field: 'text', value: 'hidden' }]);
       window.dispatchEvent(new Event('pagehide'));

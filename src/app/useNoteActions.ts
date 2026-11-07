@@ -59,7 +59,7 @@ interface Options {
 export function useNoteActions(options: Options): NoteActions {
   const { board, ids, reactor, newId, edit, editWith, onSelect, onStatus } = options;
   const format = (details: NoteDetails) => edit((current) => updateNotes(current, ids, details));
-  /** Clone `notes` by (dx, dy), select the copies and say how many were added. */
+  /** Run a clone command, select the copies and, when `announce`, say how many were added. */
   const copyNotes = (
     clone: (current: Board) => ReturnType<typeof cloneNotes>,
     announce: boolean,

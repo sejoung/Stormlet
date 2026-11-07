@@ -76,6 +76,7 @@ export function useFrameDrawing({
     const frame = own(board.frames ?? {}, current.id);
     if (!frame) return null;
     const { dx, dy } = travel(current);
+    if (isClick(dx, dy)) return null;
     return { ...frame, x: frame.x + dx, y: frame.y + dy };
   };
   return {
@@ -83,7 +84,8 @@ export function useFrameDrawing({
     backgroundDown: (event) => {
       if (tool !== 'frame' || event.button !== 0) return false;
       capture(event);
-      setGesture({ type: 'create', start: point(event), at: point(event) });
+      const at = point(event);
+      setGesture({ type: 'create', start: at, at });
       return true;
     },
     begin: (event, id, resize = false) => {
@@ -91,18 +93,18 @@ export function useFrameDrawing({
       capture(event);
       frames.onSelect(id);
       if (own(board.frames ?? {}, id)?.locked) return;
+      const at = point(event);
       setGesture({
         type: resize ? 'resize' : 'move',
         id,
-        start: point(event),
-        at: point(event),
+        start: at,
+        at,
         duplicate: !resize && event.altKey,
       });
     },
     move: (event) => {
       if (!gesture) return false;
-      const at = point(event);
-      if (!isClick(at.x - gesture.start.x, at.y - gesture.start.y)) setGesture({ ...gesture, at });
+      setGesture({ ...gesture, at: point(event) });
       return true;
     },
     up: (event) => {
@@ -124,6 +126,8 @@ export function useFrameDrawing({
       if (!gesture || gesture.type === 'create') return current;
       if (gesture.type === 'move' && gesture.duplicate) return current;
       const { dx, dy } = travel(gesture);
+      // Matches `up`: a press that ends back within the click threshold changes nothing.
+      if (isClick(dx, dy)) return current;
       if (gesture.type === 'move')
         return applyPatches(current, moveFrame(current, gesture.id, dx, dy)).board;
       const frame = own(current.frames ?? {}, gesture.id);

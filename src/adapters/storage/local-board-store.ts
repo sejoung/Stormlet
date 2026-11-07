@@ -5,16 +5,16 @@ import { FormatError, parseBoard, serializeBoard } from '../files/stormlet-forma
 import { readItem, writeItem } from './web-storage';
 
 export const BOARD_KEY = 'stormlet.board';
-/** Edits within this window share one save, so key repeat and bursts serialize once. */
+/** Quiet period after the last edit before the board is saved (debounce). */
 export const SAVE_DELAY = 250;
 
 /**
  * Keeps the board in localStorage. Another tab's save arrives through the `storage` event
  * and is reported as patches, the same path a collaboration store will use.
  *
- * Saving the whole board is synchronous and grows with it, so writes are batched: the
- * latest board is saved once after a short quiet period, and immediately when the page is
- * hidden or closed, so nothing is lost on reload.
+ * Saving the whole board is synchronous and grows with it, so writes are debounced: each
+ * edit restarts the timer and the latest board is saved once edits pause. A pending save
+ * is written immediately when the page is hidden or closed, so nothing is lost on reload.
  */
 export class LocalBoardStore implements BoardStore {
   private board: Board;
@@ -39,7 +39,8 @@ export class LocalBoardStore implements BoardStore {
     const { board } = applyPatches(this.board, patches);
     if (board === this.board) return;
     this.board = board;
-    this.timer ??= setTimeout(this.flush, this.delay);
+    this.cancelSave();
+    this.timer = setTimeout(this.flush, this.delay);
   }
 
   subscribe(listener: (patches: Patch[]) => void): () => void {
@@ -50,8 +51,7 @@ export class LocalBoardStore implements BoardStore {
   /** Save a pending change now. */
   readonly flush = (): void => {
     if (this.timer === null) return;
-    clearTimeout(this.timer);
-    this.timer = null;
+    this.cancelSave();
     writeItem(this.key, serializeBoard(this.board, { compact: true }));
   };
 
@@ -74,6 +74,11 @@ export class LocalBoardStore implements BoardStore {
     }
   }
 
+  private cancelSave() {
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.timer = null;
+  }
+
   private emit(patches: Patch[]) {
     if (patches.length) for (const listener of this.listeners) listener(patches);
   }
@@ -88,8 +93,7 @@ export class LocalBoardStore implements BoardStore {
     if (!next) return;
     const patches = diffBoards(this.board, next);
     // The other tab's save is now the latest; writing ours back would only echo it.
-    if (this.timer !== null) clearTimeout(this.timer);
-    this.timer = null;
+    this.cancelSave();
     this.board = next;
     this.emit(patches);
   };

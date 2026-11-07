@@ -1,6 +1,6 @@
 import type { Board } from '../domain/model';
 import { own } from '../domain/ids';
-import { boundsOf } from '../domain/geometry/bounds';
+import { boundsHeight, boundsOf, boundsWidth } from '../domain/geometry/bounds';
 import type { Point } from './viewport';
 
 export interface Guides {
@@ -39,8 +39,8 @@ export function snapOffset(
   const picked = new Set(ids);
   const bounds = boundsOf(ids.flatMap((id) => own(board.stickies, id) ?? []));
   if (!bounds) return { offset, guides: {} };
-  const xs = lines(bounds.left, bounds.right - bounds.left).map((x) => x + offset.x);
-  const ys = lines(bounds.top, bounds.bottom - bounds.top).map((y) => y + offset.y);
+  const xs = lines(bounds.left, boundsWidth(bounds)).map((x) => x + offset.x);
+  const ys = lines(bounds.top, boundsHeight(bounds)).map((y) => y + offset.y);
   let x = null as Snap | null;
   let y = null as Snap | null;
   const limit = SNAP_DISTANCE / zoom;
