@@ -1,10 +1,10 @@
-import type { Board } from '../../domain/model';
-import { own } from '../../domain/ids';
-import { groupSelection } from '../../domain/note-actions';
-import type { Rect } from '../../domain/geometry/bounds';
-import type { StickySize } from '../../domain/sticky-size';
-import type { Point } from '../../engine/viewport';
-import type { Guides } from '../../engine/snapping';
+import type { Board } from '../../../domain/model';
+import { own } from '../../../domain/ids';
+import { groupSelection } from '../../../domain/note-actions';
+import type { Rect } from '../../../domain/geometry/bounds';
+import type { StickySize } from '../../../domain/sticky-size';
+import type { Point } from '../../../engine/viewport';
+import type { Guides } from '../../../engine/snapping';
 
 export type Gesture =
   | { type: 'pan'; last: Point }

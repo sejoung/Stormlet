@@ -11,7 +11,7 @@ export function BoardSearch({
   onClose,
 }: {
   query: string;
-  notes: Sticky[];
+  notes: readonly Sticky[];
   onQuery(value: string): void;
   onSelect(id: string): void;
   onClose(): void;

@@ -8,12 +8,9 @@ import {
 } from '../../domain/connections/model';
 import { COLOR_STYLES } from '../board/kinds';
 import { LINE_COLORS } from '../connections/colors';
+import type { CreationDefaults } from '../../domain/creation-defaults';
 import { Icon } from './Icon';
 
-export interface ToolDefaults {
-  stickyColor: StickyColor;
-  connection: ConnectionStyle;
-}
 const LINE_PRESETS = [
   { label: '선', icon: 'line', path: 'straight', endArrow: false },
   { label: '화살표', icon: 'arrow', path: 'straight', endArrow: true },
@@ -32,7 +29,7 @@ export function CreationFlyout({
   onClose,
 }: {
   kind: 'sticky' | 'connect';
-  defaults: ToolDefaults;
+  defaults: CreationDefaults;
   onStickyColor(color: StickyColor): void;
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   onClose(): void;

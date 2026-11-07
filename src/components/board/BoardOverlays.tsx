@@ -1,7 +1,7 @@
 import type { Board } from '../../domain/model';
 import type { View } from '../../engine/viewport';
 import { COLOR_STYLES } from './kinds';
-import { rectangle, type Gesture } from './board-gestures';
+import { rectangle, type Gesture } from './gestures/gestures';
 import { own } from '../../domain/ids';
 import type { Size } from '../common/useElementSize';
 

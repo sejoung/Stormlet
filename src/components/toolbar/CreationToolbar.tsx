@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { StickyColor } from '../../domain/model';
 import type { ConnectionStyle } from '../../domain/connections/model';
 import { COLOR_STYLES } from '../board/kinds';
-import { CreationFlyout, type ToolDefaults } from './CreationFlyout';
+import { CreationFlyout } from './CreationFlyout';
+import type { CreationDefaults } from '../../domain/creation-defaults';
 import { FrameFlyout } from '../frames/FrameFlyout';
 import type { FrameInteraction } from '../frames/types';
 
@@ -29,7 +30,7 @@ export function CreationToolbar({
   onTool(tool: BoardTool): void;
   onAddCenter(): void;
   onBulk(): void;
-  defaults: ToolDefaults;
+  defaults: CreationDefaults;
   onStickyColor(color: StickyColor): void;
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   frames: FrameInteraction;

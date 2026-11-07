@@ -1,17 +1,13 @@
-import { DEFAULT_STICKY_APPEARANCE, isStickyColor, type StickyColor } from '../../domain/model';
+import { DEFAULT_STICKY_APPEARANCE, isStickyColor } from '../../domain/model';
 import {
   CONNECTION_COLORS,
   CONNECTION_PATHS,
   DEFAULT_CONNECTION,
   isConnectionWidth,
-  type ConnectionStyle,
 } from '../../domain/connections/model';
+import type { CreationDefaults } from '../../domain/creation-defaults';
 import { readItem, writeItem } from './web-storage';
 
-export interface CreationDefaults {
-  stickyColor: StickyColor;
-  connection: ConnectionStyle;
-}
 export const CREATION_DEFAULTS_KEY = 'stormlet.creation-defaults';
 
 const includes = (list: readonly unknown[], value: unknown) => list.includes(value);

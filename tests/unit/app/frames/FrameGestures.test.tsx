@@ -93,6 +93,33 @@ describe('frame gestures', () => {
     expect(Object.keys(store.board.stickies)).toHaveLength(5);
   });
 
+  it('treats a drag that ends back at its start as a click in the preview too', () => {
+    const store = memoryStore({
+      ...boardOf(sticky('a', { x: 40, y: 40 })),
+      frames: { frame: frame() },
+    });
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    const note = screen.getByRole('button', { name: '도메인 이벤트: a' });
+    const edge = () => screen.getAllByRole('button', { name: '프레임 테두리: 프레임 1 · 위쪽' })[0];
+    fireEvent.pointerDown(edge(), { button: 0, clientX: 300, clientY: 80 });
+    fireEvent.pointerMove(board, { clientX: 380, clientY: 120 });
+    expect(note).toHaveStyle({ left: '120px', top: '80px' });
+    fireEvent.pointerMove(board, { clientX: 301, clientY: 81 });
+    expect(note).toHaveStyle({ left: '40px', top: '40px' });
+    fireEvent.pointerUp(board, { clientX: 301, clientY: 81 });
+    expect(store.board.frames?.frame).toMatchObject({ x: 0, y: 0 });
+    expect(note).toHaveStyle({ left: '40px', top: '40px' });
+
+    fireEvent.pointerDown(edge(), { button: 0, altKey: true, clientX: 300, clientY: 80 });
+    fireEvent.pointerMove(board, { clientX: 700, clientY: 80 });
+    expect(document.querySelector('.frame-draft')).not.toBeNull();
+    fireEvent.pointerMove(board, { clientX: 301, clientY: 80 });
+    expect(document.querySelector('.frame-draft')).toBeNull();
+    fireEvent.pointerUp(board, { clientX: 301, clientY: 80 });
+    expect(Object.keys(store.board.frames!)).toEqual(['frame']);
+  });
+
   it('resizes only the frame using the handle and keyboard and duplicates its contents independently', async () => {
     const user = userEvent.setup();
     const store = memoryStore({

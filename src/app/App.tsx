@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   addSticky,
   deleteStickies,
@@ -10,7 +10,7 @@ import {
 } from '../domain/commands';
 import type { StickySize } from '../domain/sticky-size';
 import { own } from '../domain/ids';
-import { DEFAULT_STICKY_APPEARANCE, isEmptyBoard, type Board } from '../domain/model';
+import { DEFAULT_STICKY_APPEARANCE, isEmptyBoard } from '../domain/model';
 import { boardTitle, renameBoard } from '../domain/board-title';
 import type { BoardStore } from '../domain/store';
 import { centeredAt } from '../engine/sticky-metrics';
@@ -42,20 +42,8 @@ import { useSelection } from './selection/useSelection';
 import { selectionCommands } from './selection/selection-commands';
 import { NoteSelection } from './NoteSelection';
 import { ObjectToolbars } from './ObjectToolbars';
-
-/** How long a status message stays before it clears itself. */
-const STATUS_DURATION = 5000;
-
-/** Notes whose text contains `query` (case-insensitive); `ids` is `null` without a query. */
-function useBoardSearch(board: Board, query: string) {
-  const needle = query.trim().toLocaleLowerCase();
-  return useMemo(() => {
-    const notes = Object.values(board.stickies);
-    if (!needle) return { notes, ids: null };
-    const found = notes.filter((note) => note.text.toLocaleLowerCase().includes(needle));
-    return { notes: found, ids: new Set(found.map((note) => note.id)) };
-  }, [board.stickies, needle]);
-}
+import { useBoardSearch } from './panels/useBoardSearch';
+import { useStatus } from './panels/useStatus';
 
 export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   // --- Board, history and view ---
@@ -87,15 +75,8 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   // --- Panels and messages ---
   const [dialog, setDialog] = useState<'bulk' | 'help' | null>(null);
   const closeDialog = useCallback(() => setDialog(null), []);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const search = useBoardSearch(board, query);
-  const [status, setStatus] = useState<string | null>(null);
-  useEffect(() => {
-    if (!status) return;
-    const timer = window.setTimeout(() => setStatus(null), STATUS_DURATION);
-    return () => window.clearTimeout(timer);
-  }, [status]);
+  const search = useBoardSearch(board);
+  const [status, setStatus] = useStatus();
 
   // --- Helpers shared by the commands below ---
   const viewportCenter = () => elementCenter(boardElement.current!);
@@ -238,7 +219,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     onLock: commands.toggleLock,
     onFormat: actions.toggleFormat,
     onNudge: commands.nudge,
-    onSearch: () => setSearchOpen(true),
+    onSearch: search.show,
     onFit: (onlySelected) => fit(onlySelected ? activeIds : undefined),
     onHelp: () => setDialog('help'),
     onSave: save,
@@ -259,7 +240,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
           canUndo={canUndo}
           canRedo={canRedo}
           status={status}
-          onSearch={() => setSearchOpen((open) => !open)}
+          onSearch={search.toggle}
           onUndo={undo}
           onRedo={redo}
           onOpen={onOpen}
@@ -290,7 +271,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
               editing={editing}
               seed={seed}
               reactor={reactor}
-              matches={search.ids}
+              matches={search.matches}
               element={boardElement}
               tool={tool}
               onViewChange={setView}
@@ -332,19 +313,16 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
                 }}
               />
             )}
-            {searchOpen && (
+            {search.open && (
               <BoardSearch
-                query={query}
+                query={search.query}
                 notes={search.notes}
-                onQuery={setQuery}
+                onQuery={search.setQuery}
                 onSelect={(id) => {
                   selected.selectNotes([id]);
                   fit([id]);
                 }}
-                onClose={() => {
-                  setSearchOpen(false);
-                  setQuery('');
-                }}
+                onClose={search.close}
               />
             )}
             <BoardChrome

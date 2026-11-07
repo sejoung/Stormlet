@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type PointerEvent, type RefObject } from 'react';
+import { useMemo, useState, type PointerEvent, type RefObject } from 'react';
 import { own } from '../../domain/ids';
 import { byStackOrder, type Board } from '../../domain/model';
 import type { Move } from '../../domain/commands';
@@ -6,16 +6,16 @@ import { clampStickySize, type StickySize } from '../../domain/sticky-size';
 import { groupSelection } from '../../domain/note-actions';
 import type { ConnectionSide } from '../../domain/connections/model';
 import { snapOffset } from '../../engine/snapping';
-import {
-  panBy,
-  toBoardPoint,
-  wheelZoomFactor,
-  zoomAround,
-  type Point,
-  type View,
-} from '../../engine/viewport';
+import { panBy, toBoardPoint, type Point, type View } from '../../engine/viewport';
 import type { BoardTool } from './kinds';
-import { rectangle, intersects, pickedNotes, previewBoard, type Gesture } from './board-gestures';
+import {
+  rectangle,
+  intersects,
+  pickedNotes,
+  previewBoard,
+  type Gesture,
+} from './gestures/gestures';
+import { useCanvasListeners } from './gestures/useCanvasListeners';
 import { BoardOverlays } from './BoardOverlays';
 import { ConnectionEndpoints, ConnectionLayer } from '../connections/ConnectionLayer';
 import { useConnectionDrawing } from '../connections/useConnectionDrawing';
@@ -25,7 +25,7 @@ import { useFrameDrawing } from '../frames/useFrameDrawing';
 import { FrameLayer } from '../frames/FrameLayer';
 import type { FrameInteraction } from '../frames/types';
 import { canvasTarget, closestData, type CanvasTarget } from '../menus/CanvasContextMenu';
-import { useLatest, useStableCallback } from '../common/useStableCallback';
+import { useStableCallback } from '../common/useStableCallback';
 import { clientCenter, clientToLocal } from '../common/points';
 import { isMenuKey, TEXT_ENTRY } from '../common/keyboard';
 import { cx } from '../common/cx';
@@ -58,13 +58,10 @@ interface Props {
 }
 
 const DRAG_THRESHOLD = 3;
-/** Space-bar panning is off while focus is on a control that uses Space itself. */
-const SPACE_OWNERS = `${TEXT_ENTRY}, button, [role="dialog"], [role="menu"]`;
 
 export function BoardCanvas(props: Props) {
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
-  const [space, setSpace] = useState(false);
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
   const frameDrawing = useFrameDrawing({ board, view, element, tool, frames: props.frames });
   const local = (event: { clientX: number; clientY: number }) =>
@@ -75,59 +72,7 @@ export function BoardCanvas(props: Props) {
     frameDrawing.cancel();
     drawing.cancel();
   });
-
-  // One place cancels every in-progress gesture: Escape, or the window losing focus.
-  useEffect(() => {
-    const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') cancelGestures();
-      if (
-        event.code === 'Space' &&
-        !(event.target instanceof Element && event.target.closest(SPACE_OWNERS))
-      ) {
-        event.preventDefault();
-        setSpace(true);
-      }
-    };
-    const keyup = (event: KeyboardEvent) => {
-      if (event.code === 'Space') setSpace(false);
-    };
-    const blur = () => {
-      setSpace(false);
-      cancelGestures();
-    };
-    window.addEventListener('keydown', keydown);
-    window.addEventListener('keyup', keyup);
-    window.addEventListener('blur', blur);
-    return () => {
-      window.removeEventListener('keydown', keydown);
-      window.removeEventListener('keyup', keyup);
-      window.removeEventListener('blur', blur);
-    };
-  }, [cancelGestures]);
-
-  // Registered once; reads the latest view instead of re-subscribing on every pan and zoom.
-  const latest = useLatest({ view, onViewChange });
-  useEffect(() => {
-    const node = element.current!;
-    const onWheel = (event: WheelEvent) => {
-      const content =
-        event.target instanceof Element
-          ? event.target.closest('.sticky-editor, .sticky-content')
-          : null;
-      if (content && content.scrollHeight > content.clientHeight) return;
-      event.preventDefault();
-      const { view: current, onViewChange: change } = latest.current;
-      change(
-        zoomAround(
-          current,
-          current.zoom * wheelZoomFactor(event.deltaY),
-          clientToLocal(node, event),
-        ),
-      );
-    };
-    node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
-  }, [element, latest]);
+  const space = useCanvasListeners({ element, view, onViewChange, onCancel: cancelGestures });
 
   const startPan = (event: PointerEvent) => setGesture({ type: 'pan', last: local(event) });
 
