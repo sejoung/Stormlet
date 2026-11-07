@@ -27,7 +27,7 @@ describe('.stormlet format', () => {
   it.each([
     ['not JSON', '{'],
     ['another format', JSON.stringify({ format: 'maplet', version: 1, stickies: [] })],
-    ['a newer version', file([], { version: 8 })],
+    ['a newer version', file([], { version: 9 })],
     ['an invalid version', file([], { version: 0 })],
     ['no stickies', JSON.stringify({ format: 'stormlet', version: 1 })],
     ['a malformed sticky', file([{ ...sticky('a'), kind: 'note' }])],

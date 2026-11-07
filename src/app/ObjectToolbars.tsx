@@ -12,6 +12,7 @@ export function ObjectToolbars({
   frames,
   links,
   onDeleteFrame,
+  hidden,
 }: {
   board: Board;
   view: View;
@@ -19,7 +20,9 @@ export function ObjectToolbars({
   frames: FrameInteraction;
   links: ReturnType<typeof useConnectionSession>;
   onDeleteFrame(): void;
+  hidden?: boolean;
 }) {
+  if (hidden) return null;
   return (
     <>
       {frames.selected && (

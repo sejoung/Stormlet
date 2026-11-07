@@ -32,7 +32,7 @@ export function BoardChrome({
             : tool === 'sticky'
               ? '원하는 곳을 클릭해 붙이기 · Esc 취소'
               : tool === 'connect'
-                ? '시작과 끝 메모를 클릭 · 드래그로도 연결 · Esc 취소'
+                ? '포스트잇·프레임 클릭 · 드래그로 연결 · Esc 취소'
                 : '드래그로 선택 · Space+드래그로 이동 · N 포스트잇 · L 연결선'}
         </span>
         <div className="zoom-controls" role="group" aria-label="확대 및 축소">

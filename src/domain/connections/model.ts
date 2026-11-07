@@ -4,7 +4,11 @@ export const CONNECTION_PATHS = ['straight', 'elbow', 'curve'] as const;
 export type ConnectionPath = (typeof CONNECTION_PATHS)[number];
 export const CONNECTION_SIDES = ['auto', 'top', 'right', 'bottom', 'left'] as const;
 export type ConnectionSide = (typeof CONNECTION_SIDES)[number];
-export type Endpoint = { stickyId: string; side: ConnectionSide } | { x: number; y: number };
+export type Endpoint =
+  | { stickyId: string; side: ConnectionSide }
+  | { frameId: string; side: ConnectionSide }
+  | { x: number; y: number };
+export const isFreeEndpoint = (end: Endpoint): end is { x: number; y: number } => 'x' in end;
 
 export interface Connection {
   id: string;

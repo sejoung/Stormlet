@@ -1,4 +1,5 @@
 import { useId, type PointerEvent } from 'react';
+import { endpointLabel, sameAttachment } from '../../domain/connections/endpoints';
 import type { Board } from '../../domain/model';
 import { CONNECTION_COLORS, type Connection } from '../../domain/connections/model';
 import { connectionGeometry } from '../../engine/connections/geometry';
@@ -44,6 +45,7 @@ export function ConnectionLayer({
             <circle
               key={end}
               className="connection-endpoint"
+              data-connection-id={selected.id}
               role="button"
               tabIndex={0}
               aria-label={`연결선 ${end === 'from' ? '시작점' : '끝점'} 이동`}
@@ -87,16 +89,10 @@ export function ConnectionLayer({
         const preview = line === draft;
         if (preview && Math.hypot(shape.to.x - shape.from.x, shape.to.y - shape.from.y) < 1)
           return null;
-        if (
-          preview &&
-          'stickyId' in line.from &&
-          'stickyId' in line.to &&
-          line.from.stickyId === line.to.stickyId
-        )
-          return null;
+        if (preview && sameAttachment(line.from, line.to)) return null;
         const label =
           line.label ||
-          `${'stickyId' in line.from ? board.stickies[line.from.stickyId]?.text || '빈 메모' : '자유 시작점'} → ${'stickyId' in line.to ? board.stickies[line.to.stickyId]?.text || '빈 메모' : '자유 끝점'}`;
+          `${endpointLabel(board, line.from, '자유 시작점')} → ${endpointLabel(board, line.to, '자유 끝점')}`;
         return (
           <g
             key={line.id}

@@ -1,6 +1,8 @@
 import { own } from '../ids';
 import type { Board } from '../model';
 import type { Patch } from '../patch';
+import { endpointObject, sameAttachment } from './endpoints';
+import { isFreeEndpoint } from './model';
 import {
   DEFAULT_CONNECTION,
   type Connection,
@@ -10,16 +12,12 @@ import {
 } from './model';
 
 export const endpointExists = (board: Board, endpoint: Endpoint): boolean =>
-  'stickyId' in endpoint
-    ? !!own(board.stickies, endpoint.stickyId)
-    : Number.isFinite(endpoint.x) && Number.isFinite(endpoint.y);
+  isFreeEndpoint(endpoint)
+    ? Number.isFinite(endpoint.x) && Number.isFinite(endpoint.y)
+    : !!endpointObject(board, endpoint);
 
 export function validEndpoints(board: Board, from: Endpoint, to: Endpoint): boolean {
-  return (
-    endpointExists(board, from) &&
-    endpointExists(board, to) &&
-    !('stickyId' in from && 'stickyId' in to && from.stickyId === to.stickyId)
-  );
+  return endpointExists(board, from) && endpointExists(board, to) && !sameAttachment(from, to);
 }
 
 export function addConnection(

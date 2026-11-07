@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
+import { ContextMenu } from '../menus/ContextMenu';
 import {
   isStickySize,
   MIN_STICKY_SIZE,
@@ -31,82 +31,15 @@ const PRESETS = [
 
 /** Render outside the transformed board, so zoom and clipping cannot affect the menu. */
 export function StickyContextMenu(props: Props) {
-  const element = useRef<HTMLDivElement>(null);
-  const previousFocus = useRef<Element | null>(null);
   const [width, setWidth] = useState(String(props.size.width));
   const [height, setHeight] = useState(String(props.size.height));
   const { onClose } = props;
-  useLayoutEffect(() => {
-    if (!element.current!.contains(document.activeElement))
-      previousFocus.current = document.activeElement;
-    const node = element.current!;
-    const rect = node.getBoundingClientRect();
-    node.style.left = `${Math.max(8, Math.min(props.point.x, window.innerWidth - rect.width - 8))}px`;
-    node.style.top = `${Math.max(8, Math.min(props.point.y, window.innerHeight - rect.height - 8))}px`;
-    node.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
-  }, [props.point]);
-  useEffect(() => {
-    const previous = previousFocus.current;
-    const outside = (event: PointerEvent) => {
-      if (!element.current?.contains(event.target as Node)) onClose();
-    };
-    const escape = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-      if (
-        previous instanceof HTMLElement &&
-        previous.isConnected &&
-        !element.current?.contains(previous)
-      )
-        previous.focus();
-    };
-    const close = () => onClose();
-    const wheel = (event: WheelEvent) => {
-      if (!element.current?.contains(event.target as Node)) onClose();
-    };
-    document.addEventListener('pointerdown', outside);
-    document.addEventListener('keydown', escape, true);
-    window.addEventListener('resize', close);
-    window.addEventListener('wheel', wheel, { passive: true });
-    return () => {
-      document.removeEventListener('pointerdown', outside);
-      document.removeEventListener('keydown', escape, true);
-      window.removeEventListener('resize', close);
-      window.removeEventListener('wheel', wheel);
-    };
-  }, [onClose]);
   const run = (action: () => void) => {
     action();
     onClose();
   };
-  const navigate = (event: KeyboardEvent) => {
-    if ((event.target as HTMLElement).closest('input')) return;
-    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const items = [
-      ...element.current!.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'),
-    ];
-    const index = items.indexOf(document.activeElement as HTMLButtonElement);
-    const next =
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? items.length - 1
-          : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
-    items[next]?.focus();
-  };
-  return createPortal(
-    <div
-      ref={element}
-      className="sticky-context-menu"
-      role="menu"
-      tabIndex={-1}
-      aria-label="포스트잇 메뉴"
-      onKeyDown={navigate}
-      onContextMenu={(event) => event.preventDefault()}
-    >
+  return (
+    <ContextMenu point={props.point} label="포스트잇 메뉴" onClose={onClose}>
       <span className="context-caption">
         {props.count > 1 ? `포스트잇 ${props.count}개` : '포스트잇'}
       </span>
@@ -210,7 +143,6 @@ export function StickyContextMenu(props: Props) {
       >
         삭제
       </button>
-    </div>,
-    document.body,
+    </ContextMenu>
   );
 }

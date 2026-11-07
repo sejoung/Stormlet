@@ -8,6 +8,7 @@ export const frame = (id = 'frame', values: Partial<Frame> = {}): Frame => ({
   width: 640,
   height: 400,
   color: 'none',
+  borderWidth: 2,
   locked: false,
   ...values,
 });

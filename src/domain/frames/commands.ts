@@ -3,8 +3,11 @@ import type { Board } from '../model';
 import type { Patch } from '../patch';
 import { cloneNotes } from '../note-actions';
 import type { Connection, Endpoint } from '../connections/model';
+import { isFreeEndpoint } from '../connections/model';
 import {
   clampFrameSize,
+  DEFAULT_FRAME_BORDER_WIDTH,
+  FRAME_BORDER_WIDTHS,
   contains,
   containsFrame,
   frameTitle,
@@ -29,6 +32,7 @@ export function addFrame(board: Board, id: string, bounds: FrameBounds): Patch[]
         ...clampFrameSize(bounds),
         title: `프레임 ${Object.keys(board.frames ?? {}).length + 1}`,
         color: 'none',
+        borderWidth: DEFAULT_FRAME_BORDER_WIDTH,
         locked: false,
       },
     },
@@ -39,6 +43,11 @@ export function updateFrame(board: Board, id: string, values: Partial<Omit<Frame
   const frame = own(board.frames ?? {}, id);
   if (!frame) return [];
   const next = { ...values };
+  if (
+    next.borderWidth !== undefined &&
+    !(FRAME_BORDER_WIDTHS as readonly number[]).includes(next.borderWidth)
+  )
+    return [];
   if (next.title !== undefined) next.title = frameTitle(next.title);
   if ([next.width, next.height].some((value) => value !== undefined)) {
     if (![next.width ?? frame.width, next.height ?? frame.height].every(Number.isFinite)) return [];
@@ -58,17 +67,19 @@ export function frameContents(board: Board, id: string): Board {
   if (!frame) return { stickies: {} };
   const notes = Object.values(board.stickies).filter((note) => contains(frame, note));
   const selected = new Set(notes.map((note) => note.id));
+  const frames = Object.values(board.frames ?? {}).filter(
+    (other) => other.id === id || containsFrame(frame, other),
+  );
+  const selectedFrames = new Set(frames.map((other) => other.id));
   const inside = (end: Endpoint) =>
     'stickyId' in end
       ? selected.has(end.stickyId)
-      : contains(frame, { ...end, width: 0, height: 0 });
+      : 'frameId' in end
+        ? selectedFrames.has(end.frameId)
+        : contains(frame, { ...end, width: 0, height: 0 });
   return {
     stickies: Object.fromEntries(notes.map((note) => [note.id, note])),
-    frames: Object.fromEntries(
-      Object.values(board.frames ?? {})
-        .filter((other) => other.id === id || containsFrame(frame, other))
-        .map((other) => [other.id, other]),
-    ),
+    frames: Object.fromEntries(frames.map((other) => [other.id, other])),
     connections: Object.fromEntries(
       Object.values(board.connections ?? {})
         .filter((line) => inside(line.from) && inside(line.to))
@@ -98,7 +109,7 @@ export function moveFrame(board: Board, id: string, dx: number, dy: number): Pat
   for (const line of Object.values(board.connections ?? {}))
     for (const field of ['from', 'to'] as const) {
       const end = line[field];
-      if (!('stickyId' in end) && contains(frame, { ...end, width: 0, height: 0 }))
+      if (isFreeEndpoint(end) && contains(frame, { ...end, width: 0, height: 0 }))
         patches.push({
           op: 'connection:set',
           id: line.id,
@@ -111,7 +122,17 @@ export function moveFrame(board: Board, id: string, dx: number, dy: number): Pat
 
 export function deleteFrame(board: Board, id: string): Patch[] {
   const frame = own(board.frames ?? {}, id);
-  return frame && !frame.locked ? [{ op: 'frame:delete', id }] : [];
+  if (!frame || frame.locked) return [];
+  return [
+    ...Object.values(board.connections ?? {})
+      .filter(
+        (line) =>
+          ('frameId' in line.from && line.from.frameId === id) ||
+          ('frameId' in line.to && line.to.frameId === id),
+      )
+      .map((line): Patch => ({ op: 'connection:delete', id: line.id })),
+    { op: 'frame:delete', id },
+  ];
 }
 
 /** Cut transfers the whole container; ordinary deletion removes only its boundary. */
@@ -123,6 +144,8 @@ export function cutFrameContents(board: Board, id: string): Patch[] {
   const lines = Object.values(board.connections ?? {}).filter(
     (line) =>
       contents.connections?.[line.id] ||
+      ('frameId' in line.from && !!contents.frames?.[line.from.frameId]) ||
+      ('frameId' in line.to && !!contents.frames?.[line.to.frameId]) ||
       ('stickyId' in line.from && notes.has(line.from.stickyId)) ||
       ('stickyId' in line.to && notes.has(line.to.stickyId)),
   );
@@ -162,7 +185,9 @@ export function cloneFrameContents(
   const endpoint = (end: Endpoint): Endpoint =>
     'stickyId' in end
       ? { ...end, stickyId: noteIds.get(end.stickyId)! }
-      : { x: end.x + dx, y: end.y + dy };
+      : 'frameId' in end
+        ? { ...end, frameId: frameIds.get(end.frameId)! }
+        : { x: end.x + dx, y: end.y + dy };
   const connections = Object.values(source.connections ?? {}).map((line): Patch => ({
     op: 'connection:add',
     connection: {

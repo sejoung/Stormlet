@@ -1,4 +1,5 @@
-import { own } from '../../domain/ids';
+import { endpointObject } from '../../domain/connections/endpoints';
+import { isFreeEndpoint } from '../../domain/connections/model';
 import type { Board } from '../../domain/model';
 import type { Connection, ConnectionSide, Endpoint } from '../../domain/connections/model';
 import type { Point } from '../viewport';
@@ -10,8 +11,8 @@ export interface Anchor extends Point {
 }
 
 export function endpointCenter(board: Board, endpoint: Endpoint): Point | null {
-  if (!('stickyId' in endpoint)) return endpoint;
-  const note = own(board.stickies, endpoint.stickyId);
+  if (isFreeEndpoint(endpoint)) return endpoint;
+  const note = endpointObject(board, endpoint);
   return note ? { x: note.x + note.width / 2, y: note.y + note.height / 2 } : null;
 }
 
@@ -20,8 +21,8 @@ export function endpointAnchor(board: Board, endpoint: Endpoint, toward: Point):
   if (!center) return null;
   const dx = toward.x - center.x,
     dy = toward.y - center.y;
-  let side: ConnectionSide = 'stickyId' in endpoint ? endpoint.side : 'auto';
-  const note = 'stickyId' in endpoint ? board.stickies[endpoint.stickyId] : null;
+  let side: ConnectionSide = isFreeEndpoint(endpoint) ? 'auto' : endpoint.side;
+  const note = endpointObject(board, endpoint);
   if (side === 'auto')
     side =
       Math.abs(dx) / (note?.width ?? 1) >= Math.abs(dy) / (note?.height ?? 1)

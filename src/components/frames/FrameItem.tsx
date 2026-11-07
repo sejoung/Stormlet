@@ -2,6 +2,8 @@ import { useCallback, useRef, useState, type CSSProperties, type PointerEvent } 
 import { FRAME_TITLE_LIMIT, type Frame } from '../../domain/frames/model';
 import { Icon } from '../toolbar/Icon';
 import { FRAME_STYLES } from './colors';
+import { ConnectionPorts } from '../connections/ConnectionPorts';
+import type { ConnectionSide } from '../../domain/connections/model';
 
 export function FrameItem({
   frame,
@@ -10,6 +12,10 @@ export function FrameItem({
   onDown,
   onSelect,
   onChange,
+  showPorts,
+  editable,
+  onConnect,
+  onKeyboardConnect,
 }: {
   frame: Frame;
   selected: boolean;
@@ -17,6 +23,10 @@ export function FrameItem({
   onDown(event: PointerEvent, id: string, resize?: boolean): void;
   onSelect(id: string): void;
   onChange(id: string, values: Partial<Omit<Frame, 'id'>>): void;
+  showPorts: boolean;
+  editable: boolean;
+  onConnect(event: PointerEvent, side: ConnectionSide): void;
+  onKeyboardConnect(side: ConnectionSide): void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(frame.title);
@@ -29,7 +39,7 @@ export function FrameItem({
     }
   }, []);
   const start = () => {
-    if (frame.locked) return;
+    if (frame.locked || !editable) return;
     done.current = false;
     setDraft(frame.title);
     setEditing(true);
@@ -54,6 +64,7 @@ export function FrameItem({
           height: frame.height,
           zIndex,
           '--frame-fill': FRAME_STYLES[frame.color].fill,
+          '--frame-border-width': `${frame.borderWidth}px`,
         } as CSSProperties
       }
     >
@@ -66,7 +77,9 @@ export function FrameItem({
           aria-label={`프레임 테두리: ${frame.title} · ${{ top: '위쪽', right: '오른쪽', bottom: '아래쪽', left: '왼쪽' }[side]}`}
           aria-pressed={selected}
           onPointerDown={(event) => onDown(event, frame.id)}
-          onClick={() => onSelect(frame.id)}
+          onClick={(event) => {
+            if (!event.detail) onSelect(frame.id);
+          }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === 'F2') {
               event.preventDefault();
@@ -103,7 +116,9 @@ export function FrameItem({
           aria-pressed={selected}
           title="더블클릭으로 이름 수정"
           onPointerDown={(event) => onDown(event, frame.id)}
-          onClick={() => onSelect(frame.id)}
+          onClick={(event) => {
+            if (!event.detail) onSelect(frame.id);
+          }}
           onDoubleClick={start}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === 'F2') {
@@ -116,7 +131,10 @@ export function FrameItem({
           <span>{frame.title}</span>
         </button>
       )}
-      {selected && !frame.locked && (
+      {showPorts && !editing && (
+        <ConnectionPorts onStart={onConnect} onKeyboardStart={onKeyboardConnect} />
+      )}
+      {selected && !frame.locked && editable && (
         <button
           type="button"
           className="resize-handle frame-resize"

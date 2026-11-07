@@ -13,13 +13,15 @@ import {
 function readEndpoint(raw: unknown): Endpoint {
   if (!raw || typeof raw !== 'object') throw new Error('Missing endpoint.');
   const point = raw as Record<string, unknown>;
-  if ('stickyId' in point) {
+  if ('stickyId' in point || 'frameId' in point) {
+    const key = 'stickyId' in point ? 'stickyId' : 'frameId';
     if (
-      !isStickyId(point.stickyId) ||
+      ('stickyId' in point && 'frameId' in point) ||
+      !isStickyId(point[key]) ||
       !(CONNECTION_SIDES as readonly unknown[]).includes(point.side)
     )
       throw new Error('Invalid attached endpoint.');
-    return { stickyId: point.stickyId, side: point.side as ConnectionSide };
+    return { [key]: point[key], side: point.side as ConnectionSide } as Endpoint;
   }
   if (
     typeof point.x !== 'number' ||

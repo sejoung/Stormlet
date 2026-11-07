@@ -9,10 +9,22 @@ export interface Frame {
   width: number;
   height: number;
   color: FrameColor;
+  borderWidth: number;
   locked: boolean;
 }
 export type FrameBounds = Pick<Frame, 'x' | 'y' | 'width' | 'height'>;
-export const FRAME_FIELDS = ['title', 'x', 'y', 'width', 'height', 'color', 'locked'] as const;
+export const FRAME_FIELDS = [
+  'title',
+  'x',
+  'y',
+  'width',
+  'height',
+  'color',
+  'borderWidth',
+  'locked',
+] as const;
+export const FRAME_BORDER_WIDTHS = [1, 2, 3, 4, 6, 8] as const;
+export const DEFAULT_FRAME_BORDER_WIDTH = 2;
 export type FrameField = (typeof FRAME_FIELDS)[number];
 export type FrameSetPatch = {
   [F in FrameField]: { op: 'frame:set'; id: string; field: F; value: Frame[F] };

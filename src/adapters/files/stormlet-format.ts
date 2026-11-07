@@ -20,7 +20,7 @@ import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-export const FORMAT_VERSION = 7;
+export const FORMAT_VERSION = 8;
 export const FILE_EXTENSION = '.stormlet';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };
@@ -128,6 +128,7 @@ export function parseBoard(content: string): Board {
     version !== 4 &&
     version !== 5 &&
     version !== 6 &&
+    version !== 7 &&
     version !== FORMAT_VERSION
   )
     throw new FormatError('The file version is not supported by this Stormlet.');
@@ -144,7 +145,7 @@ export function parseBoard(content: string): Board {
   });
   const board: Board = { ...(title === undefined ? {} : { title }), stickies };
   try {
-    const frames = version >= 7 ? readFrames(file.frames) : {};
+    const frames = version >= 7 ? readFrames(file.frames, version < 8) : {};
     if (Object.keys(frames).length) board.frames = frames;
   } catch {
     throw new FormatError('The frames are malformed.');

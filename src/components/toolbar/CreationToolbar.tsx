@@ -106,7 +106,7 @@ export function CreationToolbar({
           aria-haspopup="dialog"
           aria-expanded={open === 'connect'}
           aria-pressed={tool === 'connect'}
-          title="연결선 (L) · 시작과 끝 메모를 차례로 클릭"
+          title="연결선 (L) · 포스트잇·프레임을 차례로 클릭"
           onClick={() => chooseTool('connect')}
         >
           <Icon

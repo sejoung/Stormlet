@@ -160,7 +160,7 @@ export function CreationFlyout({
               점선
             </label>
           </div>
-          <p className="creation-flyout-hint">시작과 끝 메모를 차례로 클릭하세요.</p>
+          <p className="creation-flyout-hint">포스트잇·프레임을 차례로 클릭하세요.</p>
         </>
       )}
     </div>

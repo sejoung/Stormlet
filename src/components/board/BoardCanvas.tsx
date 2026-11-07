@@ -21,8 +21,9 @@ import { useConnectionDrawing } from '../connections/useConnectionDrawing';
 import type { ConnectionInteraction } from '../connections/types';
 import { StickyNote } from './StickyNote';
 import { useFrameDrawing } from '../frames/useFrameDrawing';
-import { FrameItem } from '../frames/FrameItem';
+import { FrameLayer } from '../frames/FrameLayer';
 import type { FrameInteraction } from '../frames/types';
+import { canvasTarget, type CanvasTarget } from '../menus/CanvasContextMenu';
 
 interface Props {
   board: Board;
@@ -41,6 +42,7 @@ interface Props {
   onMove(moves: Move[]): void;
   onResize(ids: string[], size: StickySize): void;
   onContextMenu(id: string, point: Point): void;
+  onCanvasMenu(point: Point, target: CanvasTarget): void;
   onAdd(at: Point): void;
   onStartEdit(id: string | null, seed?: string): void;
   onCommitText(id: string, text: string): void;
@@ -57,6 +59,11 @@ export function BoardCanvas(props: Props) {
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
   const frameDrawing = useFrameDrawing({ board, view, element, tool, frames: props.frames });
   const cancelDrawing = drawing.cancel;
+  const cancelGestures = () => {
+    setGesture(null);
+    frameDrawing.cancel();
+    cancelDrawing();
+  };
   useEffect(() => {
     const cancel = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -257,9 +264,6 @@ export function BoardCanvas(props: Props) {
   const dragging = gesture?.type === 'drag' ? gesture : null;
   const framed = frameDrawing.preview(board);
   const displayed = previewBoard(framed, gesture);
-  const displayedFrames = Object.values(displayed.frames ?? {}).sort(
-    (a, b) => b.width * b.height - a.width * a.height || a.id.localeCompare(b.id),
-  );
   const reconnect = (event: PointerEvent, id: string, end: 'from' | 'to') =>
     drawing.begin(event, undefined, { id, end });
   return (
@@ -270,22 +274,47 @@ export function BoardCanvas(props: Props) {
       aria-label="포스트잇 보드"
       tabIndex={0}
       onKeyDownCapture={(event) => {
-        if (!drawing.active || event.key !== 'Enter' || !(event.target instanceof Element)) return;
-        const id = event.target.closest('[data-sticky-id]')?.getAttribute('data-sticky-id');
-        if (id) {
+        if (
+          event.target === event.currentTarget &&
+          (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10'))
+        ) {
           event.preventDefault();
           event.stopPropagation();
-          drawing.confirm({ stickyId: id, side: 'auto' });
+          cancelGestures();
+          const rect = element.current!.getBoundingClientRect();
+          props.onCanvasMenu({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, {});
+          return;
+        }
+        if (!drawing.active || event.key !== 'Enter' || !(event.target instanceof Element)) return;
+        const id = event.target.closest('[data-sticky-id]')?.getAttribute('data-sticky-id');
+        const frameId = event.target.closest('[data-frame-id]')?.getAttribute('data-frame-id');
+        if (id || frameId) {
+          event.preventDefault();
+          event.stopPropagation();
+          drawing.confirm(
+            id ? { stickyId: id, side: 'auto' } : { frameId: frameId!, side: 'auto' },
+          );
         }
       }}
       onPointerDown={onBackgroundDown}
+      onContextMenu={(event) => {
+        if (
+          event.target instanceof Element &&
+          event.target.closest('input,textarea,[contenteditable]')
+        )
+          return;
+        event.preventDefault();
+        cancelGestures();
+        const rect = element.current!.getBoundingClientRect();
+        const point =
+          event.clientX || event.clientY
+            ? { x: event.clientX, y: event.clientY }
+            : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        props.onCanvasMenu(point, canvasTarget(event.target));
+      }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={() => {
-        setGesture(null);
-        cancelDrawing();
-        frameDrawing.cancel();
-      }}
+      onPointerCancel={cancelGestures}
       onLostPointerCapture={() => {
         setGesture(null);
         frameDrawing.cancel();
@@ -295,37 +324,20 @@ export function BoardCanvas(props: Props) {
         className="board-layer"
         style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}
       >
-        {displayedFrames.map((frame, index) => (
-          <FrameItem
-            key={frame.id}
-            frame={frame}
-            selected={props.frames.selectedId === frame.id}
-            zIndex={index - displayedFrames.length}
-            onChange={props.frames.onChange}
-            onSelect={(id) => {
-              if (!space && tool === 'interact') props.frames.onSelect(id);
-            }}
-            onDown={(event, id, resize) => {
-              if (space || tool === 'hand' || event.button === 1) {
-                event.preventDefault();
-                event.stopPropagation();
-                element.current!.setPointerCapture(event.pointerId);
-                setGesture({ type: 'pan', last: local(event) });
-              } else if (tool === 'interact') frameDrawing.begin(event, id, resize);
-            }}
-          />
-        ))}
-        {frameDrawing.draft && (
-          <div
-            className="frame-draft"
-            style={{
-              left: frameDrawing.draft.x,
-              top: frameDrawing.draft.y,
-              width: frameDrawing.draft.width,
-              height: frameDrawing.draft.height,
-            }}
-          />
-        )}
+        <FrameLayer
+          board={displayed}
+          frames={props.frames}
+          drawing={drawing}
+          frameDrawing={frameDrawing}
+          tool={tool}
+          space={space}
+          onPan={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            element.current!.setPointerCapture(event.pointerId);
+            setGesture({ type: 'pan', last: local(event) });
+          }}
+        />
         <ConnectionLayer
           board={displayed}
           zoom={view.zoom}

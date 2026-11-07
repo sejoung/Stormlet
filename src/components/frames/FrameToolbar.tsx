@@ -1,4 +1,4 @@
-import { FRAME_COLORS } from '../../domain/frames/model';
+import { FRAME_COLORS, FRAME_BORDER_WIDTHS } from '../../domain/frames/model';
 import type { FrameInteraction } from './types';
 import type { View } from '../../engine/viewport';
 import { Icon } from '../toolbar/Icon';
@@ -25,7 +25,7 @@ export function FrameToolbar({
       aria-label="프레임 편집 도구"
       style={{
         left: Math.max(12, Math.min(frame.x * view.zoom + view.x, viewport.width - 336)),
-        top: Math.max(12, Math.min(top >= 170 ? top - 164 : top + 32, viewport.height - 180)),
+        top: Math.max(12, Math.min(top >= 220 ? top - 208 : top + 32, viewport.height - 204)),
       }}
     >
       <div className="frame-tools">
@@ -71,6 +71,23 @@ export function FrameToolbar({
           />
         ))}
       </div>
+      <label className="frame-stroke-width">
+        테두리
+        <select
+          aria-label="프레임 테두리 두께"
+          value={frame.borderWidth}
+          disabled={frame.locked}
+          onChange={(event) =>
+            frames.onChange(frame.id, { borderWidth: Number(event.target.value) })
+          }
+        >
+          {FRAME_BORDER_WIDTHS.map((width) => (
+            <option key={width} value={width}>
+              {width} px
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="frame-dimensions">
         {(['width', 'height'] as const).map((field, i) => (
           <label key={field}>

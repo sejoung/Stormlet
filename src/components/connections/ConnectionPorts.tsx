@@ -23,7 +23,7 @@ export function ConnectionPorts({
           type="button"
           className={`connection-port port-${side}`}
           aria-label={`${label} 연결점`}
-          title="드래그하거나 클릭한 뒤 다른 메모를 눌러 연결"
+          title="드래그하거나 클릭한 뒤 다른 오브젝트를 눌러 연결"
           onPointerDown={(event) => onStart(event, side)}
           onDoubleClick={(event) => event.stopPropagation()}
           onClick={(event) => {

@@ -54,10 +54,9 @@ export function useNoteActions(options: Options) {
     });
     onSelect(created);
   };
-  const pasteNotes = (pasted: Board) => {
+  const pasteNotes = (pasted: Board, at = options.center()) => {
     const notes = stackOrder(pasted);
     if (!notes.length) return;
-    const at = options.center();
     const left = Math.min(...notes.map((s) => s.x)),
       top = Math.min(...notes.map((s) => s.y));
     let created: string[] = [];
@@ -69,9 +68,8 @@ export function useNoteActions(options: Options) {
     onSelect(created);
     options.onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
   };
-  const addCells = (cells: TextCell[]) => {
+  const addCells = (cells: TextCell[], at = options.center()) => {
     if (!cells.length) return;
-    const at = options.center();
     const created = cells.slice(0, 5000).map((cell) => ({ ...cell, id: newId() }));
     const columns = Math.ceil(Math.sqrt(created.length));
     // Plain text lists become a compact grid; spreadsheet cells preserve their positions.

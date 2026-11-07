@@ -39,7 +39,7 @@ describe('extended note persistence', () => {
       }),
     );
     const json = serializeBoard(board);
-    expect(JSON.parse(json).version).toBe(7);
+    expect(JSON.parse(json).version).toBe(8);
     expect(parseBoard(json)).toStrictEqual(board);
     expect(parseBoard(file({ unknown: '<script>', groupId: null })).stickies.a).not.toHaveProperty(
       'unknown',
@@ -71,7 +71,7 @@ describe('extended note persistence', () => {
     expect(() => parseBoard(file(details))).toThrow(FormatError);
   });
 
-  it('keeps a version 3 board unchanged and writes it as version 7', () => {
+  it('keeps a version 3 board unchanged and writes it as version 8', () => {
     const note = sticky('a', { width: 260, height: 180 });
     const before = JSON.stringify({ format: 'stormlet', version: 3, stickies: [note] });
     const board = parseBoard(before);

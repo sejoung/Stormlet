@@ -8,7 +8,7 @@ import {
   type Move,
 } from '../domain/commands';
 import type { StickySize } from '../domain/sticky-size';
-import { BoardContextMenu } from '../components/board/BoardContextMenu';
+import { useBoardMenus } from './menus/useBoardMenus';
 import { own } from '../domain/ids';
 import { DEFAULT_STICKY_APPEARANCE } from '../domain/model';
 import { boardTitle, renameBoard } from '../domain/board-title';
@@ -52,8 +52,6 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const closeDialog = useCallback(() => setDialog(null), []);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [menu, setMenu] = useState<{ ids: string[]; point: Point } | null>(null);
-  const closeMenu = useCallback(() => setMenu(null), []);
   const [status, setStatus] = useState<string | null>(null);
   const links = useConnectionSession({
     board,
@@ -124,14 +122,14 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
       : links.selected
         ? links.remove()
         : edit((current) => deleteStickies(current, activeIds));
-  useClipboard({
+  const clipboard = useClipboard({
     board,
     ids: activeIds,
     frameId: frames.selectedId,
-    onPaste: (source) =>
+    onPaste: (source, at) =>
       Object.keys(source.frames ?? {}).length
-        ? frames.paste(source, toBoardPoint(view, center()))
-        : actions.pasteNotes(source),
+        ? frames.paste(source, at ?? toBoardPoint(view, center()))
+        : actions.pasteNotes(source, at),
     onText: actions.addCells,
     onCut: () => (frames.selected ? frames.cut() : remove()),
     onStatus: setStatus,
@@ -182,17 +180,6 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     (ids: string[], size: StickySize) => edit((current) => resizeStickies(current, ids, size)),
     [edit],
   );
-  const onContextMenu = useCallback(
-    (id: string, point: Point) => {
-      clearConnection();
-      setSelectedFrame(null);
-      const ids = selection.has(id) ? [...selection] : [id];
-      setPicked(ids);
-      setMenu({ ids, point });
-    },
-    [selection, clearConnection],
-  );
-
   const onCommitText = useCallback(
     (id: string, text: string) => {
       setEditing(null);
@@ -220,10 +207,31 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     reset: () => {
       setPicked([]);
       setEditing(null);
-      setMenu(null);
+      menus.close();
       links.clear();
       frames.clear();
     },
+  });
+
+  const menus = useBoardMenus({
+    board,
+    view,
+    element: boardElement,
+    ids: activeIds,
+    frames,
+    links,
+    actions,
+    clipboard,
+    edit,
+    selectNotes,
+    onEdit: startEdit,
+    flushEditor,
+    onAdd,
+    onFit: () => fit(),
+    onUndo: undo,
+    onRedo: redo,
+    canUndo: session.undo.length > 0,
+    canRedo: session.redo.length > 0,
   });
 
   useShortcuts({
@@ -312,7 +320,8 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
             onSelect={selectNotes}
             onMove={onMove}
             onResize={onResize}
-            onContextMenu={onContextMenu}
+            onContextMenu={menus.onNote}
+            onCanvasMenu={menus.onCanvas}
             onAdd={onAdd}
             onStartEdit={startEdit}
             onCommitText={onCommitText}
@@ -320,6 +329,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
             onReact={(id, emoji) => actions.react(emoji, [id])}
           />
           <ObjectToolbars
+            hidden={menus.open}
             board={board}
             view={view}
             frames={frames}
@@ -330,7 +340,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
             }}
             onDeleteFrame={frames.remove}
           />
-          {!!selectedNotes.length && !menu && (
+          {!!selectedNotes.length && !menus.open && (
             <NoteSelection
               notes={selectedNotes}
               ids={activeIds}
@@ -340,7 +350,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
               edit={edit}
               onResize={onResize}
               flushEditor={flushEditor}
-              onMenu={setMenu}
+              onMenu={menus.onDetails}
               onFrame={() => {
                 flushEditor();
                 frames.surround(activeIds);
@@ -376,14 +386,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
           />
         </div>
       </main>
-      <BoardContextMenu
-        board={board}
-        menu={menu}
-        edit={edit}
-        onClose={closeMenu}
-        onEdit={startEdit}
-        onDuplicate={actions.duplicate}
-      />
+      {menus.node}
       {dialog === 'bulk' && (
         <BulkDialog
           onClose={closeDialog}
