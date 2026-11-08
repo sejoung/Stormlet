@@ -12,9 +12,8 @@ test.describe('in an English browser', () => {
     await expect(page).toHaveTitle('Stormlet — Sticky note board');
 
     await page.getByRole('button', { name: 'Settings' }).click();
-    await page.getByRole('radio', { name: '한국어' }).check();
-    await expect(page.getByRole('dialog', { name: '설정' })).toBeVisible();
-    await page.keyboard.press('Escape');
+    await page.getByRole('menuitemradio', { name: '한국어' }).click();
+    await expect(page.getByRole('button', { name: '설정' })).toBeFocused();
     await expect(page.getByRole('button', { name: '실행 취소' })).toBeVisible();
 
     await page.reload();
@@ -35,7 +34,7 @@ test.describe('in a browser language without a translation', () => {
   test.use({ locale: 'fr-FR' });
 
   test('falls back to English', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'File', exact: true })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   });
 });

@@ -16,14 +16,15 @@ export const en = {
   'toolbar.undoHint': 'Undo (Ctrl/Cmd+Z)',
   'toolbar.redo': 'Redo',
   'toolbar.redoHint': 'Redo (Ctrl/Cmd+Shift+Z)',
-  'toolbar.searchAndFiles': 'Search and files',
   'toolbar.search': 'Search notes',
   'toolbar.searchHint': 'Search notes (Ctrl/Cmd+F)',
-  'toolbar.open': 'Open',
-  'toolbar.openHint': 'Open a board file',
-  'toolbar.save': 'Save',
-  'toolbar.saveHint': 'Save as a board file',
   'toolbar.settings': 'Settings',
+  'menu.bar': 'Menu',
+  'menu.file': 'File',
+  'menu.openFile': 'Open…',
+  'menu.download': 'Download as file',
+  'menu.syncNow': 'Sync now',
+  'menu.diagnostics': 'Troubleshooting…',
 
   'board.titleField': 'Board name',
   'board.titleLabel': 'Board name: {title}',
@@ -33,7 +34,6 @@ export const en = {
   'board.notSavedHint':
     'This browser is not saving your changes, possibly because its storage is full. Use Save to keep a copy.',
 
-  'settings.title': 'Settings',
   'settings.language': 'Language',
   'settings.languageAuto': 'Browser language',
   'settings.diagnostics': 'Troubleshooting',
@@ -223,6 +223,8 @@ export const en = {
   'help.fitNotesKeys': 'Option / Alt + 1 / 2',
   'help.searchNotes': 'Search notes',
   'help.searchNotesKeys': '⌘ / Ctrl + F',
+  'help.openDownload': 'Open / download a board file',
+  'help.openDownloadKeys': '⌘ / Ctrl + O / S',
 
   'creation.boardTools': 'Board tools',
   'creation.select': 'Select · move',

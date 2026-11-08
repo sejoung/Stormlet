@@ -22,6 +22,7 @@ interface Handlers {
   onFit(selected: boolean): void;
   onHelp(): void;
   onSave(): void;
+  onOpenFile(): void;
 }
 
 const FORMAT_KEYS: Readonly<Record<string, FormatToggle>> = {
@@ -67,6 +68,7 @@ const BINDINGS: readonly Binding[] = [
   { mod: true, keys: Object.keys(FORMAT_KEYS), run: (h, _, key) => h.onFormat(FORMAT_KEYS[key]) },
   { mod: true, keys: ['f'], run: (h) => h.onSearch() },
   { mod: true, keys: ['s'], run: (h) => h.onSave() },
+  { mod: true, keys: ['o'], run: (h) => h.onOpenFile() },
   { alt: true, keys: ['1', '2'], run: (h, _, key) => h.onFit(key === '2') },
   {
     mod: false,

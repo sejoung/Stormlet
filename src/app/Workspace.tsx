@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocale } from '../components/common/i18n';
 import { deleteStickies, editableIds } from '../domain/commands';
 import { isEmptyBoard } from '../domain/model';
@@ -38,8 +38,7 @@ import { diagnostics } from './diagnostics/diagnostics';
 import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
 import { WorkspaceDialogs, type DialogName } from './panels/WorkspaceDialogs';
-import { DriveButton } from '../components/drive/DriveButton';
-import { needsAttention } from '../components/drive/drive-status';
+import { SyncStatus, ToolbarMenus } from './panels/ToolbarMenus';
 
 export interface WorkspaceProps {
   store: BoardStore;
@@ -89,6 +88,7 @@ export function Workspace({
 
   // --- Panels and messages ---
   const [dialog, setDialog] = useState<DialogName | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const search = useBoardSearch(board);
   const [status, setStatus] = useStatus();
 
@@ -211,6 +211,7 @@ export function Workspace({
     onFit: (onlySelected) => fit(onlySelected ? activeIds : undefined),
     onHelp: () => setDialog('help'),
     onSave: save,
+    onOpenFile: () => fileInput.current?.click(),
     onEscape: () => {
       selected.clear();
       finishTool();
@@ -233,22 +234,20 @@ export function Workspace({
             onSearch={search.toggle}
             onUndo={undo}
             onRedo={redo}
-            onOpen={onOpen}
             onSave={save}
-            onSettings={() => setDialog('settings')}
-            drive={
-              drive.available && (
-                <DriveButton
-                  state={drive.state}
-                  expiring={drive.expiring}
-                  onClick={() => {
-                    if (drive.expiring && !needsAttention(drive.state)) return drive.renew();
-                    // Reconnecting straight from the click keeps Google's popup allowed.
-                    if (drive.state.status === 'paused' && drive.ready) drive.connect();
-                    else setDialog(drive.state.status === 'conflict' ? 'conflict' : 'drive');
-                  }}
-                />
-              )
+            menus={
+              <ToolbarMenus
+                fileInput={fileInput}
+                onOpenFile={onOpen}
+                onDownload={save}
+                drive={drive}
+                language={language}
+                onLanguage={onLanguage}
+                onDialog={setDialog}
+              />
+            }
+            sync={
+              'file' in drive.state ? <SyncStatus drive={drive} onDialog={setDialog} /> : undefined
             }
           />
           <main className="workspace">
@@ -378,8 +377,6 @@ export function Workspace({
             onBulkAdd={(texts) =>
               actions.addCells(texts.map((text, row) => ({ text, row, column: 0 })))
             }
-            language={language}
-            onLanguage={onLanguage}
             diagnostics={diagnostics(locale, () => store.load())}
             drive={drive}
           />

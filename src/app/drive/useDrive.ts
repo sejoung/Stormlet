@@ -118,6 +118,10 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
       })
       .finally(() => setBusy(false));
   };
+  /** Sign in first when needed; the popup opens because this still runs in the click. */
+  const access = async ({ auth }: DriveServices) => {
+    if (!auth.getToken()) await auth.connect();
+  };
   const pick = (drive: DriveServices, kind: 'file' | 'folder') =>
     drive.auth.pick(kind, {
       language: locale,
@@ -139,6 +143,7 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
     saveToFolder: () =>
       run('drive.create-failed', async (drive) => {
         flushEditor();
+        await access(drive);
         const folder = await pick(drive, 'folder');
         if (!folder) return;
         const file = await drive.sync.create(folder.id);
@@ -147,6 +152,7 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
     open: () =>
       run('drive.open-failed', async (drive) => {
         flushEditor();
+        await access(drive);
         const picked = await pick(drive, 'file');
         if (!picked) return;
         if (!(await drive.sync.settle())) return onStatus(t('drive.openBlocked'));
@@ -159,6 +165,13 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
     saveNow: () => {
       flushEditor();
       void services?.sync.saveNow();
+    },
+    /** Save the linked file now, reconnecting first if access ended. */
+    syncNow: () => {
+      flushEditor();
+      if (services?.auth.getToken()) void services.sync.saveNow();
+      // Saving resumes when the token arrives.
+      else run('drive.connect-failed', ({ auth }) => auth.connect());
     },
     resolve: (choices: Record<string, Side>) => void services?.sync.resolve(choices),
     unlink: () => services?.sync.unlink(),

@@ -6,25 +6,23 @@ import { parseBoard } from '../../src/adapters/files/stormlet-format';
 const driveButton = (page: import('@playwright/test').Page) =>
   page.getByRole('button', { name: /^Google Drive:/ });
 
-async function connect(page: import('@playwright/test').Page) {
-  await driveButton(page).click();
-  const dialog = page.getByRole('dialog', { name: 'Google Drive' });
-  await dialog.getByRole('button', { name: 'Google Drive 연결' }).click();
-  await expect(dialog.getByRole('button', { name: 'Drive 폴더에 저장…' })).toBeVisible();
-  return dialog;
+/** Run a File menu item once Google's scripts have loaded. */
+async function fromFile(page: import('@playwright/test').Page, name: string) {
+  await page.getByRole('button', { name: '파일' }).click();
+  const item = page.getByRole('menuitem', { name });
+  await expect(item).toBeEnabled();
+  await item.click();
 }
+const pickFolder = (page: import('@playwright/test').Page) =>
+  page.getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' }).getByRole('button').click();
 
 test('saves to a Drive folder, autosaves edits and merges changes made elsewhere after reconnecting', async ({
   page,
 }) => {
   await mockGoogleScripts(page);
   const drive = await mockDrive(page);
-  const dialog = await connect(page);
-  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
-  await page
-    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
-    .getByRole('button')
-    .click();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
   await expect(driveButton(page)).toHaveText('저장됨');
   expect([...drive.files.keys()]).toEqual(['created-1']);
   expect(drive.files.get('created-1')).toMatchObject({
@@ -87,8 +85,7 @@ test('opens a board from Drive', async ({ page }) => {
       },
     }),
   });
-  const dialog = await connect(page);
-  await dialog.getByRole('button', { name: 'Drive에서 열기…' }).click();
+  await fromFile(page, 'Drive에서 열기…');
   await page.getByRole('dialog', { name: 'Stormlet 보드 열기' }).getByRole('button').click();
   await expect(page.getByText('Drive에서 Shared.stormlet을(를) 열었습니다.')).toBeVisible();
   await expect(page.getByRole('button', { name: '보드 이름: Shared' })).toBeVisible();
@@ -103,12 +100,8 @@ test('a new tab takes over an open tab’s connection, and a disconnect ends bot
 }) => {
   await mockGoogleScripts(context);
   const drive = await mockDrive(context);
-  const dialog = await connect(page);
-  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
-  await page
-    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
-    .getByRole('button')
-    .click();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
   await expect(driveButton(page)).toHaveText('저장됨');
 
   const second = await context.newPage();
@@ -121,13 +114,9 @@ test('a new tab takes over an open tab’s connection, and a disconnect ends bot
   ).not.toContain('e2e-token');
   expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
 
-  await driveButton(second).click();
-  await second
-    .getByRole('dialog', { name: 'Google Drive' })
-    .getByRole('button', { name: 'Google Drive 연결 해제' })
-    .click();
-  await expect(driveButton(second)).toHaveText('Drive');
-  await expect(driveButton(page)).toHaveText('Drive');
+  await fromFile(second, 'Google Drive 연결 해제');
+  await expect(driveButton(second)).toHaveCount(0);
+  await expect(driveButton(page)).toHaveCount(0);
 });
 
 test('renews access on a click before it runs out', async ({ page }) => {
@@ -135,12 +124,8 @@ test('renews access on a click before it runs out', async ({ page }) => {
   await page.reload();
   await mockGoogleScripts(page);
   await mockDrive(page);
-  const dialog = await connect(page);
-  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
-  await page
-    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
-    .getByRole('button')
-    .click();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
   await expect(driveButton(page)).toHaveText('저장됨');
   const signIns = () => page.evaluate(() => document.documentElement.dataset.signIns);
   expect(await signIns()).toBe('1');
@@ -160,13 +145,9 @@ test('renews access on a click before it runs out', async ({ page }) => {
 test('saving to a folder makes one file even when Drive’s answer is lost', async ({ page }) => {
   await mockGoogleScripts(page);
   const drive = await mockDrive(page);
-  const dialog = await connect(page);
   drive.faults.loseNextCreate = true;
-  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
-  await page
-    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
-    .getByRole('button')
-    .click();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
   await expect(driveButton(page)).toHaveText('저장됨');
   expect([...drive.files.keys()]).toEqual(['created-1']);
   expect(drive.requests.filter((request) => request.startsWith('POST'))).toHaveLength(1);
@@ -178,12 +159,8 @@ test('an open tab follows the file another tab opens, and saves its edits there'
 }) => {
   await mockGoogleScripts(context);
   const drive = await mockDrive(context);
-  const dialog = await connect(page);
-  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
-  await page
-    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
-    .getByRole('button')
-    .click();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
   await expect(driveButton(page)).toHaveText('저장됨');
   const second = await context.newPage();
   await second.goto('/');
@@ -195,11 +172,7 @@ test('an open tab follows the file another tab opens, and saves its edits there'
     parents: [],
     content: serializeBoard({ title: 'Shared', stickies: {} }),
   });
-  await driveButton(page).click();
-  await page
-    .getByRole('dialog', { name: 'Google Drive' })
-    .getByRole('button', { name: 'Drive에서 열기…' })
-    .click();
+  await fromFile(page, 'Drive에서 열기…');
   await page.getByRole('dialog', { name: 'Stormlet 보드 열기' }).getByRole('button').click();
   await expect(second.getByRole('button', { name: '보드 이름: Shared' })).toBeVisible();
 
@@ -223,23 +196,14 @@ test('a page closed before Drive answered a creation links that file after recon
 }) => {
   await mockGoogleScripts(page);
   const drive = await mockDrive(page);
-  const dialog = await connect(page);
   drive.faults.holdNextCreate = true;
-  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
-  await page
-    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
-    .getByRole('button')
-    .click();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
   await expect.poll(() => drive.files.size).toBe(1);
   await page.reload();
-  await expect(driveButton(page)).toHaveText('Drive');
+  await expect(driveButton(page)).toHaveCount(0);
 
-  // The dialog may already show the linked file when the lookup is quick, so only connect.
-  await driveButton(page).click();
-  await page
-    .getByRole('dialog', { name: 'Google Drive' })
-    .getByRole('button', { name: 'Google Drive 연결' })
-    .click();
+  await fromFile(page, 'Google Drive 연결');
   await expect(
     page.getByText(
       '페이지를 닫기 직전 Drive에 저장한 My idea board.stormlet을(를) 찾아 다시 연결했습니다.',

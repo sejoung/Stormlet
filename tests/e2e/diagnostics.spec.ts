@@ -22,7 +22,8 @@ test('copies diagnostics with the version and recent log from the settings', asy
 }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.getByRole('button', { name: '설정' }).click();
-  const dialog = page.getByRole('dialog', { name: '설정' });
+  await page.getByRole('menuitem', { name: '문제 해결…' }).click();
+  const dialog = page.getByRole('dialog', { name: '문제 해결' });
   await dialog.getByRole('button', { name: '진단 정보 복사' }).click();
   await expect(dialog.getByRole('status')).toHaveText('진단 정보를 복사했습니다.');
   const report = await page.evaluate(() => navigator.clipboard.readText());

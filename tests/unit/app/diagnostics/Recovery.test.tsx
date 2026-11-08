@@ -107,8 +107,8 @@ describe('recovery', () => {
   it('shows the diagnostics to copy by hand from the settings when the clipboard is refused', async () => {
     render(<App store={memoryStore(boardOf(sticky('a'), sticky('b')))} newId={ids()} />);
     fireEvent.click(screen.getByRole('button', { name: '설정' }));
-    const dialog = screen.getByRole('dialog', { name: '설정' });
-    expect(within(dialog).getByRole('heading', { name: '문제 해결' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('menuitem', { name: '문제 해결…' }));
+    const dialog = screen.getByRole('dialog', { name: '문제 해결' });
     fireEvent.click(within(dialog).getByRole('button', { name: '진단 정보 복사' }));
     expect(await within(dialog).findByRole('status')).toHaveTextContent('복사하지 못했습니다.');
     const text = within(dialog).getByRole('textbox', { name: '진단 정보' });

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { BoardTitle } from './BoardTitle';
 import { Icon } from './Icon';
 import { useT } from '../common/i18n';
@@ -14,16 +14,19 @@ interface Props {
   onSearch(): void;
   onUndo(): void;
   onRedo(): void;
-  onOpen(file: File): void;
+  /** ⌘/Ctrl+S while renaming. */
   onSave(): void;
-  onSettings(): void;
-  /** The Google Drive control, when Drive is available. */
-  drive?: ReactNode;
+  /** The menu bar under the title: File and Settings. */
+  menus: ReactNode;
+  /** Where the board syncs to (Google Drive), shown in place of the local badge. */
+  sync?: ReactNode;
 }
 
-/** Board-wide actions stay at the top; creation tools live in the left rail. */
+/**
+ * The board's name with its save state and menus, as in a desktop editor; frequent
+ * actions stay as icons on the right, and creation tools live in the left rail.
+ */
 export function Toolbar(props: Props) {
-  const fileInput = useRef<HTMLInputElement>(null);
   const t = useT();
   return (
     <header className="toolbar">
@@ -34,12 +37,18 @@ export function Toolbar(props: Props) {
           </span>
           <strong>Stormlet</strong>
         </div>
-        <BoardTitle
-          title={props.title}
-          saved={props.saved}
-          onRename={props.onRename}
-          onSave={props.onSave}
-        />
+        <div className="board-heading">
+          <BoardTitle
+            title={props.title}
+            saved={props.saved}
+            sync={props.sync}
+            onRename={props.onRename}
+            onSave={props.onSave}
+          />
+          <nav className="menu-bar" aria-label={t('menu.bar')}>
+            {props.menus}
+          </nav>
+        </div>
       </div>
       <div className="actions" role="group" aria-label={t('toolbar.boardActions')}>
         <div className="action-group" role="group" aria-label={t('toolbar.history')}>
@@ -65,55 +74,15 @@ export function Toolbar(props: Props) {
           </button>
         </div>
         <span className="toolbar-divider" aria-hidden="true" />
-        <div className="action-group" role="group" aria-label={t('toolbar.searchAndFiles')}>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={t('toolbar.search')}
-            title={t('toolbar.searchHint')}
-            onClick={props.onSearch}
-          >
-            <Icon name="search" />
-          </button>
-          <button
-            type="button"
-            title={t('toolbar.openHint')}
-            onClick={() => fileInput.current?.click()}
-          >
-            <Icon name="open" />
-            {t('toolbar.open')}
-          </button>
-          <button
-            className="save-button"
-            type="button"
-            title={t('toolbar.saveHint')}
-            onClick={props.onSave}
-          >
-            <Icon name="save" />
-            {t('toolbar.save')}
-          </button>
-          {props.drive}
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={t('toolbar.settings')}
-            title={t('toolbar.settings')}
-            onClick={props.onSettings}
-          >
-            <Icon name="settings" />
-          </button>
-        </div>
-        <input
-          ref={fileInput}
-          type="file"
-          accept=".stormlet,application/json"
-          hidden
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) props.onOpen(file);
-            event.target.value = '';
-          }}
-        />
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={t('toolbar.search')}
+          title={t('toolbar.searchHint')}
+          onClick={props.onSearch}
+        >
+          <Icon name="search" />
+        </button>
       </div>
       {props.status && (
         <p className="status" role="status">

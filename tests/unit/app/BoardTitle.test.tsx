@@ -30,7 +30,8 @@ describe('board name editing', () => {
     await user.type(input, '회고/기획: 1차{Enter}');
     expect(store.board.title).toBe('회고/기획: 1차');
     expect(screen.getByRole('button', { name: '보드 이름: 회고/기획: 1차' })).toHaveFocus();
-    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.click(screen.getByRole('button', { name: '파일' }));
+    await user.click(screen.getByRole('menuitem', { name: /^파일로 내려받기/ }));
     const [filename, contents] = vi.mocked(downloadText).mock.calls.at(-1)!;
     expect(filename).toBe('회고-기획- 1차.stormlet');
     expect(parseBoard(contents).title).toBe('회고/기획: 1차');
@@ -103,7 +104,8 @@ describe('board name editing', () => {
     );
     await waitFor(() => expect(store.board.title).toBe('이전 회고'));
     expect(store.board.stickies.b).toMatchObject({ width: 160, height: 120 });
-    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.click(screen.getByRole('button', { name: '파일' }));
+    await user.click(screen.getByRole('menuitem', { name: /^파일로 내려받기/ }));
     expect(vi.mocked(downloadText).mock.calls.at(-1)?.[0]).toBe('이전 회고.stormlet');
   });
 });

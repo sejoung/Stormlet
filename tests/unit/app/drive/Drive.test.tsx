@@ -69,20 +69,19 @@ function renderWithDrive(board: Board = boardOf(sticky('a')), link: RemoteLink |
   return { auth, drive, store, sync, links };
 }
 
+/** The linked file's sync status beside the board name; absent while nothing is linked. */
 const driveButton = () => screen.getByRole('button', { name: /^Google Drive:/ });
-const openDrive = () => {
-  fireEvent.click(driveButton());
-  return screen.getByRole('dialog', { name: 'Google Drive' });
+const noDriveButton = () =>
+  expect(screen.queryByRole('button', { name: /^Google Drive:/ })).not.toBeInTheDocument();
+const openFileMenu = () => {
+  fireEvent.click(screen.getByRole('button', { name: '파일' }));
+  return screen.getByRole('menu', { name: '파일' });
 };
-/** Connect from the Drive dialog once Google's scripts are ready. */
-async function connect() {
-  const dialog = openDrive();
-  const button = within(dialog).getByRole('button', { name: /Google Drive 연결|Google 서비스/ });
-  await waitFor(() => expect(button).toHaveAccessibleName('Google Drive 연결'));
-  expect(button).toBeEnabled();
-  fireEvent.click(button);
-  await within(dialog).findByRole('button', { name: 'Drive 폴더에 저장…' });
-  return dialog;
+/** Run a File menu item once Google's scripts have loaded and it is enabled. */
+async function chooseFromFile(name: string) {
+  const item = within(openFileMenu()).getByRole('menuitem', { name });
+  await waitFor(() => expect(item).toBeEnabled());
+  fireEvent.click(item);
 }
 
 afterEach(() => clearLog());
@@ -95,22 +94,22 @@ describe('Google Drive', () => {
 
   it('connects, saves the board to a chosen folder and shows it is saved', async () => {
     const { auth, drive, sync } = renderWithDrive({ ...boardOf(sticky('a')), title: 'Plan' });
-    expect(driveButton()).toHaveAccessibleName('Google Drive: 연결된 파일 없음');
-    const before = openDrive();
-    expect(
-      within(before).getByRole('button', { name: 'Google 서비스 불러오는 중…' }),
-    ).toBeDisabled();
-    expect(
-      within(before).queryByRole('button', { name: 'Drive에서 열기…' }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(within(before).getByRole('button', { name: '닫기' }));
-    const dialog = await connect();
+    // Nothing is linked: the local badge shows where the board is kept.
+    noDriveButton();
+    expect(screen.getByText('브라우저에 자동 저장')).toBeInTheDocument();
+    const menu = openFileMenu();
+    expect(within(menu).getByText('Google 서비스 불러오는 중…')).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: 'Drive 폴더에 저장…' })).toBeDisabled();
     expect(auth.prepare).toHaveBeenCalledTimes(1);
+    fireEvent.keyDown(menu, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '파일' })).toHaveFocus();
 
     auth.pick.mockResolvedValueOnce({ id: 'folder', name: 'Boards' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Drive 폴더에 저장…' }));
-    // The dialog closes first, so Google's Picker is not covered by it.
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await chooseFromFile('Drive 폴더에 저장…');
+    // Signing in happens within the click; the menu is gone before Google's Picker opens.
+    expect(auth.connect).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(
       await screen.findByText('Plan.stormlet을(를) Drive에 저장했습니다.'),
     ).toBeInTheDocument();
@@ -122,20 +121,34 @@ describe('Google Drive', () => {
     expect(drive.calls).toEqual(['unconfirmed', 'create folder']);
     expect(driveButton()).toHaveAccessibleName('Google Drive: Drive에 저장됨');
     expect(driveButton()).toHaveTextContent('저장됨');
+    expect(screen.queryByText('브라우저에 자동 저장')).not.toBeInTheDocument();
     expect(sync.current.status).toBe('synced');
 
-    const linked = openDrive();
-    expect(within(linked).getByText('Plan.stormlet')).toBeInTheDocument();
+    const linked = openFileMenu();
     expect(
-      within(linked).getByRole('button', { name: '다른 폴더에 사본 저장…' }),
-    ).toBeInTheDocument();
+      within(linked)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      '열기…⌘ / Ctrl+O',
+      '파일로 내려받기⌘ / Ctrl+S',
+      'Drive에서 열기…',
+      '다른 폴더에 사본 저장…',
+      '지금 동기화',
+      '동기화 중지',
+      'Google Drive 연결 해제',
+    ]);
+    fireEvent.keyDown(linked, { key: 'Escape' });
+    fireEvent.click(driveButton());
+    const details = screen.getByRole('dialog', { name: 'Google Drive' });
+    expect(within(details).getByText('Plan.stormlet')).toBeInTheDocument();
   });
 
   it('links a file saved just before the page closed once connected', async () => {
-    const { drive, links } = renderWithDrive({ ...boardOf(sticky('a')), title: 'Plan' });
+    const { auth, drive, links } = renderWithDrive({ ...boardOf(sticky('a')), title: 'Plan' });
     drive.files.set('made', { name: 'Plan.stormlet', version: 1, board: boardOf() });
     drive.unseen.id = 'made';
-    await connect();
+    act(() => auth.elsewhere.token());
     expect(
       await screen.findByText(
         '페이지를 닫기 직전 Drive에 저장한 Plan.stormlet을(를) 찾아 다시 연결했습니다.',
@@ -152,9 +165,8 @@ describe('Google Drive', () => {
       version: 4,
       board: { ...boardOf(sticky('r', { text: 'from drive' })), title: 'Shared' },
     });
-    const dialog = await connect();
     auth.pick.mockResolvedValueOnce({ id: 'remote', name: 'Shared.stormlet' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Drive에서 열기…' }));
+    await chooseFromFile('Drive에서 열기…');
     expect(
       await screen.findByText('Drive에서 Shared.stormlet을(를) 열었습니다.'),
     ).toBeInTheDocument();
@@ -220,9 +232,8 @@ describe('Google Drive', () => {
 
   it('stops syncing when a local file replaces the board, and on disconnect', async () => {
     const { auth, sync } = renderWithDrive();
-    const dialog = await connect();
     auth.pick.mockResolvedValueOnce({ id: 'folder', name: 'Boards' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Drive 폴더에 저장…' }));
+    await chooseFromFile('Drive 폴더에 저장…');
     await waitFor(() => expect(sync.current.status).toBe('synced'));
 
     const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
@@ -234,23 +245,21 @@ describe('Google Drive', () => {
     expect(await screen.findByText('local.stormlet을(를) 열었습니다.')).toBeInTheDocument();
     expect(sync.current.status).toBe('unlinked');
 
-    fireEvent.click(within(openDrive()).getByRole('button', { name: 'Google Drive 연결 해제' }));
+    noDriveButton();
+    await chooseFromFile('Google Drive 연결 해제');
     expect(await screen.findByText('Google Drive 연결을 해제했습니다.')).toBeInTheDocument();
     expect(auth.disconnect).toHaveBeenCalled();
-    expect(driveButton()).toHaveTextContent('Drive');
   });
 
   it('reports failed actions and logs them', async () => {
     const { auth } = renderWithDrive();
     auth.connect.mockRejectedValueOnce(new DriveAuthError('cancelled'));
-    const dialog = openDrive();
-    const button = await within(dialog).findByRole('button', { name: 'Google Drive 연결' });
-    await waitFor(() => expect(button).toBeEnabled());
-    fireEvent.click(button);
+    await chooseFromFile('Drive에서 열기…');
     expect(
       await screen.findByText('Google 로그인이 취소되었거나 차단되었습니다.'),
     ).toBeInTheDocument();
-    expect(recentLog().map((entry) => entry.event)).toContain('drive.connect-failed');
+    expect(auth.pick).not.toHaveBeenCalled();
+    expect(recentLog().map((entry) => entry.event)).toContain('drive.open-failed');
   });
 
   it('follows a token, an expiry and a disconnect from another tab', async () => {
@@ -273,14 +282,13 @@ describe('Google Drive', () => {
     await waitFor(() => expect(driveButton()).toHaveTextContent('저장됨'));
     act(() => auth.elsewhere.disconnected());
     expect(sync.current.status).toBe('unlinked');
-    expect(driveButton()).toHaveTextContent('Drive');
+    noDriveButton();
   });
 
   it('renews expiring access on the next click, and from the button after a failure', async () => {
     const { auth, sync } = renderWithDrive();
-    const dialog = await connect();
     auth.pick.mockResolvedValueOnce({ id: 'folder', name: 'Boards' });
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Drive 폴더에 저장…' }));
+    await chooseFromFile('Drive 폴더에 저장…');
     await waitFor(() => expect(sync.current.status).toBe('synced'));
     expect(auth.connect).toHaveBeenCalledTimes(1);
 

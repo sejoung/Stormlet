@@ -43,16 +43,70 @@
   background: #ffe79a;
   color: #3b3430;
 }
-.board-caption {
-  flex: 0 1 400px;
+.board-heading {
+  flex: 0 1 460px;
   min-width: 0;
-  max-width: 400px;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 1px;
+}
+.board-caption {
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   color: var(--text);
   font-size: 12px;
+}
+.menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.menu-button {
+  position: relative;
+}
+.menu-trigger {
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 18px;
+}
+.menu-trigger:hover,
+.menu-trigger.open {
+  background: var(--selected);
+}
+.sticky-context-menu.toolbar-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 260px;
+}
+.toolbar-menu .menu-choice {
+  position: relative;
+  justify-content: flex-start;
+  padding-left: 28px;
+}
+.toolbar-menu .menu-choice[aria-checked='true']::before {
+  position: absolute;
+  left: 10px;
+  color: var(--accent);
+  content: '✓';
+}
+.toolbar-menu button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.toolbar-menu button:disabled:hover {
+  background: transparent;
 }
 .local-badge {
   display: inline-flex;
@@ -105,15 +159,6 @@
 .actions .icon-button {
   width: 32px;
   padding: 5px;
-}
-.actions .save-button {
-  margin-left: 4px;
-  padding: 8px 13px;
-  background: #4262e8;
-  color: white;
-}
-.actions .save-button:hover {
-  background: #3150d4;
 }
 .toolbar-divider {
   width: 1px;
@@ -217,20 +262,39 @@
 .local-badge.unsaved::before {
   background: #e07b24;
 }
-.actions .drive-button {
-  gap: 6px;
-  max-width: 150px;
+.drive-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
+  max-width: 160px;
+  min-height: 22px;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
 }
-.actions .drive-button span {
+.drive-button:hover {
+  background: var(--selected);
+  color: var(--text);
+}
+.drive-button .app-icon {
+  width: 14px;
+  height: 14px;
+}
+.drive-button span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.actions .drive-button.attention {
+.drive-button.attention {
   border-color: #e07b24;
   color: var(--text);
   font-weight: 600;
 }
-.actions .drive-button.attention .app-icon {
+.drive-button.attention .app-icon {
   color: #e07b24;
 }

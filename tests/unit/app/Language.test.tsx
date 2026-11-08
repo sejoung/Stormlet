@@ -37,21 +37,22 @@ describe('language', () => {
   it('switches language from the settings and remembers the choice', () => {
     renderIn('fr-FR');
     openSettings('Settings');
-    const dialog = screen.getByRole('dialog', { name: 'Settings' });
-    expect(screen.getByRole('radio', { name: 'Browser language' })).toBeChecked();
+    const menu = screen.getByRole('menu', { name: 'Settings' });
+    expect(screen.getByRole('menuitemradio', { name: 'Browser language' })).toBeChecked();
     // Each language is listed in its own name, so it can be found from any language.
-    fireEvent.click(screen.getByRole('radio', { name: '한국어' }));
-    expect(dialog).toHaveAccessibleName('설정');
-    expect(screen.getByRole('radio', { name: '한국어' })).toBeChecked();
+    fireEvent.click(screen.getByRole('menuitemradio', { name: '한국어' }));
+    expect(menu).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '실행 취소' })).toBeInTheDocument();
     expect(document.documentElement.lang).toBe('ko');
     expect(localStorage.getItem(LOCALE_KEY)).toBe('ko');
+    openSettings('설정');
+    expect(screen.getByRole('menuitemradio', { name: '한국어' })).toBeChecked();
 
     cleanup();
     renderIn('fr-FR');
     expect(screen.getByRole('button', { name: '실행 취소' })).toBeInTheDocument();
     openSettings('설정');
-    fireEvent.click(screen.getByRole('radio', { name: '브라우저 언어' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: '브라우저 언어' }));
     expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
     expect(localStorage.getItem(LOCALE_KEY)).toBe('auto');
   });

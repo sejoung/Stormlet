@@ -13,14 +13,15 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'toolbar.undoHint': '실행 취소 (Ctrl/Cmd+Z)',
   'toolbar.redo': '다시 실행',
   'toolbar.redoHint': '다시 실행 (Ctrl/Cmd+Shift+Z)',
-  'toolbar.searchAndFiles': '검색 및 파일',
   'toolbar.search': '메모 검색',
   'toolbar.searchHint': '메모 검색 (Ctrl/Cmd+F)',
-  'toolbar.open': '열기',
-  'toolbar.openHint': '보드 파일 열기',
-  'toolbar.save': '저장',
-  'toolbar.saveHint': '보드 파일로 저장',
   'toolbar.settings': '설정',
+  'menu.bar': '메뉴',
+  'menu.file': '파일',
+  'menu.openFile': '열기…',
+  'menu.download': '파일로 내려받기',
+  'menu.syncNow': '지금 동기화',
+  'menu.diagnostics': '문제 해결…',
 
   'board.titleField': '보드 이름',
   'board.titleLabel': '보드 이름: {title}',
@@ -30,7 +31,6 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'board.notSavedHint':
     '브라우저가 변경 내용을 저장하지 못하고 있습니다. 저장 공간이 가득 찼을 수 있습니다. 저장 버튼으로 사본을 내려받으세요.',
 
-  'settings.title': '설정',
   'settings.language': '언어',
   'settings.languageAuto': '브라우저 언어',
   'settings.diagnostics': '문제 해결',
@@ -220,6 +220,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'help.fitNotesKeys': 'Option / Alt + 1 / 2',
   'help.searchNotes': '메모 검색',
   'help.searchNotesKeys': '⌘ / Ctrl + F',
+  'help.openDownload': '보드 파일 열기 / 내려받기',
+  'help.openDownloadKeys': '⌘ / Ctrl + O / S',
 
   'creation.boardTools': '보드 도구',
   'creation.select': '선택 · 이동',

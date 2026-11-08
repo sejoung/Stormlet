@@ -13,8 +13,6 @@ interface Props {
   busy: boolean;
   onPrepare(): void;
   onConnect(): void;
-  onSaveToFolder(): void;
-  onOpen(): void;
   onSaveNow(): void;
   onResolve(): void;
   onUnlink(): void;
@@ -22,7 +20,10 @@ interface Props {
   onClose(): void;
 }
 
-/** Connecting Google Drive and choosing the file this board syncs with. */
+/**
+ * The linked Drive file's details and what it needs: reconnecting, a conflict, a retry.
+ * Opening and saving files are in the File menu.
+ */
 export function DriveDialog(props: Props) {
   const t = useT();
   const { state, connected, ready, busy, onPrepare } = props;
@@ -74,16 +75,6 @@ export function DriveDialog(props: Props) {
           >
             {state.status === 'failed' ? t('drive.retry') : t('drive.saveNow')}
           </button>
-        )}
-        {connected && (
-          <>
-            <button type="button" disabled={busy} onClick={props.onSaveToFolder}>
-              {linked ? t('drive.saveCopy') : t('drive.saveToFolder')}
-            </button>
-            <button type="button" disabled={busy} onClick={props.onOpen}>
-              {t('drive.open')}
-            </button>
-          </>
         )}
         {linked && (
           <button

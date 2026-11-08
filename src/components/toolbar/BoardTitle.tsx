@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { MAX_BOARD_TITLE_LENGTH } from '../../domain/board-title';
 import { useInlineEdit } from '../common/useInlineEdit';
 import { isComposing } from '../common/keyboard';
@@ -6,12 +7,15 @@ import { useT } from '../common/i18n';
 export function BoardTitle({
   title,
   saved,
+  sync,
   onRename,
   onSave,
 }: {
   title: string;
   /** False while the browser refuses to save changes; the badge then warns instead. */
   saved: boolean;
+  /** A remote sync status, shown instead of the local badge while browser saves work. */
+  sync?: ReactNode;
   onRename(title: string): void;
   onSave(): void;
 }) {
@@ -70,7 +74,11 @@ export function BoardTitle({
         </button>
       )}
       {saved ? (
-        <span className="local-badge">{t('board.autosaved')}</span>
+        (sync ?? (
+          <span className="local-badge" title={t('board.autosaved')}>
+            {t('board.autosaved')}
+          </span>
+        ))
       ) : (
         <span className="local-badge unsaved" role="alert" title={t('board.notSavedHint')}>
           {t('board.notSaved')}

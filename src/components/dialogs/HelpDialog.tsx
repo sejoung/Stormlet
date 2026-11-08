@@ -27,6 +27,7 @@ const SHORTCUTS: readonly (readonly [action: MessageKey, keys: MessageKey])[] = 
   ['help.undoRedo', 'help.undoRedoKeys'],
   ['help.fitNotes', 'help.fitNotesKeys'],
   ['help.searchNotes', 'help.searchNotesKeys'],
+  ['help.openDownload', 'help.openDownloadKeys'],
 ];
 
 export function HelpDialog({ onClose }: { onClose(): void }) {

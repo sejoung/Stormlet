@@ -39,23 +39,24 @@
   .brand strong {
     display: none;
   }
-  .board-caption {
+  .board-heading {
     max-width: none;
   }
-  .actions {
-    flex-basis: 100%;
-    justify-content: flex-end;
+  /* The dot alone says it is saved here; the name needs the room. */
+  .local-badge:not(.unsaved) {
+    gap: 0;
+    font-size: 0;
   }
   .tool-panel {
     left: 10px;
-    top: 125px;
-    max-height: calc(100% - 200px);
+    top: 88px;
+    max-height: calc(100% - 160px);
   }
   .toolbar-divider {
     margin: 0 3px;
   }
   .workspace .canvas-area {
-    top: 124px;
+    top: 84px;
     left: 78px;
   }
   .empty-hint {
