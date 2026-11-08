@@ -3,7 +3,13 @@ import type { Board } from '../../domain/model';
 import { RemoteError } from '../../domain/sync/remote';
 import type { Side } from '../../domain/sync/merge';
 import type { DriveSync, SyncState } from '../../application/drive-sync';
-import { DriveAuthError, type AuthEvent, type DriveAuth } from '../../adapters/drive/types';
+import {
+  DriveAuthError,
+  type AuthEvent,
+  type DriveAuth,
+  type DriveItem,
+} from '../../adapters/drive/types';
+import { isEmptyBoard } from '../../domain/model';
 import { useAuthRenewal } from './useAuthRenewal';
 import { errorDetails, log } from '../../adapters/diagnostics/log';
 import { useLocale, useT } from '../../components/common/i18n';
@@ -13,10 +19,16 @@ import type { MessageKey } from '../../i18n/messages';
 export interface DriveServices {
   auth: DriveAuth;
   sync: DriveSync;
+  /** The folder boards are saved to, shared by every tab. */
+  folder: { read(): DriveItem | null; write(folder: DriveItem | null): void };
+  /** This tab started from an empty board, so its first edit goes to the folder. */
+  startedEmpty?: boolean;
 }
 
 interface Options {
   services: DriveServices | undefined;
+  /** The board on screen, so a new board can go to Drive once it has something on it. */
+  board: Board;
   flushEditor(): void;
   /** Put an opened board on the canvas, titled after `name` when it has no title. */
   replaceBoard(board: Board, name: string): void;
@@ -43,7 +55,7 @@ function failure(error: unknown): MessageKey {
  * actions behind the Drive dialog. Every action reports failures as a status message and
  * in the diagnostics log; none of them touches the board unless it succeeds.
  */
-export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Options) {
+export function useDrive({ services, board, flushEditor, replaceBoard, onStatus }: Options) {
   const t = useT();
   const locale = useLocale();
   const [state, setState] = useState<SyncState>(() => services?.sync.current ?? UNLINKED);
@@ -127,6 +139,42 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
       language: locale,
       title: t(kind === 'file' ? 'drive.pickFile' : 'drive.pickFolder'),
     });
+  /** Save the board as a new file in `folder`, and make it the folder for every tab. */
+  const createIn = async (drive: DriveServices, folder: DriveItem) => {
+    drive.folder.write(folder);
+    const file = await drive.sync.create(folder.id);
+    onStatus(t('drive.savedIn', { name: file.name, folder: folder.name }));
+  };
+  const saveToFolder = () =>
+    run('drive.create-failed', async (drive) => {
+      flushEditor();
+      await access(drive);
+      const folder = await pick(drive, 'folder');
+      if (folder) await createIn(drive, folder);
+    });
+  const syncNow = () => {
+    flushEditor();
+    if (services?.auth.getToken()) void services.sync.saveNow();
+    // Saving resumes when the token arrives.
+    else run('drive.connect-failed', ({ auth }) => auth.connect());
+  };
+
+  // A board started in this tab goes to the shared folder with its first edit, so Drive,
+  // not this browser, is where new work lives. Stopping sync here turns that off.
+  const autoSave = useRef(services?.startedEmpty ?? false);
+  const linked = 'file' in state;
+  const firstEdit = !isEmptyBoard(board);
+  useEffect(() => {
+    if (!services || !autoSave.current) return;
+    if (linked) autoSave.current = false;
+    if (linked || !connected || !firstEdit) return;
+    const folder = services.folder.read();
+    if (!folder) return;
+    autoSave.current = false;
+    run('drive.create-failed', (drive) => createIn(drive, folder));
+    // `run` and `createIn` change every render; the conditions above are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [services, linked, connected, firstEdit]);
 
   return {
     available: Boolean(services),
@@ -140,15 +188,23 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
     connect: () =>
       // Saving resumes when the token arrives, as it does when another tab connects.
       run('drive.connect-failed', ({ auth }) => auth.connect()),
-    saveToFolder: () =>
+    /** Where this board is kept, for the badge beside its name. */
+    savedTo: !services ? undefined : linked ? ('drive' as const) : ('browser-only' as const),
+    /** The folder boards are saved to; null until one is chosen. */
+    folder: () => services?.folder.read() ?? null,
+    saveToFolder,
+    /** Save this board to Drive: into the shared folder, or a folder chosen now. */
+    saveToDrive: () => {
+      const folder = services?.folder.read();
+      if (!folder) return saveToFolder();
       run('drive.create-failed', async (drive) => {
         flushEditor();
         await access(drive);
-        const folder = await pick(drive, 'folder');
-        if (!folder) return;
-        const file = await drive.sync.create(folder.id);
-        onStatus(t('drive.saved', { name: file.name }));
-      }),
+        await createIn(drive, folder);
+      });
+    },
+    /** ⌘/Ctrl+S: save the linked file now, or `download` a board not in Drive. */
+    saveOr: (download: () => void) => () => (linked ? syncNow() : download()),
     open: () =>
       run('drive.open-failed', async (drive) => {
         flushEditor();
@@ -167,12 +223,7 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
       void services?.sync.saveNow();
     },
     /** Save the linked file now, reconnecting first if access ended. */
-    syncNow: () => {
-      flushEditor();
-      if (services?.auth.getToken()) void services.sync.saveNow();
-      // Saving resumes when the token arrives.
-      else run('drive.connect-failed', ({ auth }) => auth.connect());
-    },
+    syncNow,
     /**
      * Before a new board replaces this one: save what is pending to the linked file, then
      * stop syncing. False, with a message, when that cannot be saved now.
@@ -188,10 +239,14 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
       return true;
     },
     resolve: (choices: Record<string, Side>) => void services?.sync.resolve(choices),
-    unlink: () => services?.sync.unlink(),
+    unlink: () => {
+      autoSave.current = false;
+      services?.sync.unlink();
+    },
     disconnect: () =>
-      run('drive.disconnect-failed', async ({ auth, sync }) => {
+      run('drive.disconnect-failed', async ({ auth, sync, folder }) => {
         sync.unlink();
+        folder.write(null);
         await auth.disconnect();
         onStatus(t('drive.disconnected'));
       }),

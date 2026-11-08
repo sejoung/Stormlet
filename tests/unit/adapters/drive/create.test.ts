@@ -26,10 +26,16 @@ function fakeDrive(
 ) {
   let now = 1_000;
   const log: string[] = [];
+  const lists: string[] = [];
   const bodies: string[] = [];
   const fetcher = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = String(input);
     const method = init.method ?? 'GET';
+    // The folder listing that picks a free name; an empty folder unless the test says.
+    if (url.includes('?q=')) {
+      lists.push(decodeURIComponent(url));
+      return (await script['GET list']?.shift()) ?? json({ files: [] });
+    }
     const key = url.includes('generateIds')
       ? 'GET ids'
       : url.startsWith(DRIVE_UPLOAD)
@@ -54,7 +60,7 @@ function fakeDrive(
     () => now,
   );
   const later = (ms: number) => (now += ms);
-  return { client, log, bodies, creations, later };
+  return { client, log, lists, bodies, creations, later };
 }
 
 const created = (version = '1') => json({ id: 'reserved', name: 'Plan.stormlet', version });
@@ -265,5 +271,35 @@ describe('creating Drive files without duplicates', () => {
     });
     await failure(other.client.create('folder', board));
     expect(other.creations.read()).toBeNull();
+  });
+
+  it('numbers the name when the folder already has a file called that', async () => {
+    const drive = fakeDrive({
+      'GET list': [
+        json({
+          files: [
+            { id: 'x', name: 'Plan.stormlet' },
+            { id: 'y', name: 'Plan (2).stormlet' },
+          ],
+          nextPageToken: 'more',
+        }),
+        json({ files: [{ id: 'z', name: "Bob's plan.stormlet" }] }),
+      ],
+      'GET ids': [json({ ids: ['reserved'] })],
+      'POST upload': [json({ id: 'reserved', name: 'Plan (3).stormlet', version: '1' })],
+    });
+    expect(await drive.client.create("f'1", board)).toMatchObject({ name: 'Plan (3).stormlet' });
+    expect(drive.bodies[0]).toContain('"name":"Plan (3).stormlet"');
+    expect(drive.lists[0]).toContain("q='f\\'1' in parents and trashed = false");
+    expect(drive.lists[1]).toContain('pageToken=more');
+  });
+
+  it('keeps the plain name when the folder cannot be listed', async () => {
+    const drive = fakeDrive({
+      'GET list': [json({}, 500)],
+      'GET ids': [json({ ids: ['reserved'] })],
+      'POST upload': [created()],
+    });
+    expect(await drive.client.create('folder', board)).toMatchObject({ name: 'Plan.stormlet' });
   });
 });

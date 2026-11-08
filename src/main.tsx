@@ -5,6 +5,7 @@ import { BOARD_KEY, LocalBoardStore, SAVE_DELAY } from './adapters/storage/local
 import { markSaved, slotKey } from './adapters/storage/board-slots';
 import { LocalBoardLibrary, startTab, type TabBoard } from './adapters/storage/tab-board';
 import { renameBoard } from './domain/board-title';
+import { isEmptyBoard } from './domain/model';
 import { browserLanguages } from './adapters/browser/languages';
 import { pickLocale, translate } from './i18n/messages';
 import { log } from './adapters/diagnostics/log';
@@ -14,7 +15,7 @@ import { driveConfig } from './adapters/drive/config';
 import { GoogleConnection } from './adapters/drive/google';
 import { openAuthChannel } from './adapters/drive/auth-channel';
 import { DriveClient } from './adapters/drive/client';
-import { LocalDriveLinks } from './adapters/drive/links';
+import { LocalDriveFolder, LocalDriveLinks } from './adapters/drive/links';
 import { LocalCreations } from './adapters/drive/creations';
 import { DriveSync } from './application/drive-sync';
 import './styles.css';
@@ -41,9 +42,9 @@ function start({ slot, newTitle }: TabBoard) {
   if (newTitle !== null) local.apply(renameBoard(local.load(), newTitle));
   // With Drive configured, the board store also keeps the linked Drive file in sync.
   const auth = google && new GoogleConnection(google, openAuthChannel(google.clientId));
-  const drive = auth && {
-    auth,
-    sync: new DriveSync(
+  const sync =
+    auth &&
+    new DriveSync(
       local,
       new DriveClient(
         auth.getToken,
@@ -54,8 +55,15 @@ function start({ slot, newTitle }: TabBoard) {
       new LocalDriveLinks(slot),
       Date.now,
       local.damaged !== null,
-    ),
-  };
+    );
+  const drive = auth &&
+    sync && {
+      auth,
+      sync,
+      folder: new LocalDriveFolder(),
+      // A board started empty here goes to the shared Drive folder with its first edit.
+      startedEmpty: isEmptyBoard(local.load()) && sync.current.status === 'unlinked',
+    };
   createRoot(root).render(
     <StrictMode>
       <App

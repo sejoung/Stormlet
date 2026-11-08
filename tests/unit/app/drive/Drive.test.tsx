@@ -1,88 +1,19 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { App } from '../../../../src/app/App';
-import { DriveSync } from '../../../../src/application/drive-sync';
-import {
-  DriveAuthError,
-  type AuthEvent,
-  type DriveAuth,
-  type DriveItem,
-} from '../../../../src/adapters/drive/types';
+import { DriveAuthError } from '../../../../src/adapters/drive/types';
 import { serializeBoard } from '../../../../src/adapters/files/stormlet-format';
 import { clearLog, recentLog } from '../../../../src/adapters/diagnostics/log';
-import type { Board } from '../../../../src/domain/model';
-import type { RemoteLink } from '../../../../src/domain/sync/remote';
 import { boardOf, sticky } from '../../../support/boards';
 import { ids, memoryStore } from '../../../support/app';
-import { fakeDrive, memoryLinks } from '../../../support/drive';
-
-/** Google sign-in as the app sees it, with picks answered by the test. */
-function fakeAuth() {
-  let token: string | null = null;
-  let loaded = false;
-  let expiring = false;
-  const listeners = new Set<(event: AuthEvent) => void>();
-  const emit = (event: AuthEvent) => listeners.forEach((listener) => listener(event));
-  const auth = {
-    getToken: () => token,
-    expiring: () => token !== null && expiring,
-    subscribe: (listener: (event: AuthEvent) => void) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    clearToken: vi.fn(() => {}),
-    prepare: vi.fn(async () => {
-      loaded = true;
-    }),
-    ready: () => loaded,
-    connect: vi.fn(async () => {
-      token = 'token';
-      expiring = false;
-      emit('connected');
-    }),
-    pick: vi.fn(async (): Promise<DriveItem | null> => null),
-    disconnect: vi.fn(async () => {
-      token = null;
-      emit('disconnected');
-    }),
-  } satisfies DriveAuth;
-  return {
-    ...auth,
-    /** What another tab or the clock does to this connection. */
-    elsewhere: {
-      token: () => ((token = 'shared'), emit('connected')),
-      expiring: () => ((expiring = true), emit('expiring')),
-      expired: () => ((token = null), emit('expired')),
-      disconnected: () => ((token = null), emit('disconnected')),
-    },
-  };
-}
-
-function renderWithDrive(board: Board = boardOf(sticky('a')), link: RemoteLink | null = null) {
-  const auth = fakeAuth();
-  const drive = fakeDrive();
-  const store = memoryStore(board);
-  const links = memoryLinks(link);
-  const sync = new DriveSync(store, drive.remote, links);
-  render(<App store={sync} drive={{ auth, sync }} newId={ids()} />);
-  return { auth, drive, store, sync, links };
-}
-
-/** The linked file's sync status beside the board name; absent while nothing is linked. */
-const driveButton = () => screen.getByRole('button', { name: /^Google Drive:/ });
-const noDriveButton = () =>
-  expect(screen.queryByRole('button', { name: /^Google Drive:/ })).not.toBeInTheDocument();
-const openFileMenu = () => {
-  fireEvent.click(screen.getByRole('button', { name: '파일' }));
-  return screen.getByRole('menu', { name: '파일' });
-};
-/** Run a File menu item once Google's scripts have loaded and it is enabled. */
-async function chooseFromFile(name: string) {
-  const item = within(openFileMenu()).getByRole('menuitem', { name });
-  await waitFor(() => expect(item).toBeEnabled());
-  fireEvent.click(item);
-}
+import {
+  chooseFromFile,
+  driveButton,
+  noDriveButton,
+  openFileMenu,
+  renderWithDrive,
+} from './support';
 
 afterEach(() => clearLog());
 
@@ -94,9 +25,10 @@ describe('Google Drive', () => {
 
   it('connects, saves the board to a chosen folder and shows it is saved', async () => {
     const { auth, drive, sync } = renderWithDrive({ ...boardOf(sticky('a')), title: 'Plan' });
-    // Nothing is linked: the local badge shows where the board is kept.
+    // Nothing is linked: the badge says the board is only here, and the button offers Drive.
     noDriveButton();
-    expect(screen.getByText('브라우저에 자동 저장')).toBeInTheDocument();
+    expect(screen.getByText('이 브라우저에만 저장됨')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Google Drive 연결' })).toBeInTheDocument();
     const menu = openFileMenu();
     expect(within(menu).getByText('Google 서비스 불러오는 중…')).toBeInTheDocument();
     expect(within(menu).getByRole('menuitem', { name: 'Drive 폴더에 저장…' })).toBeDisabled();
@@ -111,7 +43,7 @@ describe('Google Drive', () => {
     expect(auth.connect).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Plan.stormlet을(를) Drive에 저장했습니다.'),
+      await screen.findByText('Drive의 Boards 폴더에 Plan.stormlet을(를) 저장했습니다.'),
     ).toBeInTheDocument();
     expect(auth.pick).toHaveBeenCalledWith('folder', {
       language: 'ko',
@@ -121,7 +53,8 @@ describe('Google Drive', () => {
     expect(drive.calls).toEqual(['unconfirmed', 'create folder']);
     expect(driveButton()).toHaveAccessibleName('Google Drive: Drive에 저장됨');
     expect(driveButton()).toHaveTextContent('저장됨');
-    expect(screen.queryByText('브라우저에 자동 저장')).not.toBeInTheDocument();
+    expect(screen.queryByText('이 브라우저에만 저장됨')).not.toBeInTheDocument();
+    expect(screen.getByText('Google Drive에 자동 저장')).toBeInTheDocument();
     expect(sync.current.status).toBe('synced');
 
     const linked = openFileMenu();
@@ -132,10 +65,11 @@ describe('Google Drive', () => {
     ).toEqual([
       '새 보드…',
       '열기…⌘ / Ctrl+O',
-      '파일로 내려받기⌘ / Ctrl+S',
+      // ⌘/Ctrl+S saves to Drive while the board is linked there.
+      '파일로 내려받기',
       'Drive에서 열기…',
       '다른 폴더에 사본 저장…',
-      '지금 동기화',
+      '지금 동기화⌘ / Ctrl+S',
       '동기화 중지',
       'Google Drive 연결 해제',
     ]);

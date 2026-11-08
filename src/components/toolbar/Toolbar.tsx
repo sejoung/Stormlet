@@ -20,8 +20,10 @@ interface Props {
   menus: ReactNode;
   /** The app's settings, apart from the board's menus at the far end. */
   settings: ReactNode;
-  /** Where the board syncs to (Google Drive), shown in place of the local badge. */
-  sync?: ReactNode;
+  /** Where the board is kept, beside its name; see `BoardTitle`. */
+  savedTo?: 'drive' | 'browser-only';
+  /** The Google Drive button, when Drive is available. */
+  drive?: ReactNode;
 }
 
 /**
@@ -46,7 +48,7 @@ export function Toolbar(props: Props) {
         <BoardTitle
           title={props.title}
           saved={props.saved}
-          sync={props.sync}
+          savedTo={props.savedTo}
           onRename={props.onRename}
           onSave={props.onSave}
         />
@@ -85,6 +87,7 @@ export function Toolbar(props: Props) {
           <Icon name="search" />
         </button>
         <span className="toolbar-divider" aria-hidden="true" />
+        {props.drive}
         {props.settings}
       </div>
       {props.status && (

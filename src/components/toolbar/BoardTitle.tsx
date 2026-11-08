@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { MAX_BOARD_TITLE_LENGTH } from '../../domain/board-title';
 import { useInlineEdit } from '../common/useInlineEdit';
 import { isComposing } from '../common/keyboard';
@@ -8,15 +7,18 @@ import { Icon } from './Icon';
 export function BoardTitle({
   title,
   saved,
-  sync,
+  savedTo,
   onRename,
   onSave,
 }: {
   title: string;
   /** False while the browser refuses to save changes; the badge then warns instead. */
   saved: boolean;
-  /** A remote sync status, shown instead of the local badge while browser saves work. */
-  sync?: ReactNode;
+  /**
+   * Where the board is kept when Drive is available: in Drive, or only in this browser,
+   * which is worth saying since Drive is where boards should live.
+   */
+  savedTo?: 'drive' | 'browser-only';
   onRename(title: string): void;
   onSave(): void;
 }) {
@@ -86,11 +88,20 @@ export function BoardTitle({
         </button>
       )}
       {saved ? (
-        (sync ?? (
+        savedTo === 'drive' ? (
+          <span className="local-badge in-drive">
+            <Icon name="cloudCheck" size={12} />
+            {t('board.savedToDrive')}
+          </span>
+        ) : savedTo === 'browser-only' ? (
+          <span className="local-badge browser-only" title={t('board.browserOnlyHint')}>
+            {t('board.browserOnly')}
+          </span>
+        ) : (
           <span className="local-badge" title={t('board.autosaved')}>
             {t('board.autosaved')}
           </span>
-        ))
+        )
       ) : (
         <span className="local-badge unsaved" role="alert" title={t('board.notSavedHint')}>
           {t('board.notSaved')}

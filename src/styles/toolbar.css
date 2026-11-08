@@ -226,39 +226,53 @@
 .local-badge.unsaved::before {
   background: #e07b24;
 }
-.drive-button {
+.toolbar .drive-button {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 5px;
-  max-width: 160px;
-  min-height: 22px;
-  margin-left: 4px;
-  padding: 1px 8px;
-  border: 1px solid transparent;
-  border-radius: 999px;
+  gap: 6px;
+  max-width: 200px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-}
-.drive-button:hover {
-  background: var(--selected);
   color: var(--text);
-}
-.drive-button .app-icon {
-  width: 14px;
-  height: 14px;
-}
-.drive-button span {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px;
   white-space: nowrap;
 }
-.drive-button.attention {
-  border-color: #e07b24;
-  color: var(--text);
+.toolbar .drive-button:hover {
+  background: var(--selected);
+}
+.toolbar .drive-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Not in Drive yet: the next step stands out. */
+.toolbar .drive-button.drive-cta {
+  border-color: var(--accent);
+  color: var(--accent);
   font-weight: 600;
 }
-.drive-button.attention .app-icon {
+.toolbar .drive-button.attention {
+  border-color: #e07b24;
+  font-weight: 600;
+}
+.toolbar .drive-button.attention .app-icon {
   color: #e07b24;
+}
+.local-badge.in-drive {
+  color: var(--text);
+}
+.local-badge.in-drive::before {
+  display: none;
+}
+.local-badge.in-drive .app-icon {
+  color: var(--accent);
+}
+.local-badge.browser-only {
+  cursor: help;
+}
+.local-badge.browser-only::before {
+  background: #e0a024;
 }

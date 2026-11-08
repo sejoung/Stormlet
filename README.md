@@ -47,7 +47,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 - Context menus on notes, frames, lines and the empty canvas (also Shift+F10)
 - Undo and redo for every change, including deletions that remove attached lines
 - Autosave in the browser, a board for each tab: a new board opens in a new tab, coming back resumes the last board, and boards of closed tabs stay under File → Recent boards ([ADR 0011](docs/adr/0011-board-per-tab.md))
-- Optional Google Drive sync: save the board to a Drive folder or open one from Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
+- Optional Google Drive sync, the main place for boards once connected: a Drive button in the toolbar connects and saves, the chosen folder is shared by every tab so new boards go there with their first edit, and `Ctrl/Cmd+S` saves to Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Rename the board by double-clicking its title; the title becomes the download filename
 - A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap) and Settings (language, keyboard help, troubleshooting)
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
@@ -73,7 +73,7 @@ Reactions use a stable local identifier, so no profile is shown.
 | Undo / redo                      | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` |
 | Fit all / fit selected           | `Alt/Option+1` / `2`              |
 | Search                           | `Ctrl/Cmd+F`                      |
-| Open / download a board file     | `Ctrl/Cmd+O` / `Ctrl/Cmd+S`       |
+| Open a board file / save         | `Ctrl/Cmd+O` / `Ctrl/Cmd+S`       |
 | Help                             | `F1`, `?`                         |
 
 ## Getting started

@@ -62,6 +62,12 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'board.titleLabel': '보드 이름: {title}',
   'board.titleHint': '더블클릭 또는 Enter로 보드 이름 수정',
   'board.rename': '보드 이름 바꾸기',
+  'drive.saveHere': 'Drive에 저장',
+  'drive.savedIn': 'Drive의 {folder} 폴더에 {name}을(를) 저장했습니다.',
+  'board.savedToDrive': 'Google Drive에 자동 저장',
+  'board.browserOnly': '이 브라우저에만 저장됨',
+  'board.browserOnlyHint':
+    'Google Drive에 저장하면 안전하게 보관하고 다른 기기에서도 열 수 있습니다.',
   'board.autosaved': '브라우저에 자동 저장',
   'board.notSaved': '저장되지 않음',
   'board.notSavedHint':
@@ -256,7 +262,7 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'help.fitNotesKeys': 'Option / Alt + 1 / 2',
   'help.searchNotes': '메모 검색',
   'help.searchNotesKeys': '⌘ / Ctrl + F',
-  'help.openDownload': '보드 파일 열기 / 내려받기',
+  'help.openDownload': '보드 파일 열기 / 저장 (Drive 연결 시 Drive, 아니면 내려받기)',
   'help.openDownloadKeys': '⌘ / Ctrl + O / S',
 
   'creation.boardTools': '보드 도구',

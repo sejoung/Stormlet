@@ -65,6 +65,11 @@ export const en = {
   'board.titleLabel': 'Board name: {title}',
   'board.titleHint': 'Double-click or press Enter to rename the board',
   'board.rename': 'Rename board',
+  'drive.saveHere': 'Save to Drive',
+  'drive.savedIn': 'Saved {name} to the {folder} folder in Drive.',
+  'board.savedToDrive': 'Autosaved to Google Drive',
+  'board.browserOnly': 'Only in this browser',
+  'board.browserOnlyHint': 'Save it to Google Drive to keep it safe and open it on other devices.',
   'board.autosaved': 'Autosaved in this browser',
   'board.notSaved': 'Not saved',
   'board.notSavedHint':
@@ -259,7 +264,7 @@ export const en = {
   'help.fitNotesKeys': 'Option / Alt + 1 / 2',
   'help.searchNotes': 'Search notes',
   'help.searchNotesKeys': '⌘ / Ctrl + F',
-  'help.openDownload': 'Open / download a board file',
+  'help.openDownload': 'Open a board file / save (to Drive when linked, else download)',
   'help.openDownloadKeys': '⌘ / Ctrl + O / S',
 
   'creation.boardTools': 'Board tools',

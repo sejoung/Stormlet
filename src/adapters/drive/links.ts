@@ -2,6 +2,7 @@ import type { RemoteFile, RemoteLink, RemoteLinks } from '../../domain/sync/remo
 import { parseBoard, serializeBoard } from '../files/stormlet-format';
 import { readItem, removeItem, writeItem } from '../storage/web-storage';
 import { log } from '../diagnostics/log';
+import type { DriveItem } from './types';
 
 export const DRIVE_FILE_KEY = 'stormlet.drive.file';
 /** The board as last synced, needed to merge after a reload; it never holds a token. */
@@ -55,5 +56,27 @@ export class LocalDriveLinks implements RemoteLinks {
     const { id, name, version } = link.file;
     writeItem(this.baseKey, serializeBoard(link.base, { compact: true }));
     writeItem(this.fileKey, JSON.stringify({ id, name, version }));
+  }
+}
+
+/** The Drive folder new boards are saved to, shared by every tab (ADR 0011). */
+export const DRIVE_FOLDER_KEY = 'stormlet.drive.folder';
+
+/** The folder last chosen for saving to Drive; forgotten on disconnect. */
+export class LocalDriveFolder {
+  read(): DriveItem | null {
+    try {
+      const parsed = JSON.parse(readItem(DRIVE_FOLDER_KEY) ?? 'null') as Partial<DriveItem> | null;
+      return typeof parsed?.id === 'string' && parsed.id && typeof parsed.name === 'string'
+        ? { id: parsed.id, name: parsed.name }
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  write(folder: DriveItem | null): void {
+    if (folder) writeItem(DRIVE_FOLDER_KEY, JSON.stringify({ id: folder.id, name: folder.name }));
+    else removeItem(DRIVE_FOLDER_KEY);
   }
 }

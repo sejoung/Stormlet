@@ -224,3 +224,41 @@ test('a page closed before Drive answered a creation links that file after recon
   expect([...drive.files.keys()]).toEqual(['created-1']);
   expect(drive.requests.filter((request) => request.startsWith('POST'))).toHaveLength(1);
 });
+
+test('a new board in another tab is saved to the same Drive folder with its first edit', async ({
+  page,
+  context,
+}) => {
+  await mockGoogleScripts(context);
+  const drive = await mockDrive(context);
+  await expect(page.getByText('이 브라우저에만 저장됨')).toBeVisible();
+  await fromFile(page, 'Drive 폴더에 저장…');
+  await pickFolder(page);
+  await expect(driveButton(page)).toHaveText('저장됨');
+  await expect(page.getByText('Google Drive에 자동 저장')).toBeVisible();
+
+  // The new board opens in a new tab, which takes over the connection and the folder.
+  await canvas(page).focus();
+  await page.keyboard.press('n');
+  const at = await point(page, 300, 300);
+  await page.mouse.click(at.x, at.y);
+  await page.keyboard.type('First board');
+  await page.keyboard.press('Escape');
+  await fromFile(page, '새 보드…');
+  const opened = context.waitForEvent('page');
+  await page.getByRole('button', { name: '새 보드 만들기' }).click();
+  const second = await opened;
+  await expect(second.getByRole('button', { name: 'Drive에 저장' })).toBeVisible();
+  await canvas(second).focus();
+  await second.keyboard.press('n');
+  const there = await point(second, 300, 300);
+  await second.mouse.click(there.x, there.y);
+  await second.keyboard.type('Second board');
+  await second.keyboard.press('Escape');
+  await expect(driveButton(second)).toHaveText('저장됨');
+  // Both boards are called "My idea board"; the second file is numbered.
+  expect([...drive.files.values()].map((file) => [file.name, file.parents])).toEqual([
+    ['My idea board.stormlet', ['folder-1']],
+    ['My idea board (2).stormlet', ['folder-1']],
+  ]);
+});

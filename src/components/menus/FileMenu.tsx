@@ -65,7 +65,8 @@ export function FileMenu({
             <MenuItem
               label={t('menu.download')}
               icon="save"
-              shortcut="⌘ / Ctrl+S"
+              // ⌘/Ctrl+S saves to Drive while the board is linked there.
+              shortcut={drive?.linked ? undefined : '⌘ / Ctrl+S'}
               close={close}
               onSelect={onDownload}
             />
@@ -102,6 +103,7 @@ export function FileMenu({
                     <MenuItem
                       label={t('menu.syncNow')}
                       icon="sync"
+                      shortcut="⌘ / Ctrl+S"
                       disabled={unavailable}
                       close={close}
                       onSelect={drive.onSyncNow}

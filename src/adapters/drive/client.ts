@@ -8,6 +8,8 @@ import {
 } from '../../domain/sync/remote';
 import { FILE_EXTENSION, FormatError, parseBoard, serializeBoard } from '../files/stormlet-format';
 import { memoryCreations, type CreationRecord } from './creations';
+import { freeName, isNameFor } from '../files/file-names';
+import { log } from '../diagnostics/log';
 
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
 export const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
@@ -16,6 +18,10 @@ export const REQUEST_TIMEOUT = 30_000;
 /** Larger files are refused before downloading; boards are far smaller. */
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const FILE_FIELDS = 'id,name,version';
+/** Pages of a folder listing read to find a free name; boards are far fewer. */
+const LIST_PAGES = 10;
+/** A value inside a Drive query string. */
+const quoted = (text: string) => `'${text.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 /** Upload attempts for one creation; the reserved ID makes repeating it safe. */
 export const CREATE_ATTEMPTS = 3;
 /** Wait before the second attempt, doubled each time. */
@@ -140,7 +146,10 @@ export class DriveClient implements RemoteBoards {
     const current = await this.metadata(file.id);
     if (current.data.version !== file.version)
       throw new RemoteError('conflict', 'The file changed in Drive.');
-    const name = driveFileName(board);
+    // A numbered copy of the title's name (`Plan (2).stormlet`) keeps its number.
+    const name = isNameFor(file.name, driveFileName(board))
+      ? file.name
+      : await this.nameInParent(file.id, board);
     const content = serializeBoard(board);
     // Renaming needs the metadata part; otherwise the content alone is sent.
     const upload = name === file.name ? null : multipart({ name }, content);
@@ -168,7 +177,7 @@ export class DriveClient implements RemoteBoards {
    * the page was closed in between.
    */
   async create(folderId: string, board: Board): Promise<RemoteFile> {
-    const sent = { name: driveFileName(board), content: serializeBoard(board) };
+    const sent = { name: await this.nameIn(folderId, board), content: serializeBoard(board) };
     this.creating++;
     try {
       const reservation = this.reserved.get(folderId) ?? { id: await this.reserveId(), sent: [] };
@@ -224,6 +233,47 @@ export class DriveClient implements RemoteBoards {
         await new Promise((resolve) => setTimeout(resolve, CREATE_BACKOFF * 2 ** attempt));
       }
     }
+  }
+
+  /**
+   * The board's file name, numbered (`Plan (2).stormlet`) when another file in the folder
+   * has it. Stormlet sees only files it made or opened (`drive.file`), so files of other
+   * apps may still share the name. A failed listing keeps the plain name: names never
+   * decide which file is written.
+   */
+  private async nameIn(folderId: string, board: Board, except?: string): Promise<string> {
+    const base = driveFileName(board);
+    try {
+      const taken = new Set<string>();
+      let page = '';
+      for (let read = 0; read < LIST_PAGES; read++) {
+        const q = `${quoted(folderId)} in parents and trashed = false`;
+        const { data } = await this.request(
+          `${DRIVE_API}?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name)&pageSize=1000${page && `&pageToken=${encodeURIComponent(page)}`}`,
+          (response) =>
+            response.json() as Promise<{ files?: RemoteFile[]; nextPageToken?: string }>,
+        );
+        for (const file of data.files ?? []) if (file.id !== except) taken.add(file.name);
+        if (!data.nextPageToken) break;
+        page = data.nextPageToken;
+      }
+      return freeName(base, taken);
+    } catch (error) {
+      log.warn('drive.name-check-failed', { message: (error as Error).message });
+      return base;
+    }
+  }
+
+  /** A free name for an existing file whose board was renamed, in its own folder. */
+  private async nameInParent(id: string, board: Board): Promise<string> {
+    const parents = await this.request(
+      `${DRIVE_API}/${encodeURIComponent(id)}?fields=parents`,
+      (response) => response.json() as Promise<{ parents?: string[] }>,
+    ).then(
+      ({ data }) => data.parents ?? [],
+      () => [],
+    );
+    return parents[0] ? this.nameIn(parents[0], board, id) : driveFileName(board);
   }
 
   private async reserveId(): Promise<string> {

@@ -86,18 +86,36 @@ describe('Drive client', () => {
     expect(parseBoard(String(sent[1].init.body))).toEqual(board);
   });
 
-  it('renames the file with the content when the title changed, without an ETag', async () => {
+  it('renames the file with the content when the title changed, numbered if taken', async () => {
     const { fetcher, sent } = fakeFetch(
       json({ version: '3' }),
-      json({ id: 'f1', name: 'Renamed.stormlet', version: '4' }),
+      json({ parents: ['folder'] }),
+      json({
+        files: [
+          { id: 'f1', name: 'Plan.stormlet' },
+          { id: 'g', name: 'Renamed.stormlet' },
+        ],
+      }),
+      json({ id: 'f1', name: 'Renamed (2).stormlet', version: '4' }),
     );
     const client = new DriveClient(() => 'token', fetcher);
     await client.save(file, { ...board, title: 'Renamed' });
-    expect(sent[1].url).toContain('uploadType=multipart');
-    const headers = sent[1].init.headers as Record<string, string>;
+    expect(sent[3].url).toContain('uploadType=multipart');
+    const headers = sent[3].init.headers as Record<string, string>;
     expect(headers['Content-Type']).toMatch(/^multipart\/related; boundary=stormlet-/);
     expect(headers).not.toHaveProperty('If-Match');
-    expect(String(sent[1].init.body)).toContain('{"name":"Renamed.stormlet"}');
+    expect(String(sent[3].init.body)).toContain('{"name":"Renamed (2).stormlet"}');
+  });
+
+  it('keeps a numbered name while the title stays the same', async () => {
+    const { fetcher, sent } = fakeFetch(
+      json({ version: '3' }),
+      json({ id: 'f1', name: 'Plan (2).stormlet', version: '4' }),
+    );
+    const client = new DriveClient(() => 'token', fetcher);
+    await client.save({ ...file, name: 'Plan (2).stormlet' }, board);
+    expect(sent).toHaveLength(2);
+    expect(sent[1].url).toContain('uploadType=media');
   });
 
   it('reports a changed version as a conflict without writing', async () => {

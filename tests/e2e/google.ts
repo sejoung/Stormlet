@@ -110,6 +110,14 @@ export async function mockDrive(page: Target) {
     const upload = url.pathname.startsWith('/upload/');
     const id = decodeURIComponent(url.pathname.split('/files/')[1] ?? '');
     if (id === 'generateIds') return reply(route, { ids: [`created-${++created}`] });
+    // A folder listing, as `drive.file` shows it: only files this app has.
+    const parent = /^'(.+)' in parents/.exec(url.searchParams.get('q') ?? '')?.[1];
+    if (parent !== undefined)
+      return reply(route, {
+        files: [...files]
+          .filter(([, file]) => file.parents.includes(parent))
+          .map(([fileId, file]) => ({ id: fileId, name: file.name })),
+      });
     if (request.method() === 'POST' && upload) {
       const [metadata, content] = multipart(request);
       const newId = String(metadata.id);

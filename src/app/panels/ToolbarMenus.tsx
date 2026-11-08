@@ -96,25 +96,33 @@ export function ToolbarMenus({
 }
 
 /**
- * The linked Drive file's sync state beside the board's name. A click deals with what
- * needs the user: renewing or reconnecting access, a conflict, or the details.
+ * The Google Drive button: connect, then save this board to Drive; once it is there, its
+ * sync state. A click deals with what needs the user: renewing or reconnecting access, a
+ * conflict, or the details.
  */
-export function SyncStatus({
+export function DriveControl({
   drive,
   onDialog,
 }: {
   drive: Drive;
   onDialog(dialog: DialogName): void;
 }) {
+  if (!drive.available) return null;
   const { state } = drive;
-  if (!('file' in state)) return null;
   return (
     <DriveButton
       state={state}
+      connected={drive.connected}
       expiring={drive.expiring}
+      onPrepare={() => void drive.prepare()}
       onClick={() => {
+        if (!('file' in state)) {
+          // Google's popup opens only within the click, so it needs its scripts loaded.
+          if (drive.connected) return drive.saveToDrive();
+          if (drive.ready) return drive.connect();
+          return onDialog('drive');
+        }
         if (drive.expiring && !needsAttention(state)) return drive.renew();
-        // Reconnecting straight from the click keeps Google's popup allowed.
         if (state.status === 'paused' && drive.ready) drive.connect();
         else onDialog(state.status === 'conflict' ? 'conflict' : 'drive');
       }}

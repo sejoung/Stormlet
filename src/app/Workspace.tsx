@@ -38,7 +38,7 @@ import { diagnostics } from './diagnostics/diagnostics';
 import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
 import { WorkspaceDialogs, type DialogName } from './panels/WorkspaceDialogs';
-import { AppSettings, SyncStatus, ToolbarMenus } from './panels/ToolbarMenus';
+import { AppSettings, DriveControl, ToolbarMenus } from './panels/ToolbarMenus';
 
 export interface WorkspaceProps {
   store: BoardStore;
@@ -194,6 +194,7 @@ export function Workspace({
   });
   const drive = useDrive({
     services: driveServices,
+    board,
     flushEditor,
     replaceBoard: replace,
     onStatus: setStatus,
@@ -213,7 +214,7 @@ export function Workspace({
     onSearch: search.show,
     onFit: (onlySelected) => fit(onlySelected ? activeIds : undefined),
     onHelp: () => setDialog('help'),
-    onSave: save,
+    onSave: drive.saveOr(save),
     onOpenFile: () => fileInput.current?.click(),
     onEscape: () => {
       selected.clear();
@@ -238,7 +239,7 @@ export function Workspace({
             onSearch={search.toggle}
             onUndo={undo}
             onRedo={redo}
-            onSave={save}
+            onSave={drive.saveOr(save)}
             menus={
               <ToolbarMenus
                 fileInput={fileInput}
@@ -258,9 +259,8 @@ export function Workspace({
             settings={
               <AppSettings language={language} onLanguage={onLanguage} onDialog={setDialog} />
             }
-            sync={
-              'file' in drive.state ? <SyncStatus drive={drive} onDialog={setDialog} /> : undefined
-            }
+            savedTo={drive.savedTo}
+            drive={<DriveControl drive={drive} onDialog={setDialog} />}
           />
           <main className="workspace">
             <CreationToolbar
