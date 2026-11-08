@@ -116,6 +116,14 @@ npm run test:e2e:ui       # Playwright UI에서 실행·디버깅
 
 테스트 서버는 4173 포트에서 자동 실행되고 테스트가 끝나면 종료된다. HTML 보고서는 `playwright-report/index.html`, 화면 캡처는 `test-results/e2e`에 저장한다. 실패한 테스트의 추적 기록과 영상도 남긴다. CI는 모든 push와 pull request에서 `verify`와 E2E를 실행한다.
 
+### 배포 (GitHub Pages)
+
+백엔드 없이 정적 파일만으로 동작한다. 보드는 브라우저에, Drive 파일은 브라우저가 Google API로 직접 읽고 쓴다.
+
+1. 저장소 **Settings → Pages**에서 Source를 **GitHub Actions**로 둔다.
+2. Drive를 켜려면 **Settings → Secrets and variables → Actions → Variables**에 `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, `VITE_GOOGLE_APP_ID`를 넣는다. 공개 설정이라 Secrets가 아니어도 된다. 없으면 Drive 없이 배포하고 실행 기록에 경고를 남긴다. Google Cloud에는 배포 origin(`https://<계정>.github.io`)을 등록한다([설정](docs/google-drive.md)).
+3. **Actions → Pages → Run workflow**로 직접 실행한다. `verify`와 E2E가 모두 통과해야 배포한다.
+
 ## 구조
 
 | 계층              | 역할                                                                                         |

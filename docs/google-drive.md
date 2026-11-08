@@ -8,13 +8,15 @@ Drive 연결은 선택 기능이다. 아래 세 값을 넣고 빌드한 경우�
 2. OAuth 동의 화면을 만들고 범위에 `https://www.googleapis.com/auth/drive.file`만 추가한다. 테스트 모드라면 사용할 계정을 테스트 사용자로 등록한다. `drive.file`은 앱이 만들었거나 사용자가 Picker로 고른 파일에만 접근하는 범위다.
 3. **웹 애플리케이션** OAuth 클라이언트를 만들고 승인된 JavaScript 원본에 `http://127.0.0.1:5173`과 배포 origin(예: `https://<계정>.github.io`)을 등록한다. origin에는 경로를 넣지 않는다.
 4. 브라우저용 API 키를 만들고 아래 [API 키 제한](#api-키-제한)을 적용한다.
-5. `.env.example`을 `.env.local`로 복사해 Client ID, API 키, 프로젝트 번호(App ID)를 넣고 개발 서버를 다시 시작하거나 다시 빌드한다. 세 값은 번들에 들어가는 공개 설정이다. **client secret은 절대 넣지 않는다.**
+5. 로컬에서는 `.env.example`을 `.env.local`로 복사해 Client ID, API 키, 프로젝트 번호(App ID)를 넣고 개발 서버를 다시 시작하거나 다시 빌드한다. 세 값은 번들에 들어가는 공개 설정이다. **client secret은 절대 넣지 않는다.**
 
 ```sh
 VITE_GOOGLE_CLIENT_ID=1234567890-xxxx.apps.googleusercontent.com
 VITE_GOOGLE_API_KEY=AIza...
 VITE_GOOGLE_APP_ID=1234567890
 ```
+
+GitHub Pages 배포는 같은 세 값을 저장소의 Actions **Variables**에 넣고 `Pages` workflow를 직접 실행한다(README의 배포 항목). OAuth 동의 화면이 테스트 모드면 테스트 사용자만 로그인할 수 있으므로, 누구나 쓰게 하려면 게시(프로덕션)한다.
 
 ### API 키 제한
 

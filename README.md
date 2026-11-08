@@ -116,6 +116,14 @@ npm run test:e2e:ui       # Open Playwright UI mode
 
 The test server starts on port 4173 and stops when the tests finish. The HTML report is written to `playwright-report/index.html` and screenshots to `test-results/e2e`. Failed tests keep traces and videos. CI runs `verify` and the E2E suite on every push and pull request.
 
+### Deploying (GitHub Pages)
+
+Stormlet needs no backend: boards stay in the browser, and the browser reads and writes Drive files through Google's APIs itself.
+
+1. In **Settings → Pages**, set Source to **GitHub Actions**.
+2. For Google Drive, add `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY` and `VITE_GOOGLE_APP_ID` under **Settings → Secrets and variables → Actions → Variables**. They are public settings, so plain variables will do. Without them the site is deployed without Drive, with a warning in the run. Register the deployed origin (`https://<account>.github.io`) in Google Cloud ([setup](docs/google-drive.md)).
+3. Run **Actions → Pages → Run workflow** by hand. It deploys only after `verify` and the E2E tests pass.
+
 ## Architecture
 
 | Layer             | Responsibility                                                                                       |
