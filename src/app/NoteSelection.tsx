@@ -22,7 +22,7 @@ export function NoteSelection({
   onMenu,
   onFrame,
 }: {
-  notes: Sticky[];
+  notes: readonly Sticky[];
   ids: readonly string[];
   view: View;
   viewport: Size;

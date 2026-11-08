@@ -1,21 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  addSticky,
-  deleteStickies,
-  editableIds,
-  moveStickies,
-  resizeStickies,
-  setText,
-  type Move,
-} from '../domain/commands';
-import type { StickySize } from '../domain/sticky-size';
-import { own } from '../domain/ids';
-import { DEFAULT_STICKY_APPEARANCE, isEmptyBoard } from '../domain/model';
+import { useCallback, useState } from 'react';
+import { deleteStickies, editableIds } from '../domain/commands';
+import { isEmptyBoard } from '../domain/model';
 import { boardTitle, renameBoard } from '../domain/board-title';
 import type { BoardStore } from '../domain/store';
-import { centeredAt } from '../engine/sticky-metrics';
-import { INITIAL_VIEW, toBoardPoint, zoomAround, type Point, type View } from '../engine/viewport';
-import { fitBoard } from '../engine/fit-view';
 import { reactionIdentity } from '../adapters/storage/web-storage';
 import { BoardCanvas } from '../components/board/BoardCanvas';
 import type { BoardTool } from '../components/board/kinds';
@@ -27,8 +14,6 @@ import { BoardSearch } from '../components/toolbar/BoardSearch';
 import { BoardChrome } from '../components/board/BoardChrome';
 import { DraftProvider, useDraftRegistry } from '../components/common/drafts';
 import { FitProvider, useFitRegistry } from '../components/common/fitted-fonts';
-import { useElementSize } from '../components/common/useElementSize';
-import { elementCenter } from '../components/common/points';
 import { useBoardFiles } from './useBoardFiles';
 import { useBoardSession } from './useBoardSession';
 import { useShortcuts } from './useShortcuts';
@@ -45,16 +30,18 @@ import { NoteSelection } from './NoteSelection';
 import { ObjectToolbars } from './ObjectToolbars';
 import { useBoardSearch } from './panels/useBoardSearch';
 import { useStatus } from './panels/useStatus';
+import { useBoardView } from './view/useBoardView';
+import { useNoteEditing } from './notes/useNoteEditing';
 
 export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   // --- Board, history and view ---
   const { session, edit, editWith, undo, redo } = useBoardSession(store);
   const { board } = session;
   const defaults = useCreationDefaults();
-  const boardElement = useRef<HTMLDivElement>(null);
-  const viewport = useElementSize(boardElement);
-  const [view, setView] = useState<View>(INITIAL_VIEW);
+  const canvas = useBoardView();
+  const { view, viewport } = canvas;
   const [tool, setTool] = useState<BoardTool>('interact');
+  const finishTool = () => setTool('interact');
   const [reactor] = useState(reactionIdentity);
 
   // --- Selection and text editing ---
@@ -62,17 +49,16 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const drafts = useDraftRegistry();
   const fits = useFitRegistry();
   const flushEditor = drafts.flushAll;
-  const [editing, setEditing] = useState<string | null>(null);
-  const [seed, setSeed] = useState<string | undefined>();
-  const selection = useMemo(
-    () => new Set(selected.noteIds.filter((id) => own(board.stickies, id))),
-    [selected.noteIds, board.stickies],
-  );
-  const activeIds = useMemo(
-    () => (editing && own(board.stickies, editing) ? [editing] : [...selection]),
-    [editing, board.stickies, selection],
-  );
-  const selectedNotes = activeIds.map((id) => board.stickies[id]);
+  const notes = useNoteEditing({
+    board,
+    edit,
+    newId,
+    stickyColor: defaults.stickyColor,
+    selectedIds: selected.noteIds,
+    onSelect: selected.selectNotes,
+    onAdded: finishTool,
+  });
+  const { activeIds } = notes;
 
   // --- Panels and messages ---
   const [dialog, setDialog] = useState<'bulk' | 'help' | null>(null);
@@ -81,58 +67,22 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const [status, setStatus] = useStatus();
 
   // --- Helpers shared by the commands below ---
-  const viewportCenter = () => elementCenter(boardElement.current!);
-  const boardCenter = () => toBoardPoint(view, viewportCenter());
-  const finishTool = () => setTool('interact');
   const selectFrame = (id: string) => {
     flushEditor();
-    setEditing(null);
+    notes.stopEdit();
     selected.selectFrame(id);
-  };
-  const startEdit = (id: string | null, initial?: string) => {
-    if (id && own(board.stickies, id)?.locked) return;
-    setSeed(initial);
-    setEditing(id);
   };
   const chooseTool = (next: BoardTool) => {
     flushEditor();
     selected.clearObjects();
     setTool(next);
   };
+  /** Fit the whole board, or the given notes with the selected frame or line. */
   const fit = (ids?: readonly string[]) =>
-    setView(
-      (current) =>
-        fitBoard(
-          board,
-          boardElement.current!.getBoundingClientRect(),
-          ids
-            ? { notes: ids, connection: selected.connectionId, frame: selected.frameId }
-            : undefined,
-        ) ?? current,
+    canvas.fit(
+      board,
+      ids && { notes: ids, connection: selected.connectionId, frame: selected.frameId },
     );
-
-  // --- Note editing ---
-  const onAdd = (at: Point) => {
-    const id = newId();
-    edit((current) =>
-      addSticky(current, {
-        id,
-        ...DEFAULT_STICKY_APPEARANCE,
-        color: defaults.stickyColor,
-        ...centeredAt(at),
-      }),
-    );
-    selected.selectNotes([id]);
-    startEdit(id);
-    finishTool();
-  };
-  const onMove = (moves: Move[]) => edit((current) => moveStickies(current, moves));
-  const onResize = (ids: readonly string[], size: StickySize) =>
-    edit((current) => resizeStickies(current, ids, size));
-  const onCommitText = (id: string, text: string) => {
-    setEditing(null);
-    edit((current) => setText(current, id, text));
-  };
 
   // --- Object sessions ---
   const links = useConnectionSession({
@@ -167,7 +117,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     editWith,
     onSelect: selected.selectNotes,
     onStatus: setStatus,
-    center: boardCenter,
+    center: canvas.boardCenter,
   });
   const commands = selectionCommands(frames, links, {
     remove: () => edit((current) => deleteStickies(current, activeIds)),
@@ -175,7 +125,9 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     duplicate: (offset, directional) => actions.duplicate(activeIds, offset, directional),
     toggleLock: actions.lock,
     nudge: (offset) =>
-      onMove(selectedNotes.map((s) => ({ id: s.id, x: s.x + offset.x, y: s.y + offset.y }))),
+      notes.move(
+        notes.activeNotes.map((s) => ({ id: s.id, x: s.x + offset.x, y: s.y + offset.y })),
+      ),
   });
   const selectAll = () => selected.selectNotes(editableIds(board, Object.keys(board.stickies)));
 
@@ -186,7 +138,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     frameId: frames.selectedId,
     onPaste: (source, at) =>
       Object.keys(source.frames ?? {}).length
-        ? frames.paste(source, at ?? boardCenter())
+        ? frames.paste(source, at ?? canvas.boardCenter())
         : actions.pasteNotes(source, at),
     onText: actions.addCells,
     onCut: commands.cut,
@@ -206,7 +158,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
     onStatus: setStatus,
     reset: () => {
       selected.clear();
-      setEditing(null);
+      notes.stopEdit();
       menus.close();
     },
   });
@@ -257,7 +209,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
               onConnectionStyle={defaults.onConnection}
               tool={tool}
               onTool={chooseTool}
-              onAddCenter={() => onAdd(boardCenter())}
+              onAddCenter={() => notes.add(canvas.boardCenter())}
               onBulk={() => {
                 finishTool();
                 setDialog('bulk');
@@ -270,22 +222,22 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
                 frames={frames}
                 view={view}
                 viewport={viewport}
-                selection={selection}
-                editing={editing}
-                seed={seed}
+                selection={notes.selection}
+                editing={notes.editing}
+                seed={notes.seed}
                 reactor={reactor}
                 matches={search.matches}
-                element={boardElement}
+                element={canvas.element}
                 tool={tool}
-                onViewChange={setView}
+                onViewChange={canvas.setView}
                 onSelect={selected.selectNotes}
-                onMove={onMove}
-                onResize={onResize}
+                onMove={notes.move}
+                onResize={notes.resize}
                 onContextMenu={menus.onNote}
                 onCanvasMenu={menus.onCanvas}
-                onAdd={onAdd}
-                onStartEdit={startEdit}
-                onCommitText={onCommitText}
+                onAdd={notes.add}
+                onStartEdit={notes.startEdit}
+                onCommitText={notes.commitText}
                 onDuplicate={actions.duplicate}
                 onReact={(id, emoji) => actions.react(emoji, [id])}
               />
@@ -298,16 +250,16 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
                 viewport={viewport}
                 onDeleteFrame={frames.remove}
               />
-              {!!selectedNotes.length && !menus.open && (
+              {!!activeIds.length && !menus.open && (
                 <NoteSelection
-                  notes={selectedNotes}
+                  notes={notes.activeNotes}
                   ids={activeIds}
                   view={view}
                   viewport={viewport}
-                  element={boardElement}
+                  element={canvas.element}
                   actions={actions}
                   edit={edit}
-                  onResize={onResize}
+                  onResize={notes.resize}
                   flushEditor={flushEditor}
                   onMenu={menus.onDetails}
                   onFrame={() => {
@@ -332,7 +284,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
                 empty={isEmptyBoard(board)}
                 tool={tool}
                 zoom={view.zoom}
-                onZoom={(zoom) => setView(zoomAround(view, zoom, viewportCenter()))}
+                onZoom={canvas.zoomTo}
                 onFit={() => fit()}
                 onHelp={() => setDialog('help')}
               />
@@ -342,16 +294,16 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
             menu={menus.menu}
             board={board}
             view={view}
-            element={boardElement}
+            element={canvas.element}
             edit={edit}
             ids={activeIds}
             frames={frames}
             links={links}
             clipboard={clipboard}
             onClose={menus.close}
-            onEdit={startEdit}
+            onEdit={notes.startEdit}
             onDuplicate={actions.duplicate}
-            onAdd={onAdd}
+            onAdd={notes.add}
             onSelectAll={selectAll}
             onFit={() => fit()}
             onUndo={undo}

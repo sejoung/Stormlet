@@ -6,14 +6,17 @@ import { clampZoom, type View } from './viewport';
 /** Viewport space kept clear around fitted content for the surrounding chrome. */
 const FIT_MARGIN = { width: 120, height: 160 };
 
+/** The objects to fit instead of the whole board. */
+export interface FitSelection {
+  notes: readonly string[];
+  connection: string | null;
+  frame: string | null;
+}
+
 export function fitBoard(
   board: Board,
   viewport: { width: number; height: number },
-  selected?: {
-    notes: readonly string[];
-    connection: string | null;
-    frame: string | null;
-  },
+  selected?: FitSelection,
 ): View | null {
   const notes = selected && new Set(selected.notes);
   return fitView(

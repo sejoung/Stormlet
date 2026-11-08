@@ -16,7 +16,7 @@ import { COLOR_STYLES } from '../board/kinds';
 import { Icon } from '../toolbar/Icon';
 
 interface Props {
-  notes: Sticky[];
+  notes: readonly Sticky[];
   view: View;
   viewport: { width: number; height: number };
   onFormat(details: NoteDetails): void;
