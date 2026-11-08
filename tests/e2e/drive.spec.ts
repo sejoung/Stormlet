@@ -156,3 +156,18 @@ test('renews access on a click before it runs out', async ({ page }) => {
   await page.clock.fastForward(60 * 60_000);
   await expect(driveButton(page)).toHaveText('다시 연결');
 });
+
+test('saving to a folder makes one file even when Drive’s answer is lost', async ({ page }) => {
+  await mockGoogleScripts(page);
+  const drive = await mockDrive(page);
+  const dialog = await connect(page);
+  drive.faults.loseNextCreate = true;
+  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
+  await page
+    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
+    .getByRole('button')
+    .click();
+  await expect(driveButton(page)).toHaveText('저장됨');
+  expect([...drive.files.keys()]).toEqual(['created-1']);
+  expect(drive.requests.filter((request) => request.startsWith('POST'))).toHaveLength(1);
+});

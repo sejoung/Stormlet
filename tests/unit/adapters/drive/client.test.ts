@@ -106,20 +106,6 @@ describe('Drive client', () => {
     expect(sent).toHaveLength(1);
   });
 
-  it('creates a file in the chosen folder', async () => {
-    const { fetcher, sent } = fakeFetch(json({ id: 'new', name: 'Plan.stormlet', version: '1' }));
-    const client = new DriveClient(() => 'token', fetcher);
-    expect(await client.create('folder', board)).toEqual({
-      id: 'new',
-      name: 'Plan.stormlet',
-      version: '1',
-    });
-    expect(sent[0].url).toBe(`${DRIVE_UPLOAD}?uploadType=multipart&fields=id,name,version`);
-    expect(String(sent[0].init.body)).toContain(
-      '{"name":"Plan.stormlet","mimeType":"application/json","parents":["folder"]}',
-    );
-  });
-
   it('reads the version alone', async () => {
     const { fetcher, sent } = fakeFetch(json({ version: '9' }));
     expect(await new DriveClient(() => 't', fetcher).version('f1')).toBe('9');

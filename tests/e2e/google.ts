@@ -86,6 +86,8 @@ export async function mockDrive(page: Target) {
   const files = new Map<string, FakeFile>();
   const requests: string[] = [];
   let created = 0;
+  /** Drop the answer to the next creation after storing the file, as a lost response would. */
+  const faults = { loseNextCreate: false };
   const reply = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   const meta = (id: string) => {
@@ -104,15 +106,21 @@ export async function mockDrive(page: Target) {
     if (request.headers().authorization !== `Bearer ${TOKEN}`) return reply(route, {}, 401);
     const upload = url.pathname.startsWith('/upload/');
     const id = decodeURIComponent(url.pathname.split('/files/')[1] ?? '');
+    if (id === 'generateIds') return reply(route, { ids: [`created-${++created}`] });
     if (request.method() === 'POST' && upload) {
       const [metadata, content] = multipart(request);
-      const newId = `created-${++created}`;
+      const newId = String(metadata.id);
+      if (files.has(newId)) return reply(route, {}, 409);
       files.set(newId, {
         name: String(metadata.name),
         version: 1,
         content,
         parents: metadata.parents as string[],
       });
+      if (faults.loseNextCreate) {
+        faults.loseNextCreate = false;
+        return route.abort('failed');
+      }
       return reply(route, meta(newId));
     }
     const file = files.get(id);
@@ -127,7 +135,7 @@ export async function mockDrive(page: Target) {
     }
     if (url.searchParams.get('alt') === 'media')
       return route.fulfill({ contentType: 'application/json', body: file.content });
-    return reply(route, meta(id));
+    return reply(route, { ...meta(id), parents: file.parents });
   });
-  return { files, requests };
+  return { files, requests, faults };
 }

@@ -15,6 +15,28 @@ export const REQUEST_TIMEOUT = 30_000;
 /** Larger files are refused before downloading; boards are far smaller. */
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const FILE_FIELDS = 'id,name,version';
+/** Upload attempts for one creation; the reserved ID makes repeating it safe. */
+export const CREATE_ATTEMPTS = 3;
+/** Wait before the second attempt, doubled each time. */
+export const CREATE_BACKOFF = 500;
+/** Failures after which an upload may have landed anyway. */
+const RETRY_CREATE: readonly RemoteFailure[] = ['network', 'conflict'];
+
+/** What one creation attempt sent. */
+interface Sent {
+  name: string;
+  content: string;
+}
+/** A creation under way: its reserved ID and everything sent to it so far. */
+interface Reservation {
+  id: string;
+  sent: Sent[];
+}
+interface Created {
+  file: RemoteFile;
+  parents: string[];
+  content: string;
+}
 
 /** The Drive file name for a board: its title, as for downloads. */
 export const driveFileName = (board: Board): string =>
@@ -49,6 +71,9 @@ function multipart(metadata: object, content: string) {
  * check the file's version first and, when Google exposes an ETag, send it as `If-Match`.
  */
 export class DriveClient implements RemoteBoards {
+  /** Unfinished creations by folder, kept so saving there again reuses the reserved ID. */
+  private readonly reserved = new Map<string, Reservation>();
+
   constructor(
     private readonly token: () => string | null,
     private readonly fetcher: typeof fetch = (...args) => globalThis.fetch(...args),
@@ -104,17 +129,99 @@ export class DriveClient implements RemoteBoards {
     return { id: data.id, name: data.name, version: data.version };
   }
 
+  /**
+   * Create the file under an ID reserved from Drive beforehand, so repeating a creation
+   * whose answer was lost finds the file it made instead of making a second one. The
+   * reservation outlives a failed call: saving to the same folder again reuses it.
+   */
   async create(folderId: string, board: Board): Promise<RemoteFile> {
+    const sent = { name: driveFileName(board), content: serializeBoard(board) };
+    const reservation = this.reserved.get(folderId) ?? { id: await this.reserveId(), sent: [] };
+    this.reserved.set(folderId, reservation);
+    reservation.sent.push(sent);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const file = await this.upload(reservation.id, folderId, sent);
+        this.reserved.delete(folderId);
+        return file;
+      } catch (error) {
+        // A lost answer or 409 may mean an earlier upload went through: look before retrying.
+        if (!(error instanceof RemoteError && RETRY_CREATE.includes(error.reason))) throw error;
+        const existing = await this.created(reservation.id);
+        if (existing) return this.adopt(existing, reservation, folderId, board);
+        if (attempt + 1 >= CREATE_ATTEMPTS) throw error;
+        await new Promise((resolve) => setTimeout(resolve, CREATE_BACKOFF * 2 ** attempt));
+      }
+    }
+  }
+
+  private async reserveId(): Promise<string> {
+    const { data } = await this.request(
+      `${DRIVE_API}/generateIds?count=1&space=drive&type=files`,
+      (response) => response.json() as Promise<{ ids?: string[] }>,
+    );
+    const [id] = data.ids ?? [];
+    if (!id) throw new RemoteError('network', 'Drive did not reserve a file ID.');
+    return id;
+  }
+
+  private async upload(id: string, folderId: string, { name, content }: Sent) {
     const upload = multipart(
-      { name: driveFileName(board), mimeType: 'application/json', parents: [folderId] },
-      serializeBoard(board),
+      { id, name, mimeType: 'application/json', parents: [folderId] },
+      content,
     );
     const { data } = await this.request(
       `${DRIVE_UPLOAD}?uploadType=multipart&fields=${FILE_FIELDS}`,
       (response) => response.json() as Promise<RemoteFile>,
       { method: 'POST', headers: { 'Content-Type': upload.type }, body: upload.body },
     );
+    if (data.id !== id) throw new RemoteError('conflict', 'Drive created a different file.');
     return { id: data.id, name: data.name, version: data.version };
+  }
+
+  /** The file at a reserved ID with its raw content, or null while it does not exist. */
+  private async created(id: string): Promise<Created | null> {
+    const url = `${DRIVE_API}/${encodeURIComponent(id)}`;
+    try {
+      const { data: meta } = await this.request(
+        `${url}?fields=${FILE_FIELDS},parents`,
+        (response) => response.json() as Promise<RemoteFile & { parents?: string[] }>,
+      );
+      const { data: content } = await this.request(`${url}?alt=media`, (response) =>
+        response.text(),
+      );
+      return {
+        file: { id: meta.id, name: meta.name, version: meta.version },
+        parents: meta.parents ?? [],
+        content,
+      };
+    } catch (error) {
+      if (error instanceof RemoteError && error.reason === 'missing') return null;
+      throw error;
+    }
+  }
+
+  /**
+   * Take over a file an unanswered upload made, if it holds something this creation sent;
+   * anything else at the reserved ID is not ours to overwrite.
+   */
+  private async adopt(
+    existing: Created,
+    reservation: Reservation,
+    folderId: string,
+    board: Board,
+  ): Promise<RemoteFile> {
+    const ours = reservation.sent.some(
+      (sent) => sent.content === existing.content && sent.name === existing.file.name,
+    );
+    if (!ours || !existing.parents.includes(folderId))
+      throw new RemoteError('conflict', 'The reserved file holds something else.');
+    this.reserved.delete(folderId);
+    const latest = reservation.sent.at(-1)!;
+    if (existing.content === latest.content && existing.file.name === latest.name)
+      return existing.file;
+    // An earlier attempt landed; bring it up to what this attempt meant to write.
+    return this.save(existing.file, board);
   }
 
   private metadata(id: string) {
