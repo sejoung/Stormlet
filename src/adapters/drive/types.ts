@@ -15,9 +15,10 @@ export interface PickOptions {
 
 /**
  * What happened to the connection: a token arrived (here or from another tab, also when
- * renewed), it entered its renewal window, it ran out, or the user disconnected.
+ * renewed), it entered its renewal window, it ran out, or the user disconnected: keeping
+ * what is remembered about Drive (`disconnected`) or dropping it too (`forgotten`).
  */
-export type AuthEvent = 'connected' | 'expiring' | 'expired' | 'disconnected';
+export type AuthEvent = 'connected' | 'expiring' | 'expired' | 'disconnected' | 'forgotten';
 
 /** Google sign-in and the Drive Picker; `GoogleConnection` implements them. */
 export interface DriveAuth {
@@ -37,8 +38,11 @@ export interface DriveAuth {
   connect(): Promise<void>;
   /** Show the Picker; resolves with the chosen item, or null when cancelled. */
   pick(kind: PickKind, options: PickOptions): Promise<DriveItem | null>;
-  /** Forget the token and withdraw Google's consent. */
-  disconnect(): Promise<void>;
+  /**
+   * Forget the token and withdraw Google's consent, in every tab; with `forget`, the tabs
+   * also drop the files and folder they remember.
+   */
+  disconnect(forget?: boolean): Promise<void>;
 }
 
 /** Errors Google sign-in reports, by what the user can do about them. */

@@ -15,8 +15,8 @@ import type { DialogName } from './WorkspaceDialogs';
 /** The board's menus: File, Edit and View. */
 export function ToolbarMenus({
   fileInput,
-  onNew,
-  onRecent,
+  onDialog,
+  recent,
   onOpenFile,
   onDownload,
   keys,
@@ -28,9 +28,9 @@ export function ToolbarMenus({
   drive,
 }: {
   fileInput: RefObject<HTMLInputElement | null>;
-  onNew(): void;
-  /** Boards of closed tabs; absent where the browser keeps only one board. */
-  onRecent?(): void;
+  onDialog(dialog: DialogName): void;
+  /** Boards of closed tabs are kept; false where the browser keeps only one board. */
+  recent: boolean;
   onOpenFile(file: File): void;
   onDownload(): void;
   /** The commands behind the shortcuts, which the Edit and View menus run too. */
@@ -48,8 +48,8 @@ export function ToolbarMenus({
     <>
       <FileMenu
         fileInput={fileInput}
-        onNew={onNew}
-        onRecent={onRecent}
+        onNew={() => onDialog('new')}
+        onRecent={recent ? () => onDialog('recent') : undefined}
         onOpenFile={onOpenFile}
         onDownload={onDownload}
         drive={
@@ -65,7 +65,7 @@ export function ToolbarMenus({
                 onSaveToFolder: drive.saveToFolder,
                 onSyncNow: drive.syncNow,
                 onUnlink: drive.unlink,
-                onDisconnect: drive.disconnect,
+                onDisconnect: () => onDialog('disconnect'),
               }
             : undefined
         }

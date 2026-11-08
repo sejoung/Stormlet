@@ -473,18 +473,36 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'drive.recovered': '페이지를 닫기 직전 Drive에 저장한 {name}을(를) 찾아 다시 연결했습니다.',
   'drive.openBlocked':
     '지금 Drive 파일의 변경 내용이 아직 저장되지 않았습니다. 먼저 저장하거나 동기화를 중지하세요.',
-  'drive.disconnected': 'Google Drive 연결을 해제했습니다.',
+  'drive.disconnected':
+    'Google Drive 연결을 해제했습니다. 다시 연결하면 같은 파일에 이어서 저장합니다.',
   'drive.revokeFailed':
     '이 기기에서는 연결을 해제했지만 Google이 권한 삭제를 확인하지 않았습니다. Google 계정의 서드파티 액세스 설정에서 Stormlet을 삭제할 수 있습니다.',
   'drive.error.cancelled': 'Google 로그인이 취소되었거나 차단되었습니다.',
   'drive.error.unavailable': 'Google에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도하세요.',
   'drive.failure.auth': 'Drive 접근 권한이 끝났습니다. 다시 연결한 뒤 시도하세요.',
   'drive.failure.conflict': '저장하는 동안 Drive 파일이 계속 바뀌었습니다. 다시 시도하세요.',
-  'drive.failure.permission': 'Drive가 파일 접근을 거부했습니다.',
+  'drive.failure.permission':
+    'Drive가 파일 접근을 거부했습니다. 다시 연결한 뒤라면 Drive에서 다시 찾기로 같은 파일을 골라 주세요.',
   'drive.failure.full': 'Drive 저장 공간이 부족합니다. 공간을 비운 뒤 다시 시도하세요.',
-  'drive.failure.missing': 'Drive 파일이 더 이상 없습니다. 보드를 폴더에 다시 저장하세요.',
+  'drive.failure.missing':
+    'Drive에서 이 보드의 파일을 찾을 수 없습니다. 다시 연결한 뒤라면 Drive에서 다시 찾기로 같은 파일을 골라 주세요. 지워졌다면 보드를 폴더에 다시 저장하세요.',
   'drive.failure.network': 'Drive에 연결할 수 없습니다. 저장을 다시 시도합니다.',
   'drive.failure.unreadable': '이 버전에서 읽을 수 있는 Stormlet 보드 파일이 아닙니다.',
+  'drive.failure.account':
+    '이 보드의 파일은 다른 Google 계정({email})에 있어 저장을 멈췄습니다. 그 계정으로 다시 연결하거나 동기화를 멈추세요.',
+  'drive.relink': 'Drive에서 다시 찾기…',
+  'drive.relinkOther': '이 보드의 Drive 파일이 아닙니다. 같은 파일을 골라 주세요.',
+  'drive.forgotten':
+    'Google Drive 연결을 해제하고 이 브라우저의 Drive 파일·폴더 정보를 지웠습니다.',
+  'menu.disconnect': 'Google Drive 연결 해제…',
+  'disconnect.title': 'Google Drive 연결 해제',
+  'disconnect.description':
+    '이 브라우저에서 Stormlet의 Google Drive 접근 권한을 철회합니다. 보드와 Drive 파일은 그대로 남고, 다시 연결하면 같은 파일과 폴더에 이어서 저장합니다.',
+  'disconnect.forget': '이 브라우저의 Drive 파일·폴더 정보도 지우기',
+  'disconnect.forgetHint':
+    '공용 컴퓨터라면 선택하세요. 다시 연결해도 보드가 Drive 파일과 이어지지 않습니다.',
+  'disconnect.cancel': '취소',
+  'disconnect.confirm': '연결 해제',
   'drive.failure.unknown': 'Drive에 저장하다 예상하지 못한 오류가 났습니다.',
   'drive.conflict.title': '남길 변경 선택',
   'drive.conflict.description':

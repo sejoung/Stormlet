@@ -3,7 +3,8 @@ export type AuthMessage =
   | { type: 'request' }
   | { type: 'token'; token: string; expiresIn: number }
   | { type: 'expired'; token: string }
-  | { type: 'disconnected' };
+  /** `forget`: the tabs also drop what they remember about Drive (ADR 0010). */
+  | { type: 'disconnected'; forget: boolean };
 
 export interface AuthChannel {
   post(message: AuthMessage): void;
@@ -16,7 +17,7 @@ export function parseAuthMessage(value: unknown): AuthMessage | null {
   const data = value as Record<string, unknown>;
   const token = typeof data.token === 'string' && data.token ? data.token : null;
   if (data.type === 'request') return { type: 'request' };
-  if (data.type === 'disconnected') return { type: 'disconnected' };
+  if (data.type === 'disconnected') return { type: 'disconnected', forget: data.forget === true };
   if (data.type === 'expired' && token) return { type: 'expired', token };
   if (
     data.type === 'token' &&

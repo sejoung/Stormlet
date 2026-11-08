@@ -4,6 +4,7 @@ import { diffBoards, type Patch } from '../domain/patch';
 import { mergeBoards, same, type Conflict, type Side } from '../domain/sync/merge';
 import {
   RemoteError,
+  type RemoteAccount,
   type RemoteBoards,
   type RemoteFailure,
   type RemoteFile,
@@ -20,7 +21,8 @@ export const RETRY_DELAYS = [5_000, 15_000, 60_000] as const;
 /** Save attempts in one run, each after merging what changed remotely in between. */
 const ROUNDS = 3;
 
-export type SyncFailure = Exclude<RemoteFailure, 'auth'> | 'unknown';
+/** `account`: the file is in another Google account than the one connected now. */
+export type SyncFailure = Exclude<RemoteFailure, 'auth'> | 'unknown' | 'account';
 export type SyncState =
   | { status: 'unlinked' }
   | { status: 'synced' | 'pending' | 'saving'; file: RemoteFile }
@@ -31,7 +33,7 @@ export type SyncState =
   | { status: 'failed'; file: RemoteFile; reason: SyncFailure; detail: string };
 
 type Status = SyncState['status'];
-type Opened = Awaited<ReturnType<RemoteBoards['open']>>;
+type Opened = Awaited<ReturnType<RemoteBoards['open']>> & { account?: RemoteAccount };
 
 /**
  * Keeps the board in sync with one remote file (ADR 0010). It is the app's `BoardStore`:
@@ -113,9 +115,12 @@ export class DriveSync implements BoardStore {
   async create(folderId: string): Promise<RemoteFile> {
     const generation = this.detach();
     const board = this.load();
-    const file = await this.remote.create(folderId, board);
+    const [file, account] = await Promise.all([
+      this.remote.create(folderId, board),
+      this.account(),
+    ]);
     if (generation === this.generation) {
-      this.remember({ file, base: board });
+      this.remember({ file, base: board, account });
       this.set('synced');
       if (!same(this.load(), board)) this.changed();
     }
@@ -123,15 +128,21 @@ export class DriveSync implements BoardStore {
   }
 
   /** Read a file to open; call `linkOpened` before putting it on the board. */
-  open(id: string): Promise<Opened> {
-    return this.remote.open(id);
+  async open(id: string): Promise<Opened> {
+    const [opened, account] = await Promise.all([this.remote.open(id), this.account()]);
+    return { ...opened, account };
+  }
+
+  /** The Google account the current access is for; undefined when it cannot be told. */
+  account(): Promise<RemoteAccount | undefined> {
+    return this.remote.account?.().catch(() => undefined) ?? Promise.resolve(undefined);
   }
 
   /** Link the file just opened, so replacing the board with it saves nothing back. */
-  linkOpened({ file, board }: Opened): void {
+  linkOpened({ file, board, account }: Opened): void {
     this.detach();
     this.remote.forgetUnconfirmed?.();
-    this.remember({ file, base: board });
+    this.remember({ file, base: board, account });
     this.set('synced');
   }
 
@@ -151,11 +162,11 @@ export class DriveSync implements BoardStore {
   async recover(): Promise<RemoteFile | null> {
     if (this.link || !this.remote.unconfirmed) return null;
     const generation = this.generation;
-    const found = await this.remote.unconfirmed();
+    const [found, account] = await Promise.all([this.remote.unconfirmed(), this.account()]);
     // Linking or creating something meanwhile decides for the user.
     if (!found || generation !== this.generation || this.link) return null;
     this.remote.forgetUnconfirmed?.();
-    this.remember({ file: found.file, base: found.board });
+    this.remember({ file: found.file, base: found.board, account });
     this.set('synced');
     if (!same(this.load(), found.board)) this.changed();
     return found.file;
@@ -170,14 +181,29 @@ export class DriveSync implements BoardStore {
 
   /** Save now, without waiting, and retry after a failure. */
   saveNow(): Promise<void> {
-    return this.link ? this.run() : Promise.resolve();
+    if (!this.link) return Promise.resolve();
+    // Another account may be connected by now; that is checked again first.
+    return this.otherAccount() ? this.resume() : this.run();
   }
 
-  /** After reconnecting: take in what changed remotely, then save what changed here. */
-  resume(): Promise<void> {
-    if (!this.link) return Promise.resolve();
-    this.pullWanted = true;
+  /**
+   * After reconnecting: take in what changed remotely, then save what changed here. The
+   * file must be in the account connected now; a file of another account is never written.
+   */
+  async resume(): Promise<void> {
+    if (!this.link) return;
+    const generation = this.generation;
     this.set('saving');
+    const expected = this.link.account;
+    const current = await this.account();
+    if (generation !== this.generation || !this.link) return;
+    if (expected && current && current.id !== expected.id) {
+      this.cancelWait();
+      return this.set('failed', { reason: 'account', detail: expected.email });
+    }
+    // A link made before accounts were kept learns its account now.
+    if (!expected && current) this.remember({ ...this.link, account: current });
+    this.pullWanted = true;
     return this.run();
   }
 
@@ -197,11 +223,16 @@ export class DriveSync implements BoardStore {
    */
   async settle(): Promise<boolean> {
     if (!this.link) return true;
-    if (!['paused', 'conflict'].includes(this.state.status)) await this.run();
+    if (!['paused', 'conflict'].includes(this.state.status) && !this.otherAccount())
+      await this.run();
     return !this.link || same(this.load(), this.link.base);
   }
 
   // --- Internals ---
+
+  private otherAccount(): boolean {
+    return this.state.status === 'failed' && this.state.reason === 'account';
+  }
 
   private changed(): void {
     if (!this.link) return;
@@ -265,7 +296,7 @@ export class DriveSync implements BoardStore {
         try {
           const file = await this.remote.save(this.link!.file, board);
           if (!live()) return;
-          this.remember({ file, base: board });
+          this.remember({ file, base: board, account: this.link!.account });
           this.retries = 0;
           // Edits made while saving go out on the usual schedule.
           if (same(this.load(), board)) this.set('synced');
@@ -308,7 +339,7 @@ export class DriveSync implements BoardStore {
       this.local.apply(patches);
       for (const listener of this.listeners) listener(patches);
     }
-    this.remember({ file: theirs.file, base: theirs.board });
+    this.remember({ file: theirs.file, base: theirs.board, account: this.link?.account });
   }
 
   private fail(error: unknown): void {

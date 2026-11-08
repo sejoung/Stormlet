@@ -10,6 +10,7 @@ import {
   type DriveItem,
 } from '../../adapters/drive/types';
 import { isEmptyBoard } from '../../domain/model';
+import type { SavedFolder } from '../../adapters/drive/links';
 import { useAuthRenewal } from './useAuthRenewal';
 import { errorDetails, log } from '../../adapters/diagnostics/log';
 import { useLocale, useT } from '../../components/common/i18n';
@@ -19,8 +20,8 @@ import type { MessageKey } from '../../i18n/messages';
 export interface DriveServices {
   auth: DriveAuth;
   sync: DriveSync;
-  /** The folder boards are saved to, shared by every tab. */
-  folder: { read(): DriveItem | null; write(folder: DriveItem | null): void };
+  /** The folder boards are saved to, shared by every tab, with the account it is in. */
+  folder: { read(): SavedFolder | null; write(folder: SavedFolder | null): void };
   /** This tab started from an empty board, so its first edit goes to the folder. */
   startedEmpty?: boolean;
 }
@@ -86,7 +87,12 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
           (error: unknown) => log.warn('drive.recover-failed', errorDetails(error)),
         );
       else if (event === 'expired') sync.pause();
-      else if (event === 'disconnected') sync.unlink();
+      // Disconnecting keeps the file to continue with after reconnecting; forgetting drops it.
+      else if (event === 'disconnected') sync.pause();
+      else if (event === 'forgotten') {
+        autoSave.current = false;
+        sync.unlink();
+      }
     };
     const unsubscribe = auth.subscribe(follow);
     // Another tab may have handed over its token before this subscribed.
@@ -140,8 +146,16 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
       title: t(kind === 'file' ? 'drive.pickFile' : 'drive.pickFolder'),
     });
   /** Save the board as a new file in `folder`, and make it the folder for every tab. */
+  /** The shared folder, unless it is in another account than the one connected now. */
+  const sharedFolder = async (drive: DriveServices) => {
+    const folder = drive.folder.read();
+    if (!folder?.account) return folder;
+    const current = await drive.sync.account();
+    return !current || current.id === folder.account ? folder : null;
+  };
   const createIn = async (drive: DriveServices, folder: DriveItem) => {
-    drive.folder.write(folder);
+    const current = await drive.sync.account();
+    drive.folder.write({ id: folder.id, name: folder.name, account: current?.id });
     const file = await drive.sync.create(folder.id);
     onStatus(t('drive.savedIn', { name: file.name, folder: folder.name }));
   };
@@ -171,7 +185,10 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     const folder = services.folder.read();
     if (!folder) return;
     autoSave.current = false;
-    run('drive.create-failed', (drive) => createIn(drive, folder));
+    run('drive.create-failed', async (drive) => {
+      const shared = await sharedFolder(drive);
+      if (shared) await createIn(drive, shared);
+    });
     // `run` and `createIn` change every render; the conditions above are what matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [services, linked, connected, firstEdit]);
@@ -194,15 +211,27 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     folder: () => services?.folder.read() ?? null,
     saveToFolder,
     /** Save this board to Drive: into the shared folder, or a folder chosen now. */
-    saveToDrive: () => {
-      const folder = services?.folder.read();
-      if (!folder) return saveToFolder();
+    saveToDrive: () =>
       run('drive.create-failed', async (drive) => {
         flushEditor();
         await access(drive);
-        await createIn(drive, folder);
-      });
-    },
+        const folder = (await sharedFolder(drive)) ?? (await pick(drive, 'folder'));
+        if (folder) await createIn(drive, folder);
+      }),
+    /**
+     * Give access to the linked file again by choosing it in the Picker, e.g. after
+     * reconnecting when Drive no longer lets Stormlet see it; then continue syncing.
+     */
+    relink: () =>
+      run('drive.open-failed', async (drive) => {
+        await access(drive);
+        const picked = await pick(drive, 'file');
+        if (!picked) return;
+        const { current } = drive.sync;
+        if (!('file' in current) || picked.id !== current.file.id)
+          return onStatus(t('drive.relinkOther'));
+        await drive.sync.resume();
+      }),
     /** ⌘/Ctrl+S: save the linked file now, or `download` a board not in Drive. */
     saveOr: (download: () => void) => () => (linked ? syncNow() : download()),
     open: () =>
@@ -243,12 +272,19 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
       autoSave.current = false;
       services?.sync.unlink();
     },
-    disconnect: () =>
+    /**
+     * Withdraw Google's access in every tab. The tabs keep their files and the folder, so
+     * reconnecting continues where they were; with `forget`, they drop those too.
+     */
+    disconnect: (forget = false) =>
       run('drive.disconnect-failed', async ({ auth, sync, folder }) => {
-        sync.unlink();
-        folder.write(null);
-        await auth.disconnect();
-        onStatus(t('drive.disconnected'));
+        if (forget) {
+          autoSave.current = false;
+          sync.unlink();
+          folder.write(null);
+        } else sync.pause();
+        await auth.disconnect(forget);
+        onStatus(t(forget ? 'drive.forgotten' : 'drive.disconnected'));
       }),
   };
 }

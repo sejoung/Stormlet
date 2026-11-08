@@ -45,7 +45,12 @@ describe('Drive sync', () => {
     const file = await sync.create('folder');
     expect(file).toEqual({ id: 'file1', name: 'board.stormlet', version: '1' });
     expect(sync.current).toEqual({ status: 'synced', file });
-    expect(links.link).toEqual({ file, base: local.board });
+    // The account it is in is kept with the link.
+    expect(links.link).toEqual({
+      file,
+      base: local.board,
+      account: { id: 'me', email: 'me@example.com' },
+    });
 
     sync.apply(setText('a', 'one'));
     sync.apply(setText('a', 'two'));

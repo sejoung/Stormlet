@@ -211,7 +211,7 @@ describe('Google connection', () => {
     // Disconnecting elsewhere ends this tab too, including a popup it still has open.
     fake.answers.push('closed');
     receive({ type: 'token', token: 'last', expiresIn: 60_000 });
-    receive({ type: 'disconnected' });
+    receive({ type: 'disconnected', forget: false });
     expect(connection.getToken()).toBeNull();
     expect(events).toEqual([
       'connected',
@@ -223,7 +223,11 @@ describe('Google connection', () => {
       'disconnected',
     ]);
     await connection.disconnect();
-    expect(posted.at(-1)).toEqual({ type: 'disconnected' });
+    expect(posted.at(-1)).toEqual({ type: 'disconnected', forget: false });
+    await connection.disconnect(true);
+    expect(posted.at(-1)).toEqual({ type: 'disconnected', forget: true });
+    receive({ type: 'disconnected', forget: true });
+    expect(events.at(-1)).toBe('forgotten');
     expect(fake.revoked).toEqual([]);
   });
 

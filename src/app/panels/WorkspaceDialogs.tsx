@@ -8,10 +8,12 @@ import type { BoardLibrary } from '../../domain/store';
 import { RecentBoardsDialog } from '../../components/dialogs/RecentBoardsDialog';
 import { DriveDialog } from '../../components/drive/DriveDialog';
 import { DriveConflictDialog } from '../../components/drive/DriveConflictDialog';
+import { DisconnectDialog } from '../../components/drive/DisconnectDialog';
 import type { Diagnostics } from '../diagnostics/diagnostics';
 import type { Drive } from '../drive/useDrive';
 
-export type DialogName = 'new' | 'recent' | 'bulk' | 'help' | 'diagnostics' | 'drive' | 'conflict';
+export type DialogName =
+  'new' | 'recent' | 'disconnect' | 'bulk' | 'help' | 'diagnostics' | 'drive' | 'conflict';
 
 interface Props {
   dialog: DialogName | null;
@@ -73,10 +75,16 @@ export function WorkspaceDialogs({ dialog, onDialog, drive, boards, ...props }: 
           onSaveNow={drive.saveNow}
           onResolve={() => onDialog('conflict')}
           onUnlink={drive.unlink}
-          onDisconnect={drive.disconnect}
+          onRelink={() => {
+            close();
+            drive.relink();
+          }}
+          onDisconnect={() => onDialog('disconnect')}
           onClose={close}
         />
       );
+    case 'disconnect':
+      return <DisconnectDialog onDisconnect={drive.disconnect} onClose={close} />;
     case 'conflict':
       return drive.state.status === 'conflict' ? (
         <DriveConflictDialog

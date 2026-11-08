@@ -103,7 +103,14 @@ describe('pending creation storage', () => {
 describe('auth channel between tabs', () => {
   it('accepts only well-formed messages', () => {
     expect(parseAuthMessage({ type: 'request' })).toEqual({ type: 'request' });
-    expect(parseAuthMessage({ type: 'disconnected', extra: 1 })).toEqual({ type: 'disconnected' });
+    expect(parseAuthMessage({ type: 'disconnected', extra: 1 })).toEqual({
+      type: 'disconnected',
+      forget: false,
+    });
+    expect(parseAuthMessage({ type: 'disconnected', forget: true })).toEqual({
+      type: 'disconnected',
+      forget: true,
+    });
     expect(parseAuthMessage({ type: 'expired', token: 't' })).toEqual({
       type: 'expired',
       token: 't',

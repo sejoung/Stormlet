@@ -16,6 +16,8 @@ interface Props {
   onSaveNow(): void;
   onResolve(): void;
   onUnlink(): void;
+  /** Choose the linked file in the Picker again, when Drive no longer shows it. */
+  onRelink(): void;
   onDisconnect(): void;
   onClose(): void;
 }
@@ -48,7 +50,11 @@ export function DriveDialog(props: Props) {
         <p className="drive-note">{t('drive.reconnectHint', { name: state.file.name })}</p>
       )}
       {state.status === 'failed' && (
-        <p className="drive-note attention">{t(FAILURES[state.reason])}</p>
+        <p className="drive-note attention">
+          {state.reason === 'account'
+            ? t('drive.failure.account', { email: state.detail })
+            : t(FAILURES[state.reason])}
+        </p>
       )}
       <div className="drive-actions">
         {!connected && (
@@ -74,6 +80,11 @@ export function DriveDialog(props: Props) {
             onClick={props.onSaveNow}
           >
             {state.status === 'failed' ? t('drive.retry') : t('drive.saveNow')}
+          </button>
+        )}
+        {state.status === 'failed' && ['missing', 'permission'].includes(state.reason) && (
+          <button type="button" disabled={busy} onClick={props.onRelink}>
+            {t('drive.relink')}
           </button>
         )}
         {linked && (

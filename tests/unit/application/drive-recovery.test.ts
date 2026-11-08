@@ -27,7 +27,11 @@ describe('recovering a creation the page did not hear back from', () => {
     expect(sync.current).toEqual({ status: 'unlinked' });
     const file = await sync.recover();
     expect(file).toEqual({ id: 'made', name: 'Plan.stormlet', version: '1' });
-    expect(links.link).toEqual({ file, base: created });
+    expect(links.link).toEqual({
+      file,
+      base: created,
+      account: { id: 'me', email: 'me@example.com' },
+    });
     expect(drive.unseen.id).toBeNull();
     expect(sync.current.status).toBe('pending');
     await vi.advanceTimersByTimeAsync(SYNC_DELAY);

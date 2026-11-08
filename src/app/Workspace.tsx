@@ -243,8 +243,8 @@ export function Workspace({
             menus={
               <ToolbarMenus
                 fileInput={fileInput}
-                onNew={() => setDialog('new')}
-                onRecent={library && (() => setDialog('recent'))}
+                onDialog={setDialog}
+                recent={library !== undefined}
                 onOpenFile={onOpen}
                 onDownload={save}
                 keys={keys}

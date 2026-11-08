@@ -476,18 +476,35 @@ export const en = {
     'Found {name}, saved to Drive just before the page closed, and linked it again.',
   'drive.openBlocked':
     'Changes to the current Drive file are not saved yet. Save them or stop syncing first.',
-  'drive.disconnected': 'Disconnected from Google Drive.',
+  'drive.disconnected':
+    'Disconnected Google Drive. Reconnect to continue saving to the same files.',
   'drive.revokeFailed':
     'Disconnected here, but Google did not confirm removing access. You can remove Stormlet in your Google account’s third-party access settings.',
   'drive.error.cancelled': 'Google sign-in was cancelled or blocked.',
   'drive.error.unavailable': 'Could not reach Google. Check your connection and try again.',
   'drive.failure.auth': 'Access to Drive has ended. Reconnect and try again.',
   'drive.failure.conflict': 'The Drive file kept changing while saving. Try again.',
-  'drive.failure.permission': 'Drive refused access to the file.',
+  'drive.failure.permission':
+    'Drive refused access to the file. After reconnecting, choose it again with “Find it in Drive again”.',
   'drive.failure.full': 'The Drive account has no room for the file. Free up space and try again.',
-  'drive.failure.missing': 'The Drive file no longer exists. Save the board to a folder again.',
+  'drive.failure.missing':
+    'Drive cannot find this board’s file. After reconnecting, choose it again with “Find it in Drive again”; if it was deleted, save the board to a folder again.',
   'drive.failure.network': 'Could not reach Drive. Saving will be retried.',
   'drive.failure.unreadable': 'The Drive file is not a Stormlet board this version can read.',
+  'drive.failure.account':
+    'This board’s file is in another Google account ({email}), so saving stopped. Reconnect with that account, or stop syncing.',
+  'drive.relink': 'Find it in Drive again…',
+  'drive.relinkOther': 'That is not this board’s Drive file. Choose the same file.',
+  'drive.forgotten': 'Disconnected Google Drive and forgot its files and folder in this browser.',
+  'menu.disconnect': 'Disconnect Google Drive…',
+  'disconnect.title': 'Disconnect Google Drive',
+  'disconnect.description':
+    'Stormlet’s access to Google Drive is withdrawn in this browser. Boards and Drive files stay as they are; reconnecting continues saving to the same files and folder.',
+  'disconnect.forget': 'Also forget the Drive files and folder in this browser',
+  'disconnect.forgetHint':
+    'For a shared computer. Boards then no longer continue with their Drive files after reconnecting.',
+  'disconnect.cancel': 'Cancel',
+  'disconnect.confirm': 'Disconnect',
   'drive.failure.unknown': 'Saving to Drive failed unexpectedly.',
   'drive.conflict.title': 'Choose which changes to keep',
   'drive.conflict.description':

@@ -71,7 +71,7 @@ describe('Google Drive', () => {
       '다른 폴더에 사본 저장…',
       '지금 동기화⌘ / Ctrl+S',
       '동기화 중지',
-      'Google Drive 연결 해제',
+      'Google Drive 연결 해제…',
     ]);
     fireEvent.keyDown(linked, { key: 'Escape' });
     fireEvent.click(driveButton());
@@ -181,9 +181,10 @@ describe('Google Drive', () => {
     expect(sync.current.status).toBe('unlinked');
 
     noDriveButton();
-    await chooseFromFile('Google Drive 연결 해제');
-    expect(await screen.findByText('Google Drive 연결을 해제했습니다.')).toBeInTheDocument();
-    expect(auth.disconnect).toHaveBeenCalled();
+    await chooseFromFile('Google Drive 연결 해제…');
+    fireEvent.click(screen.getByRole('button', { name: '연결 해제' }));
+    expect(await screen.findByText(/Google Drive 연결을 해제했습니다/)).toBeInTheDocument();
+    expect(auth.disconnect).toHaveBeenCalledWith(false);
   });
 
   it('reports failed actions and logs them', async () => {
@@ -215,7 +216,10 @@ describe('Google Drive', () => {
     expect(driveButton()).toHaveTextContent('다시 연결');
     act(() => auth.elsewhere.token());
     await waitFor(() => expect(driveButton()).toHaveTextContent('저장됨'));
+    // Disconnecting elsewhere pauses: the file is kept for when access comes back.
     act(() => auth.elsewhere.disconnected());
+    expect(driveButton()).toHaveTextContent('다시 연결');
+    act(() => auth.elsewhere.disconnected(true));
     expect(sync.current.status).toBe('unlinked');
     noDriveButton();
   });

@@ -1,7 +1,7 @@
 import type { GoogleConfig } from './config';
 import type { AuthChannel, AuthMessage } from './auth-channel';
 import { loadScript } from './script-loader';
-import { showPicker } from './picker';
+import type { PickerApi } from './google-types';
 import {
   DriveAuthError,
   type AuthEvent,
@@ -128,11 +128,11 @@ export class GoogleConnection implements DriveAuth {
     });
   }
 
-  async disconnect(): Promise<void> {
+  async disconnect(forget = false): Promise<void> {
     const token = this.getToken();
     this.withdraw();
-    this.channel?.post({ type: 'disconnected' });
-    this.emit('disconnected');
+    this.channel?.post({ type: 'disconnected', forget });
+    this.emit(forget ? 'forgotten' : 'disconnected');
     // Consent is withdrawn once, by the tab where the user disconnected.
     if (token) await revoke(token);
   }
@@ -181,7 +181,7 @@ export class GoogleConnection implements DriveAuth {
       return this.emit('expired');
     }
     this.withdraw();
-    this.emit('disconnected');
+    this.emit(message.forget ? 'forgotten' : 'disconnected');
   };
 
   private emit(event: AuthEvent): void {
@@ -203,5 +203,41 @@ function revoke(token: string): Promise<void> {
       if (result?.successful) resolve();
       else reject(new DriveAuthError('revoke', result?.error ?? 'Google refused.'));
     });
+  });
+}
+
+interface PickerAccess extends PickOptions {
+  api: PickerApi;
+  token: string;
+  apiKey: string;
+  appId: string;
+}
+
+/** Show Google's Picker once; resolves with the chosen item, or null when cancelled. */
+export function showPicker(kind: PickKind, access: PickerAccess): Promise<DriveItem | null> {
+  const { api } = access;
+  return new Promise((resolve) => {
+    const view = new api.DocsView(api.ViewId.DOCS)
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(kind === 'folder')
+      .setMode(api.DocsViewMode.LIST);
+    if (kind === 'folder')
+      view.setParent('root').setMimeTypes('application/vnd.google-apps.folder');
+    const picker = new api.PickerBuilder()
+      .setLocale(access.language)
+      .setTitle(access.title)
+      .setDeveloperKey(access.apiKey)
+      .setAppId(access.appId)
+      .setOAuthToken(access.token)
+      .setOrigin(window.location.origin)
+      .addView(view)
+      .setCallback((result) => {
+        // Other actions (such as `loaded`) are progress, not an answer.
+        if (result.action !== 'picked' && result.action !== 'cancel') return;
+        picker.dispose();
+        resolve(result.action === 'picked' ? (result.docs?.[0] ?? null) : null);
+      })
+      .build();
+    picker.setVisible(true);
   });
 }

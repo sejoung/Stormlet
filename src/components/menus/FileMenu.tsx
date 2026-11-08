@@ -120,7 +120,7 @@ export function FileMenu({
                 )}
                 {drive.connected && (
                   <MenuItem
-                    label={t('drive.disconnect')}
+                    label={t('menu.disconnect')}
                     icon="signOut"
                     disabled={drive.busy}
                     close={close}

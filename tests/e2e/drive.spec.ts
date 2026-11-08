@@ -94,7 +94,7 @@ test('opens a board from Drive', async ({ page }) => {
   expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
 });
 
-test('a new tab has a board of its own but takes over the connection, and a disconnect ends both', async ({
+test('a new tab has a board of its own but takes over the connection, and a disconnect pauses both', async ({
   page,
   context,
 }) => {
@@ -121,8 +121,16 @@ test('a new tab has a board of its own but takes over the connection, and a disc
   ).not.toContain('e2e-token');
   expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
 
-  await fromFile(second, 'Google Drive 연결 해제');
-  await expect(driveButton(page)).toHaveCount(0);
+  // Disconnecting pauses every tab; their files wait for reconnecting.
+  await fromFile(second, 'Google Drive 연결 해제…');
+  await second
+    .getByRole('dialog', { name: 'Google Drive 연결 해제' })
+    .getByRole('button', { name: '연결 해제' })
+    .click();
+  await expect(driveButton(page)).toHaveText('다시 연결');
+  await driveButton(page).click();
+  await expect(driveButton(page)).toHaveText('저장됨');
+  expect([...drive.files.keys()]).toEqual(['created-1']);
 });
 
 test('renews access on a click before it runs out', async ({ page }) => {

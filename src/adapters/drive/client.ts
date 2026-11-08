@@ -3,15 +3,20 @@ import { boardFileStem, boardTitle } from '../../domain/board-title';
 import {
   RemoteError,
   type RemoteBoards,
+  type RemoteAccount,
   type RemoteFailure,
   type RemoteFile,
 } from '../../domain/sync/remote';
 import { FILE_EXTENSION, FormatError, parseBoard, serializeBoard } from '../files/stormlet-format';
 import { memoryCreations, type CreationRecord } from './creations';
+import { failureOf, multipart } from './http';
 import { freeName, isNameFor } from '../files/file-names';
 import { log } from '../diagnostics/log';
 
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
+/** Who the access is for, to tell one Google account's files from another's. */
+export const DRIVE_ABOUT =
+  'https://www.googleapis.com/drive/v3/about?fields=user(permissionId,emailAddress)';
 export const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 /** Requests give up after this long, body included, so a stalled save cannot hang the queue. */
 export const REQUEST_TIMEOUT = 30_000;
@@ -30,10 +35,6 @@ export const CREATE_BACKOFF = 500;
 const RETRY_CREATE: readonly RemoteFailure[] = ['network', 'conflict'];
 /** An upload not seen this long after it started can no longer land. */
 export const LATE_UPLOAD = 10 * 60_000;
-/** 403 reasons that mean "slow down" rather than "not allowed": retried like network failures. */
-const RATE_LIMITS = ['rateLimitExceeded', 'userRateLimitExceeded', 'sharingRateLimitExceeded'];
-/** 403 reasons that mean the owner's Drive has no room for the file. */
-const FULL = ['storageQuotaExceeded', 'quotaExceeded'];
 
 /** What one creation attempt sent. */
 interface Sent {
@@ -65,45 +66,9 @@ function read(content: string): Board {
 export const driveFileName = (board: Board): string =>
   `${boardFileStem(boardTitle(board))}${FILE_EXTENSION}`;
 
-const STATUS_FAILURES: Record<number, RemoteFailure> = {
-  401: 'auth',
-  403: 'permission',
-  404: 'missing',
-  409: 'conflict',
-  412: 'conflict',
-};
-
-/** The failure for a refused request; 403 covers several, told apart by Google's reason. */
-async function failureOf(response: Response): Promise<RemoteError> {
-  const status = `Drive answered ${response.status}`;
-  if (response.status !== 403)
-    return new RemoteError(STATUS_FAILURES[response.status] ?? 'network', `${status}.`);
-  const body = (await response.json().catch(() => null)) as {
-    error?: { errors?: { reason?: unknown }[] };
-  } | null;
-  const reason = String(body?.error?.errors?.[0]?.reason ?? '');
-  const failure = RATE_LIMITS.includes(reason)
-    ? 'network'
-    : FULL.includes(reason)
-      ? 'full'
-      : 'permission';
-  return new RemoteError(failure, reason ? `${status} (${reason}).` : `${status}.`);
-}
-
 interface Reply<T> {
   data: T;
   etag: string | null;
-}
-
-function multipart(metadata: object, content: string) {
-  const boundary = `stormlet-${crypto.randomUUID()}`;
-  return {
-    type: `multipart/related; boundary=${boundary}`,
-    body:
-      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-      `${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
-      `${content}\r\n--${boundary}--`,
-  };
 }
 
 /**
@@ -115,6 +80,8 @@ export class DriveClient implements RemoteBoards {
   private readonly reserved = new Map<string, Reservation>();
   /** Creations running in this page; their own retries look for the file. */
   private creating = 0;
+  /** The account behind each token, asked once per token. */
+  private readonly accounts = new Map<string, Promise<RemoteAccount>>();
 
   constructor(
     private readonly token: () => string | null,
@@ -136,6 +103,27 @@ export class DriveClient implements RemoteBoards {
       throw new RemoteError('unreadable', `The file is larger than ${MAX_FILE_BYTES} bytes.`);
     const { data: content } = await this.request(`${url}?alt=media`, (response) => response.text());
     return { file: { id: meta.id, name: meta.name, version: meta.version }, board: read(content) };
+  }
+
+  account(): Promise<RemoteAccount> {
+    const token = this.token();
+    if (!token) return Promise.reject(new RemoteError('auth', 'Not connected to Google Drive.'));
+    let account = this.accounts.get(token);
+    if (!account) {
+      account = this.request(
+        DRIVE_ABOUT,
+        (response) =>
+          response.json() as Promise<{ user?: { permissionId?: string; emailAddress?: string } }>,
+      ).then(({ data }) => {
+        const id = data.user?.permissionId;
+        if (!id) throw new RemoteError('network', 'Drive did not say whose files these are.');
+        return { id, email: data.user?.emailAddress ?? '' };
+      });
+      this.accounts.set(token, account);
+      // A failed answer is asked again next time.
+      account.catch(() => this.accounts.delete(token));
+    }
+    return account;
   }
 
   async version(id: string): Promise<string> {

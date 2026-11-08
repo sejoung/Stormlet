@@ -8,6 +8,13 @@ export interface RemoteFile {
   version: string;
 }
 
+/** The account a remote file belongs to; files of another account are not written. */
+export interface RemoteAccount {
+  id: string;
+  /** Shown to the user to say which account a board's file is in. */
+  email: string;
+}
+
 /** Why a remote operation failed, in the terms the sync rules act on. */
 export type RemoteFailure =
   'auth' | 'conflict' | 'permission' | 'full' | 'missing' | 'network' | 'unreadable';
@@ -30,6 +37,8 @@ export interface RemoteBoards {
   /** Write `board` over `file`; fails with `conflict` if it changed since `file.version`. */
   save(file: RemoteFile, board: Board): Promise<RemoteFile>;
   create(folderId: string, board: Board): Promise<RemoteFile>;
+  /** The account the current access is for. */
+  account?(): Promise<RemoteAccount>;
   /**
    * The file a creation made without the answer reaching this page (it was closed or
    * reloaded first), or null. It stays reported until `forgetUnconfirmed`.
@@ -44,6 +53,8 @@ export interface RemoteLink {
   file: RemoteFile;
   /** The board as last saved to or read from the file: the base of a three-way merge. */
   base: Board;
+  /** The account the file is in; unknown for links made before accounts were kept. */
+  account?: RemoteAccount;
 }
 
 export interface RemoteLinks {

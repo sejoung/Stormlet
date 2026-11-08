@@ -3,7 +3,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { clearLog } from '../../../../src/adapters/diagnostics/log';
 import { boardOf, sticky } from '../../../support/boards';
-import { chooseFromFile, driveButton, renderWithDrive } from './support';
+import { driveButton, renderWithDrive } from './support';
 
 const boards = { id: 'folder', name: 'Boards' };
 const addNote = () => fireEvent.click(screen.getByRole('button', { name: '가운데 붙이기' }));
@@ -32,7 +32,7 @@ describe('the Google Drive button', () => {
     expect(auth.pick).not.toHaveBeenCalled();
     expect(drive.calls).toContain('create folder');
     expect(driveButton()).toHaveTextContent('저장됨');
-    expect(folder.read()).toEqual(boards);
+    expect(folder.read()).toEqual({ ...boards, account: 'me' });
   });
 
   it('asks for a folder the first time and remembers it for every tab', async () => {
@@ -41,7 +41,7 @@ describe('the Google Drive button', () => {
     auth.pick.mockResolvedValueOnce({ id: 'picked', name: 'Retros' });
     fireEvent.click(screen.getByRole('button', { name: 'Drive에 저장' }));
     expect(await screen.findByText(/Drive의 Retros 폴더에/)).toBeInTheDocument();
-    expect(folder.read()).toEqual({ id: 'picked', name: 'Retros' });
+    expect(folder.read()).toEqual({ id: 'picked', name: 'Retros', account: 'me' });
   });
 
   it('saves to Drive with ⌘/Ctrl+S once linked', async () => {
@@ -72,15 +72,11 @@ describe('the Google Drive button', () => {
     expect(driveButton()).toHaveTextContent('저장됨');
   });
 
-  it('leaves boards that were here before, and forgets the folder on disconnect', async () => {
-    const { auth, drive, folder } = renderWithDrive(boardOf(sticky('a')), null, {
-      folder: boards,
-    });
+  it('leaves boards that were here before alone', async () => {
+    const { auth, drive } = renderWithDrive(boardOf(sticky('a')), null, { folder: boards });
     act(() => auth.elsewhere.token());
     addNote();
     await act(async () => {});
     expect(drive.calls).not.toContain('create folder');
-    await chooseFromFile('Google Drive 연결 해제');
-    await waitFor(() => expect(folder.read()).toBeNull());
   });
 });

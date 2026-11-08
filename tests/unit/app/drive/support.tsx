@@ -3,6 +3,7 @@ import { expect, vi } from 'vitest';
 import { App } from '../../../../src/app/App';
 import { DriveSync } from '../../../../src/application/drive-sync';
 import type { AuthEvent, DriveAuth, DriveItem } from '../../../../src/adapters/drive/types';
+import type { SavedFolder } from '../../../../src/adapters/drive/links';
 import type { Board } from '../../../../src/domain/model';
 import type { RemoteLink } from '../../../../src/domain/sync/remote';
 import { boardOf, sticky } from '../../../support/boards';
@@ -34,9 +35,9 @@ export function fakeAuth() {
       emit('connected');
     }),
     pick: vi.fn(async (): Promise<DriveItem | null> => null),
-    disconnect: vi.fn(async () => {
+    disconnect: vi.fn(async (forget = false) => {
       token = null;
-      emit('disconnected');
+      emit(forget ? 'forgotten' : 'disconnected');
     }),
   } satisfies DriveAuth;
   return {
@@ -46,19 +47,22 @@ export function fakeAuth() {
       token: () => ((token = 'shared'), emit('connected')),
       expiring: () => ((expiring = true), emit('expiring')),
       expired: () => ((token = null), emit('expired')),
-      disconnected: () => ((token = null), emit('disconnected')),
+      disconnected: (forget = false) => (
+        (token = null),
+        emit(forget ? 'forgotten' : 'disconnected')
+      ),
     },
   };
 }
 
 /** The Drive folder shared by every tab, kept in memory. */
-export function memoryFolder(folder: DriveItem | null = null) {
+export function memoryFolder(folder: SavedFolder | null = null) {
   return {
     folder,
     read() {
       return this.folder;
     },
-    write(next: DriveItem | null) {
+    write(next: SavedFolder | null) {
       this.folder = next;
     },
   };
@@ -67,7 +71,7 @@ export function memoryFolder(folder: DriveItem | null = null) {
 export function renderWithDrive(
   board: Board = boardOf(sticky('a')),
   link: RemoteLink | null = null,
-  options: { folder?: DriveItem; startedEmpty?: boolean } = {},
+  options: { folder?: SavedFolder; startedEmpty?: boolean } = {},
 ) {
   const auth = fakeAuth();
   const drive = fakeDrive();

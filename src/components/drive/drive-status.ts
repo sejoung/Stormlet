@@ -44,4 +44,5 @@ export const FAILURES: Record<Extract<SyncState, { status: 'failed' }>['reason']
   network: 'drive.failure.network',
   unreadable: 'drive.failure.unreadable',
   unknown: 'drive.failure.unknown',
+  account: 'drive.failure.account',
 };

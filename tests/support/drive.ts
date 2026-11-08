@@ -28,6 +28,8 @@ export function fakeDrive() {
   };
   /** A file a creation made whose answer never reached the page. */
   const unseen = { id: null as string | null };
+  /** The Google account connected now; tests switch it to another one. */
+  const who = { account: { id: 'me', email: 'me@example.com' } };
   const remote: RemoteBoards = {
     open: async (id) => {
       call('open', id);
@@ -66,6 +68,7 @@ export function fakeDrive() {
     forgetUnconfirmed: () => {
       unseen.id = null;
     },
+    account: async () => who.account,
   };
   /** Someone else edits the file in Drive. */
   const elsewhere = (id: string, change: (board: Board) => Board) => {
@@ -75,7 +78,7 @@ export function fakeDrive() {
       version: stored.version + 1,
     });
   };
-  return { remote, files, calls, failures, elsewhere, unseen };
+  return { remote, files, calls, failures, elsewhere, unseen, who };
 }
 
 export function memoryLinks(link: RemoteLink | null = null) {

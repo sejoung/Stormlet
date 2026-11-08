@@ -109,6 +109,8 @@ export async function mockDrive(page: Target) {
     if (request.headers().authorization !== `Bearer ${TOKEN}`) return reply(route, {}, 401);
     const upload = url.pathname.startsWith('/upload/');
     const id = decodeURIComponent(url.pathname.split('/files/')[1] ?? '');
+    if (url.pathname.endsWith('/about'))
+      return reply(route, { user: { permissionId: 'e2e-user', emailAddress: 'e2e@example.com' } });
     if (id === 'generateIds') return reply(route, { ids: [`created-${++created}`] });
     // A folder listing, as `drive.file` shows it: only files this app has.
     const parent = /^'(.+)' in parents/.exec(url.searchParams.get('q') ?? '')?.[1];
