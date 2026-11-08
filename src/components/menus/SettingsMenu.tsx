@@ -43,6 +43,13 @@ export function SettingsMenu({
             onSelect={onHelp}
           />
           <MenuItem
+            label={t('menu.manual')}
+            icon="manual"
+            close={close}
+            // The guide is a page of its own, in this language, opened beside the board.
+            onSelect={() => window.open(t('manual.path'), '_blank', 'noopener')}
+          />
+          <MenuItem
             label={t('menu.diagnostics')}
             icon="troubleshoot"
             close={close}

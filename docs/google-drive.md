@@ -48,7 +48,7 @@ API 키는 Picker의 개발자 키로만 쓴다. Drive 파일 읽기·쓰기는 
 - **계정**: 파일 연결과 저장 폴더에는 Google 계정 ID와 이메일을 함께 기억한다(Drive `about`). 다시 연결한 계정이 다르면 그 파일에 쓰지 않고 `저장 안 됨`으로 멈추며 어느 계정의 파일인지 알려 준다. 다른 계정의 저장 폴더도 쓰지 않고 폴더를 다시 묻는다.
 - **다시 찾기**: 다시 연결한 뒤 Drive가 파일을 보여 주지 않으면(404·403) Drive 대화상자의 `Drive에서 다시 찾기…`로 Picker에서 같은 파일을 고른다. 고르면 접근이 다시 허용되어 이어서 저장한다. 다른 파일을 고르면 이어 붙이지 않는다.
 
-브라우저에는 탭의 보드마다 연결한 파일의 ID·이름·버전과 마지막으로 동기화한 보드(`stormlet.drive.file.<보드>`, `stormlet.drive.base.<보드>`), 응답을 기다리는 생성의 폴더·파일 ID(`stormlet.drive.creating.<보드>`)만 저장한다. 토큰은 저장하지 않는다. 브라우저의 보드 저장본이 손상되어 읽을 수 없으면([ADR 0009](adr/0009-diagnostics.md)) 마지막으로 동기화한 보드에서 다시 시작한다. 빈 보드가 '모두 삭제'로 Drive에 저장되지 않게 하기 위해서다.
+브라우저에는 탭의 보드마다 연결한 파일의 ID·이름·버전·계정과 마지막으로 동기화한 보드(`stormlet.drive.file.<보드>`, `stormlet.drive.base.<보드>`), 응답을 기다리는 생성의 폴더·파일 ID(`stormlet.drive.creating.<보드>`), 탭이 함께 쓰는 저장 폴더와 그 계정(`stormlet.drive.folder`)만 저장한다. 토큰은 저장하지 않는다. 브라우저의 보드 저장본이 손상되어 읽을 수 없으면([ADR 0009](adr/0009-diagnostics.md)) 마지막으로 동기화한 보드에서 다시 시작한다. 빈 보드가 '모두 삭제'로 Drive에 저장되지 않게 하기 위해서다.
 
 ## 한계
 
@@ -66,6 +66,8 @@ CSP는 Google 로그인·Picker·Drive API origin만 추가로 허용한다(`ind
 
 - **localStorage·sessionStorage·IndexedDB**: Stormlet이 저장한 보드(`stormlet.board.*`), Drive 연결 파일과 기준 보드(`stormlet.drive.*`), 설정을 같은 origin의 다른 페이지 스크립트가 읽고 쓸 수 있다. 키 이름이 달라 우연히 섞이지는 않지만 막혀 있지도 않다. 저장 공간 한도(보통 origin당 약 5MB)도 함께 쓴다.
 - **`BroadcastChannel`**: 같은 origin의 페이지는 Stormlet의 채널에 `request`를 보내 연결된 탭의 액세스 토큰을 받을 수 있다. 이 토큰으로 Stormlet이 접근할 수 있는 Drive 파일(`drive.file`: Stormlet이 만들었거나 Stormlet으로 연 파일)을 읽고 쓸 수 있다.
+
+Drive 연결 기록과 저장 폴더에는 어느 계정의 파일인지 알리기 위해 Google 계정 ID와 이메일도 함께 저장한다. 이 값도 같은 origin의 페이지가 읽을 수 있으므로, 공용 컴퓨터에서는 연결을 해제할 때 `이 브라우저의 Drive 파일·폴더 정보도 지우기`를 고른다.
 
 그 origin의 다른 페이지를 모두 신뢰할 수 없다면 Drive를 켜는 배포는 **Stormlet 전용 origin**에 올린다. 사용자 지정 도메인, 또는 별도 GitHub 조직의 `<조직>.github.io` 같은 방법이 있다. 메모리 토큰도 연결 중에 실행되는 XSS나 악성 확장 프로그램으로부터 완전히 격리되지는 않는다.
 

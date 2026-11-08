@@ -1,5 +1,5 @@
 import type { BoardLibrary, BoardSummary } from '../../domain/store';
-import { boardSlots, migrateSingleBoard, removeSlot, summarize } from './board-slots';
+import { boardSlots, isSlotId, migrateSingleBoard, removeSlot, summarize } from './board-slots';
 import { log } from '../diagnostics/log';
 
 /** sessionStorage: the board slot this tab shows, kept across reloads of the tab. */
@@ -22,7 +22,8 @@ const newSlot = () => crypto.randomUUID();
 
 function readSession(): string | null {
   try {
-    return window.sessionStorage.getItem(TAB_KEY);
+    const slot = window.sessionStorage.getItem(TAB_KEY);
+    return isSlotId(slot) ? slot : null;
   } catch {
     return null;
   }
@@ -80,10 +81,8 @@ function takeRequest(): { newTitle: string | null; open: string | null } {
       return value;
     }
   };
-  return {
-    newTitle: created ? decode(created[1]) : null,
-    open: opened ? decode(opened[1]) : null,
-  };
+  const open = opened ? decode(opened[1]) : null;
+  return { newTitle: created ? decode(created[1]) : null, open: isSlotId(open) ? open : null };
 }
 
 const bySaved = (a: BoardSummary, b: BoardSummary) => (b.savedAt ?? 0) - (a.savedAt ?? 0);
@@ -169,7 +168,7 @@ export class LocalBoardLibrary implements BoardLibrary {
   }
 
   async remove(id: string): Promise<boolean> {
-    if (id === this.current) return false;
+    if (id === this.current || !isSlotId(id)) return false;
     if (!this.locks) {
       removeSlot(id);
       return true;

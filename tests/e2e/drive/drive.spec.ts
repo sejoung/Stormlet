@@ -1,7 +1,7 @@
-import { test, expect, canvas, point } from './support';
+import { test, expect, canvas, point } from '../support';
 import { mockDrive, mockGoogleScripts } from './google';
-import { serializeBoard } from '../../src/adapters/files/stormlet-format';
-import { parseBoard } from '../../src/adapters/files/stormlet-format';
+import { serializeBoard } from '../../../src/adapters/files/stormlet-format';
+import { parseBoard } from '../../../src/adapters/files/stormlet-format';
 
 const driveButton = (page: import('@playwright/test').Page) =>
   page.getByRole('button', { name: /^Google Drive:/ });

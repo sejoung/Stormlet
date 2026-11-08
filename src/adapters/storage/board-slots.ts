@@ -14,6 +14,14 @@ const PREVIEW_LENGTH = 80;
 /** When a board slot was last saved, so closed boards can be ordered. */
 export const SAVED_KEY = 'stormlet.saved';
 
+/**
+ * Slots are UUIDs this app made. Anything else (from the address or storage written by
+ * another page) is not used as a slot, so it cannot name other keys.
+ */
+export const isSlotId = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
 /** The key of `base` for one board slot: each tab's board keeps its own records. */
 export const slotKey = (base: string, slot: string) => `${base}.${slot}`;
 
@@ -41,8 +49,8 @@ export function boardSlots(): string[] {
     for (let index = 0; index < storage.length; index++) {
       const key = storage.key(index);
       const prefix = `${BOARD_KEY}.`;
-      if (key?.startsWith(prefix) && !key.endsWith(DAMAGED_SUFFIX))
-        slots.push(key.slice(prefix.length));
+      const slot = key?.startsWith(prefix) ? key.slice(prefix.length) : null;
+      if (isSlotId(slot)) slots.push(slot);
     }
   } catch {
     // Without storage there are no other boards.

@@ -59,6 +59,9 @@ export const en = {
   'menu.openFile': 'Open…',
   'menu.download': 'Download as file',
   'menu.syncNow': 'Sync now',
+  'menu.manual': 'User guide',
+  'manual.path': 'manual/en/index.html',
+  'help.manual': 'Open the full user guide ↗',
   'menu.diagnostics': 'Troubleshooting…',
 
   'board.titleField': 'Board name',
@@ -82,6 +85,7 @@ export const en = {
     'If something goes wrong, copy the diagnostics and paste them into a GitHub issue. They hold the app version, your browser and recent errors, never the text of your notes.',
 
   'files.opened': 'Opened {name}.',
+  'files.tooLarge': 'the file is larger than {size} MB',
   'files.openFailed': 'This file cannot be opened: {reason}',
 
   'note.kindEvent': 'Domain event',

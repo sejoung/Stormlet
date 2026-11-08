@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  BookOpen,
   Check,
   ChevronDown,
   ClipboardCopy,
@@ -117,6 +118,7 @@ const icons = {
   signOut: LogOut,
   language: Languages,
   troubleshoot: LifeBuoy,
+  manual: BookOpen,
 };
 export type IconName = keyof typeof icons;
 

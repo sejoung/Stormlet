@@ -4,7 +4,12 @@ import { diffBoards } from '../domain/patch';
 import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
 import { emptyBoard } from '../domain/model';
 import { downloadText, readFileText } from '../adapters/files/download';
-import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
+import {
+  FILE_EXTENSION,
+  MAX_BOARD_FILE_BYTES,
+  parseBoard,
+  serializeBoard,
+} from '../adapters/files/stormlet-format';
 import { errorDetails, log } from '../adapters/diagnostics/log';
 import type { Edit } from './useBoardSession';
 import { useT } from '../components/common/i18n';
@@ -61,6 +66,9 @@ export function useBoardFiles({
     },
     onOpen: async (file: File) => {
       try {
+        // A huge file would freeze the page while it is read; boards are far smaller.
+        if (file.size > MAX_BOARD_FILE_BYTES)
+          throw new Error(t('files.tooLarge', { size: MAX_BOARD_FILE_BYTES / 1024 / 1024 }));
         const opened = parseBoard(await readFileText(file));
         beforeOpen?.();
         replace(opened, file.name);

@@ -108,4 +108,19 @@ describe('a board for each tab', () => {
     fireEvent.click(screen.getByRole('button', { name: '파일' }));
     expect(screen.queryByRole('menuitem', { name: '최근 보드…' })).not.toBeInTheDocument();
   });
+
+  it('refuses a file too large to be a board before reading it', async () => {
+    const store = memoryStore(boardOf(sticky('a')));
+    render(<App store={store} newId={ids()} />);
+    const file = new File(['{}'], 'huge.stormlet');
+    Object.defineProperty(file, 'size', { value: 21 * 1024 * 1024 });
+    const read = vi.fn();
+    Object.defineProperty(file, 'text', { value: read });
+    fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [file] } });
+    expect(
+      await screen.findByText('열 수 없는 파일입니다: 파일이 20MB보다 큽니다'),
+    ).toBeInTheDocument();
+    expect(read).not.toHaveBeenCalled();
+    expect(Object.keys(store.board.stickies)).toEqual(['a']);
+  });
 });

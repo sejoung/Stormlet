@@ -56,6 +56,9 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'menu.openFile': '열기…',
   'menu.download': '파일로 내려받기',
   'menu.syncNow': '지금 동기화',
+  'menu.manual': '사용 설명서',
+  'manual.path': 'manual/index.html',
+  'help.manual': '전체 사용 설명서 보기 ↗',
   'menu.diagnostics': '문제 해결…',
 
   'board.titleField': '보드 이름',
@@ -80,6 +83,7 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
     '문제가 생기면 진단 정보를 복사해 GitHub 이슈에 붙여 넣어 주세요. 앱 버전, 브라우저, 최근 오류가 들어 있고 포스트잇 내용은 들어 있지 않습니다.',
 
   'files.opened': '{name}을(를) 열었습니다.',
+  'files.tooLarge': '파일이 {size}MB보다 큽니다',
   'files.openFailed': '열 수 없는 파일입니다: {reason}',
 
   'note.kindEvent': '도메인 이벤트',

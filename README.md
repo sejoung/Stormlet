@@ -12,6 +12,10 @@ A local-first sticky note board for exploring and organizing ideas. [한국어](
 
 Stormlet runs entirely in the browser, with no sign-in and no server. Boards are autosaved to browser storage and can be downloaded as `.stormlet` files, which are plain, readable JSON.
 
+![Stormlet with a retrospective board: menus and the Google Drive button at the top, tools on the left, three frames of sticky notes and the minimap](public/manual/images/en/overview.png)
+
+New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual/en/) ([source](public/manual/en/index.html)).
+
 ## Features
 
 **Notes**
@@ -93,15 +97,16 @@ Google Drive is optional: copy `.env.example` to `.env.local` and fill in the th
 
 ## Scripts
 
-| Script             | Description                                                     |
-| ------------------ | --------------------------------------------------------------- |
-| `npm run dev`      | Start the dev server                                            |
-| `npm run build`    | Type-check and build to `dist/`                                 |
-| `npm run verify`   | Format check, lint, type check, unit tests with coverage, build |
-| `npm test`         | Run unit tests (Vitest, jsdom)                                  |
-| `npm run test:e2e` | Run E2E tests (Playwright, Chromium)                            |
-| `npm run arch`     | Report on layer dependency rules                                |
-| `npm run format`   | Format with Prettier                                            |
+| Script                   | Description                                                     |
+| ------------------------ | --------------------------------------------------------------- |
+| `npm run dev`            | Start the dev server                                            |
+| `npm run build`          | Type-check and build to `dist/`                                 |
+| `npm run verify`         | Format check, lint, type check, unit tests with coverage, build |
+| `npm test`               | Run unit tests (Vitest, jsdom)                                  |
+| `npm run test:e2e`       | Run E2E tests (Playwright, Chromium)                            |
+| `npm run manual:capture` | Recapture the user guide's screenshots (`public/manual/images`) |
+| `npm run arch`           | Report on layer dependency rules                                |
+| `npm run format`         | Format with Prettier                                            |
 
 ### E2E tests
 

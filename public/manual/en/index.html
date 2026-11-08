@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta
+      name="description"
+      content="How to use the Stormlet sticky note board, screen by screen"
+    />
+    <title>Stormlet User Guide</title>
+    <link rel="icon" href="../../icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../manual.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="../../index.html">
+        <img src="../../icon.svg" alt="" width="28" height="28" />
+        <span>Stormlet <small>User Guide</small></span>
+      </a>
+      <nav class="top-links" aria-label="Language and board">
+        <a href="../index.html" hreflang="ko" lang="ko">한국어</a>
+        <a class="open-editor" href="../../index.html">Open the board</a>
+      </nav>
+    </header>
+    <div class="layout">
+      <nav class="toc" aria-label="Contents">
+        <p class="toc-title">Contents</p>
+        <ol>
+          <li><a href="#start">Getting started</a></li>
+          <li><a href="#notes">Sticky notes</a></li>
+          <li><a href="#frames">Frames and connectors</a></li>
+          <li><a href="#organize">Selecting and arranging</a></li>
+          <li><a href="#menus">Menus</a></li>
+          <li><a href="#saving">Where a board is kept</a></li>
+          <li><a href="#drive">Google Drive</a></li>
+          <li><a href="#tabs">Tabs and boards</a></li>
+          <li><a href="#files">Opening and downloading files</a></li>
+          <li><a href="#shortcuts">Keyboard shortcuts</a></li>
+          <li><a href="#faq">Questions</a></li>
+        </ol>
+      </nav>
+      <main>
+        <section class="intro">
+          <h1>Stormlet User Guide</h1>
+          <p class="lead">
+            Stormlet is a sticky note board that runs in your browser, made for getting ideas out
+            and grouping them: retrospectives, brainstorming, event storming. It saves to this
+            browser without an account, and once you connect Google Drive, Drive is where your
+            boards live.
+          </p>
+          <p class="note">
+            Use a current desktop Chrome, Edge, Safari or Firefox. The screens below are captured
+            from the app automatically.
+          </p>
+        </section>
+
+        <section id="start">
+          <h2>1. Getting started</h2>
+          <figure>
+            <img
+              src="../images/en/overview.png"
+              alt="Stormlet with a retrospective board: the toolbar at the top, tools on the left, frames and sticky notes in the middle"
+            />
+            <figcaption>
+              The whole screen: three frames with notes, and the minimap open at the bottom right.
+            </figcaption>
+          </figure>
+          <dl class="parts">
+            <div>
+              <dt>Toolbar</dt>
+              <dd>
+                The <b>File, Edit and View</b> menus, the board name (rename with ✎), where the
+                board is kept, undo and redo, search, the Google Drive button and <b>Settings</b>.
+              </dd>
+            </div>
+            <div>
+              <dt>Tools on the left</dt>
+              <dd>
+                Select, hand (move around), sticky note, connector and frame tools, plus “Add to
+                center” and “Add several at once”.
+              </dd>
+            </div>
+            <div>
+              <dt>Canvas</dt>
+              <dd>
+                Where the board is. Move it with <kbd>Space</kbd>+drag or the hand tool, and zoom
+                with the wheel.
+              </dd>
+            </div>
+            <div>
+              <dt>Bottom right</dt>
+              <dd>Show all notes, zoom, the minimap and keyboard help.</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section id="notes">
+          <h2>2. Sticky notes</h2>
+          <ol class="steps">
+            <li>
+              Choose the sticky note tool or press <kbd>N</kbd>, then click the board: a note
+              appears there. Start typing.
+            </li>
+            <li>
+              Press <kbd>Enter</kbd> or double-click to edit again, and <kbd>Esc</kbd> to finish.
+              <kbd>Shift</kbd>+<kbd>Enter</kbd> starts a new line.
+            </li>
+            <li>
+              Paste several lines into “Add several at once” to get a note for each line. Cells
+              copied from Excel or Google Sheets paste as notes too.
+            </li>
+          </ol>
+          <div class="split">
+            <figure>
+              <img
+                src="../images/en/note-selected.png"
+                alt="A selected note with a toolbar above it: color, bold, italic, underline, text size, alignment, reaction, duplicate, frame and lock"
+              />
+              <figcaption>A toolbar appears above the selected note.</figcaption>
+            </figure>
+            <ul>
+              <li>Choose from 16 colors, bold, italic, underline and text alignment.</li>
+              <li>
+                The text size follows the note’s size and text. A size you pick stays while the text
+                fits.
+              </li>
+              <li>Drag the handle at the bottom right, or pick a size preset.</li>
+              <li>Add emoji reactions; choosing one again takes it back.</li>
+            </ul>
+          </div>
+          <figure>
+            <img
+              src="../images/en/note-menu.png"
+              alt="The menu of a note opened with a right-click: bring to front, send to back, size, edit text, duplicate, lock, delete"
+            />
+            <figcaption>
+              Right-click a note, frame, connector or the empty canvas (or press
+              <kbd>Shift</kbd>+<kbd>F10</kbd>) for its menu.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section id="frames">
+          <h2>3. Frames and connectors</h2>
+          <h3>Frames</h3>
+          <ul>
+            <li>
+              Press <kbd>F</kbd> and drag an area to draw a frame; a click makes one of the default
+              size. Horizontal and vertical lane presets are there too.
+            </li>
+            <li>Select notes and choose “Create frame” to put a frame around them.</li>
+            <li>
+              Moving or duplicating a frame takes its notes, nested frames and connectors along.
+              Deleting a frame keeps what is inside.
+            </li>
+            <li>Double-click a frame’s title to rename it.</li>
+          </ul>
+          <h3>Connectors</h3>
+          <ul>
+            <li>
+              Press <kbd>L</kbd>, or drag a connection point around a note, to connect notes and
+              frames. Connectors follow when notes move.
+            </li>
+            <li>
+              Straight, rounded elbow or curved lines, arrows, color, width, dashes and labels.
+            </li>
+            <li>Drag an end to connect it to something else.</li>
+          </ul>
+        </section>
+
+        <section id="organize">
+          <h2>4. Selecting and arranging</h2>
+          <ul>
+            <li>
+              Drag on an empty spot to select several notes; <kbd>Ctrl/Cmd</kbd>+<kbd>A</kbd>
+              selects all.
+            </li>
+            <li>
+              With several notes selected, align them, space them evenly or lay them out in a grid;
+              guides show while you drag.
+            </li>
+            <li>
+              <kbd>Ctrl/Cmd</kbd>+<kbd>G</kbd> groups notes so they move together.
+              <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> locks them against moving or
+              deleting by accident.
+            </li>
+            <li>
+              Every change can be undone with <kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd>, including connectors
+              removed together with a note.
+            </li>
+            <li><kbd>Ctrl/Cmd</kbd>+<kbd>F</kbd> searches the notes’ text.</li>
+          </ul>
+        </section>
+
+        <section id="menus">
+          <h2>5. Menus</h2>
+          <p>
+            The menus left of the board name hold every command, with its shortcut. From the
+            keyboard, press <kbd>↓</kbd> on a menu button to open it, the arrow keys to choose and
+            <kbd>Esc</kbd> to close it.
+          </p>
+          <div class="pair">
+            <figure>
+              <img
+                src="../images/en/menu-file.png"
+                alt="The File menu: new board, recent boards, open, download as file, and Google Drive items"
+              />
+              <figcaption><b>File</b>: everything about where the board is kept</figcaption>
+            </figure>
+            <figure>
+              <img
+                src="../images/en/menu-edit.png"
+                alt="The Edit menu: undo, redo, cut, copy, paste, duplicate, delete, select all, group, lock, search notes"
+              />
+              <figcaption><b>Edit</b>: commands on what is selected</figcaption>
+            </figure>
+            <figure>
+              <img
+                src="../images/en/menu-view.png"
+                alt="The View menu: zoom in, zoom out, zoom to 100%, show all notes, show selection, minimap"
+              />
+              <figcaption><b>View</b>: zoom and the minimap</figcaption>
+            </figure>
+            <figure>
+              <img
+                src="../images/en/menu-settings.png"
+                alt="The Settings menu: language, keyboard shortcuts, user guide, troubleshooting"
+              />
+              <figcaption><b>Settings</b>: language, help and troubleshooting</figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="saving">
+          <h2>6. Where a board is kept</h2>
+          <p>The label next to the board name says where the board is saved.</p>
+          <figure>
+            <img
+              src="../images/en/toolbar-local.png"
+              alt="The toolbar, with “Only in this browser” next to the board name and a “Connect Google Drive” button on the right"
+            />
+            <figcaption>
+              <b>Only in this browser</b>: saved automatically here, but other devices cannot open
+              it.
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="../images/en/toolbar-drive.png"
+              alt="The toolbar, with “Autosaved to Google Drive” next to the board name and “Saved” on the Drive button"
+            />
+            <figcaption>
+              <b>Autosaved to Google Drive</b>: linked to a Drive file, and edits go there
+              automatically.
+            </figcaption>
+          </figure>
+          <p class="tip">
+            Browser storage can disappear when site data is cleared or a site goes unvisited for a
+            while (Safari clears it after 7 days, for example). Keep boards that matter in Google
+            Drive, or download them.
+          </p>
+        </section>
+
+        <section id="drive">
+          <h2>7. Google Drive</h2>
+          <h3>Connecting and saving</h3>
+          <ol class="steps">
+            <li>
+              Choose <b>Connect Google Drive</b> on the right of the toolbar and sign in with your
+              Google account.
+            </li>
+            <li>
+              The button becomes <b>Save to Drive</b>. Choose it and a folder, and a
+              <code>.stormlet</code> file named after the board is created there.
+            </li>
+            <li>
+              From then on, edits are saved whenever you pause. To save at once, press
+              <kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd>.
+            </li>
+          </ol>
+          <ul>
+            <li>
+              Every tab remembers the folder you chose. A new tab or a new board is saved there with
+              its first edit.
+            </li>
+            <li>
+              When the folder already has a file of that name, the file name gets a number such as
+              <code>(2)</code>; the board name stays as it is.
+            </li>
+            <li>
+              Stormlet only sees files it made or that you opened with it (the
+              <code>drive.file</code> permission), nothing else in your Drive.
+            </li>
+            <li>
+              Sign-in lasts about an hour. From 10 minutes before the end the button says
+              <b>Renew</b>, and a click in the app renews it. Open tabs share the sign-in.
+            </li>
+          </ul>
+          <h3>Merging changes made elsewhere</h3>
+          <p>
+            When the same file was changed on another device or in another tab, different parts are
+            merged when saving. Only when both sides changed the same thing differently does the
+            button say <b>Conflict</b>; choose it to pick what to keep.
+          </p>
+          <figure>
+            <img
+              src="../images/en/dialog-conflict.png"
+              alt="The dialog for choosing changes to keep: your change and Drive’s change of the same note, one to choose"
+            />
+            <figcaption>For each conflict, keep your change or the one from Drive.</figcaption>
+          </figure>
+          <h3>Disconnecting and reconnecting</h3>
+          <div class="split">
+            <figure>
+              <img
+                src="../images/en/dialog-disconnect.png"
+                alt="The Disconnect Google Drive dialog, with a checkbox to also forget the Drive files and folder in this browser"
+              />
+              <figcaption><b>File → Disconnect Google Drive…</b></figcaption>
+            </figure>
+            <ul>
+              <li>
+                Boards keep their Drive files when you disconnect; reconnecting continues saving to
+                the same files.
+              </li>
+              <li>
+                On a shared computer, choose
+                <b>Also forget the Drive files and folder in this browser</b>.
+              </li>
+              <li>
+                Connected with another Google account, saving stops, since the file is not in that
+                account, and Stormlet tells you so.
+              </li>
+              <li>
+                If the file cannot be found after reconnecting, choose the Drive button, then
+                <b>Find it in Drive again…</b> and pick the same file.
+              </li>
+              <li>To unlink just one board from Drive, use <b>File → Stop syncing</b>.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="tabs">
+          <h2>8. Tabs and boards</h2>
+          <p>
+            Each tab shows a board of its own, so tabs can hold different boards and different Drive
+            files.
+          </p>
+          <ul>
+            <li>Opening the app again resumes the board you used last.</li>
+            <li>A new tab, while another is open, starts with an empty board.</li>
+            <li>Reloading keeps the tab’s board.</li>
+          </ul>
+          <div class="pair">
+            <figure>
+              <img
+                src="../images/en/dialog-new-board.png"
+                alt="The New board dialog, with a name field and a note that the new board opens in a new tab"
+              />
+              <figcaption>
+                <b>File → New board…</b> opens it in a new tab and leaves this board as it is.
+              </figcaption>
+            </figure>
+            <figure>
+              <img
+                src="../images/en/dialog-recent.png"
+                alt="The Recent boards dialog: boards of closed tabs with their name, a preview, the number of notes, when they were saved, and open and delete buttons"
+              />
+              <figcaption>
+                <b>File → Recent boards…</b> reopens or deletes boards of closed tabs.
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+
+        <section id="files">
+          <h2>9. Opening and downloading files</h2>
+          <ul>
+            <li>
+              <b>File → Download as file</b> saves the board as a <code>.stormlet</code> file named
+              after it. For a board not in Drive, <kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd> downloads too.
+            </li>
+            <li>
+              <b>File → Open…</b> (<kbd>Ctrl/Cmd</kbd>+<kbd>O</kbd>) opens a <code>.stormlet</code>
+              file; opening can be undone.
+            </li>
+            <li>Boards in Drive open with <b>File → Open from Drive…</b>.</li>
+          </ul>
+        </section>
+
+        <section id="shortcuts">
+          <h2>10. Keyboard shortcuts</h2>
+          <div class="split">
+            <figure>
+              <img src="../images/en/dialog-help.png" alt="The keyboard shortcuts dialog" />
+              <figcaption>Press <kbd>F1</kbd> or <kbd>?</kbd> at any time.</figcaption>
+            </figure>
+            <table>
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Shortcut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Note / select / hand tool</td>
+                  <td><kbd>N</kbd> / <kbd>V</kbd> / <kbd>H</kbd></td>
+                </tr>
+                <tr>
+                  <td>Connector / frame tool</td>
+                  <td><kbd>L</kbd> / <kbd>F</kbd></td>
+                </tr>
+                <tr>
+                  <td>Edit, new line, finish</td>
+                  <td><kbd>Enter</kbd>, <kbd>Shift</kbd>+<kbd>Enter</kbd>, <kbd>Esc</kbd></td>
+                </tr>
+                <tr>
+                  <td>Duplicate / in a direction</td>
+                  <td><kbd>Ctrl/Cmd</kbd>+<kbd>D</kbd> / <kbd>Alt</kbd>+arrow</td>
+                </tr>
+                <tr>
+                  <td>Group / ungroup</td>
+                  <td>
+                    <kbd>Ctrl/Cmd</kbd>+<kbd>G</kbd> / <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >G</kbd
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>Lock</td>
+                  <td><kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></td>
+                </tr>
+                <tr>
+                  <td>Undo / redo</td>
+                  <td>
+                    <kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd> / <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd
+                      >Z</kbd
+                    >
+                  </td>
+                </tr>
+                <tr>
+                  <td>Show all notes / selection</td>
+                  <td><kbd>Alt</kbd>+<kbd>1</kbd> / <kbd>Alt</kbd>+<kbd>2</kbd></td>
+                </tr>
+                <tr>
+                  <td>Search</td>
+                  <td><kbd>Ctrl/Cmd</kbd>+<kbd>F</kbd></td>
+                </tr>
+                <tr>
+                  <td>Open a file / save</td>
+                  <td><kbd>Ctrl/Cmd</kbd>+<kbd>O</kbd> / <kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="faq">
+          <h2>11. Questions</h2>
+          <details>
+            <summary>“Not saved” shows next to the board name.</summary>
+            <p>
+              The browser’s storage is full, or the browser blocks saving. Download the board or
+              save it to Drive, and delete recent boards you no longer need to make room.
+            </p>
+          </details>
+          <details>
+            <summary>The Drive button says “Reconnect”.</summary>
+            <p>
+              The sign-in ended. Choose the button to reconnect, and the edits made meanwhile are
+              saved. They stay in this browser until then.
+            </p>
+          </details>
+          <details>
+            <summary>How do I open a board on another device?</summary>
+            <p>
+              Save it to Google Drive, then on the other device use <b>File → Open from Drive…</b>
+              and choose the same file. Changes made in both places are merged when saving.
+            </p>
+          </details>
+          <details>
+            <summary>How do I report a problem?</summary>
+            <p>
+              Choose <b>Settings → Troubleshooting…</b>, then <b>Copy diagnostics</b>, and paste it
+              into your bug report. It holds the app version, the browser and recent log entries,
+              never the text of your notes.
+            </p>
+          </details>
+          <details>
+            <summary>How do I change the language?</summary>
+            <p>
+              Choose the browser language, English or 한국어 in the <b>Settings</b> menu. Names the
+              app makes for boards and frames stay English in every language.
+            </p>
+          </details>
+          <footer class="bottom">
+            <span>Stormlet User Guide</span>
+            <a href="../../index.html">Open the board</a>
+          </footer>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

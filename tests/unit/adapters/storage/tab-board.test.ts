@@ -42,6 +42,16 @@ function fakeLocks() {
   };
 }
 
+/** Board slots, as the UUIDs the app makes. */
+const OLDER = '00000000-0000-4000-8000-000000000001';
+const NEWER = '00000000-0000-4000-8000-000000000002';
+const EMPTY = '00000000-0000-4000-8000-000000000003';
+const KEPT = '00000000-0000-4000-8000-000000000004';
+const ONLY = '00000000-0000-4000-8000-000000000005';
+const MINE = '00000000-0000-4000-8000-000000000006';
+const OPEN = '00000000-0000-4000-8000-000000000007';
+const CLOSED = '00000000-0000-4000-8000-000000000008';
+
 const saveBoard = (slot: string, board = boardOf(sticky('a')), savedAt = 1) => {
   localStorage.setItem(slotKey(BOARD_KEY, slot), serializeBoard(board));
   localStorage.setItem(slotKey(SAVED_KEY, slot), String(savedAt));
@@ -85,58 +95,70 @@ describe('a board for each tab', () => {
   });
 
   it('resumes the most recent closed board when no other tab is open', async () => {
-    saveBoard('older', boardOf(sticky('o')), 10);
-    saveBoard('newer', boardOf(sticky('n')), 20);
-    saveBoard('empty', boardOf(), 30);
+    saveBoard(OLDER, boardOf(sticky('o')), 10);
+    saveBoard(NEWER, boardOf(sticky('n')), 20);
+    saveBoard(EMPTY, boardOf(), 30);
     const locks = fakeLocks();
-    expect((await startTab(locks.tab('a'))).slot).toBe('newer');
+    expect((await startTab(locks.tab('a'))).slot).toBe(NEWER);
     // Empty boards of closed tabs are not kept.
-    expect(localStorage.getItem(slotKey(BOARD_KEY, 'empty'))).toBeNull();
+    expect(localStorage.getItem(slotKey(BOARD_KEY, EMPTY))).toBeNull();
     // With a tab open, another tab starts an empty board instead of taking one over.
     sessionStorage.clear();
     const second = await startTab(locks.tab('b'));
-    expect(['older', 'newer']).not.toContain(second.slot);
+    expect([OLDER, NEWER]).not.toContain(second.slot);
   });
 
   it('starts a board requested by another tab, and clears the request', async () => {
-    saveBoard('kept', boardOf(sticky('k')), 5);
+    saveBoard(KEPT, boardOf(sticky('k')), 5);
     const locks = fakeLocks();
     history.replaceState(null, '', '/#new=%ED%9A%8C%EA%B3%A0');
     const created = await startTab(locks.tab('a'));
-    expect([created.newTitle, created.slot === 'kept', location.hash]).toEqual(['회고', false, '']);
+    expect([created.newTitle, created.slot === KEPT, location.hash]).toEqual(['회고', false, '']);
 
     sessionStorage.clear();
-    history.replaceState(null, '', '/#board=kept');
-    expect((await startTab(locks.tab('b'))).slot).toBe('kept');
+    history.replaceState(null, '', `/#board=${KEPT}`);
+    expect((await startTab(locks.tab('b'))).slot).toBe(KEPT);
     // A board already open elsewhere is not taken over.
     sessionStorage.clear();
-    history.replaceState(null, '', '/#board=kept');
-    expect((await startTab(locks.tab('c'))).slot).not.toBe('kept');
+    history.replaceState(null, '', `/#board=${KEPT}`);
+    expect((await startTab(locks.tab('c'))).slot).not.toBe(KEPT);
+  });
+
+  it('only takes slots it could have made, whatever the address or storage says', async () => {
+    localStorage.setItem(`${BOARD_KEY}.not-a-slot`, serializeBoard(boardOf(sticky('x'))));
+    sessionStorage.setItem(TAB_KEY, '../other');
+    history.replaceState(null, '', '/#board=__proto__');
+    const { slot } = await startTab(fakeLocks().tab('a'));
+    expect(slot).toMatch(/^[0-9a-f-]{36}$/);
+    expect(localStorage.getItem(`${BOARD_KEY}.not-a-slot`)).not.toBeNull();
+    expect(await new LocalBoardLibrary(slot, fakeLocks().tab('b')).remove('not-a-slot')).toBe(
+      false,
+    );
   });
 
   it('shares the most recent board between tabs where Web Locks are missing', async () => {
-    saveBoard('only', boardOf(sticky('x')), 3);
-    expect((await startTab(undefined)).slot).toBe('only');
+    saveBoard(ONLY, boardOf(sticky('x')), 3);
+    expect((await startTab(undefined)).slot).toBe(ONLY);
     sessionStorage.clear();
-    expect((await startTab(undefined)).slot).toBe('only');
+    expect((await startTab(undefined)).slot).toBe(ONLY);
   });
 });
 
 describe('boards of closed tabs', () => {
   it('lists closed boards, opens them, starts new ones in a tab and removes them', async () => {
-    saveBoard('mine', boardOf(sticky('m')), 1);
-    saveBoard('open', boardOf(sticky('o')), 2);
-    saveBoard('closed', { ...boardOf(sticky('c'), sticky('d')), title: 'Retro' }, 3);
+    saveBoard(MINE, boardOf(sticky('m')), 1);
+    saveBoard(OPEN, boardOf(sticky('o')), 2);
+    saveBoard(CLOSED, { ...boardOf(sticky('c'), sticky('d')), title: 'Retro' }, 3);
     localStorage.setItem(
-      slotKey(DRIVE_FILE_KEY, 'closed'),
+      slotKey(DRIVE_FILE_KEY, CLOSED),
       '{"id":"f","name":"Retro.stormlet","version":"2"}',
     );
     const locks = fakeLocks();
-    void locks.tab('other').request(LOCK_PREFIX + 'open', () => new Promise(() => {}));
-    const library = new LocalBoardLibrary('mine', locks.tab('me'));
+    void locks.tab('other').request(LOCK_PREFIX + OPEN, () => new Promise(() => {}));
+    const library = new LocalBoardLibrary(MINE, locks.tab('me'));
     expect(await library.closed()).toEqual([
       {
-        id: 'closed',
+        id: CLOSED,
         title: 'Retro',
         notes: 2,
         preview: 'c · d',
@@ -146,17 +168,17 @@ describe('boards of closed tabs', () => {
     ]);
 
     const opened = vi.spyOn(window, 'open').mockReturnValue(null);
-    library.open('closed', 'tab');
+    library.open(CLOSED, 'tab');
     library.startInTab('Plan B');
     expect(opened.mock.calls).toEqual([
-      ['/#board=closed', '_blank', 'noopener'],
+      [`/#board=${CLOSED}`, '_blank', 'noopener'],
       ['/#new=Plan%20B', '_blank', 'noopener'],
     ]);
 
-    expect(await library.remove('open')).toBe(false);
-    expect(await library.remove('mine')).toBe(false);
-    expect(await library.remove('closed')).toBe(true);
-    expect(Object.keys(localStorage).filter((key) => key.endsWith('.closed'))).toEqual([]);
+    expect(await library.remove(OPEN)).toBe(false);
+    expect(await library.remove(MINE)).toBe(false);
+    expect(await library.remove(CLOSED)).toBe(true);
+    expect(Object.keys(localStorage).filter((key) => key.endsWith(`.${CLOSED}`))).toEqual([]);
     expect(await library.closed()).toEqual([]);
   });
 });

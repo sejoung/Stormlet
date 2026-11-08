@@ -7,7 +7,13 @@ import {
   type RemoteFailure,
   type RemoteFile,
 } from '../../domain/sync/remote';
-import { FILE_EXTENSION, FormatError, parseBoard, serializeBoard } from '../files/stormlet-format';
+import {
+  FILE_EXTENSION,
+  FormatError,
+  MAX_BOARD_FILE_BYTES,
+  parseBoard,
+  serializeBoard,
+} from '../files/stormlet-format';
 import { memoryCreations, type CreationRecord } from './creations';
 import { failureOf, multipart } from './http';
 import { freeName, isNameFor } from '../files/file-names';
@@ -21,7 +27,7 @@ export const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 /** Requests give up after this long, body included, so a stalled save cannot hang the queue. */
 export const REQUEST_TIMEOUT = 30_000;
 /** Larger files are refused before downloading; boards are far smaller. */
-export const MAX_FILE_BYTES = 20 * 1024 * 1024;
+export const MAX_FILE_BYTES = MAX_BOARD_FILE_BYTES;
 const FILE_FIELDS = 'id,name,version';
 /** Pages of a folder listing read to find a free name; boards are far fewer. */
 const LIST_PAGES = 10;

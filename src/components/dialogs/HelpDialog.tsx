@@ -44,6 +44,11 @@ export function HelpDialog({ onClose }: { onClose(): void }) {
           </div>
         ))}
       </dl>
+      <p className="help-manual">
+        <a href={t('manual.path')} target="_blank" rel="noopener">
+          {t('help.manual')}
+        </a>
+      </p>
     </Modal>
   );
 }

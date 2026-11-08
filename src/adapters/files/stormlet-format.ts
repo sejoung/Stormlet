@@ -107,6 +107,9 @@ function readSticky(value: unknown, index: number, version: number): Sticky {
   }
 }
 
+/** Larger files are refused before reading them; boards are far smaller. */
+export const MAX_BOARD_FILE_BYTES = 20 * 1024 * 1024;
+
 export function parseBoard(content: string): Board {
   let data: unknown;
   try {

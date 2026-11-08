@@ -355,3 +355,11 @@
   color: var(--muted);
   font-size: 12px;
 }
+.help-manual {
+  margin: 16px 0 0;
+  font-size: 13px;
+}
+.help-manual a {
+  color: var(--accent);
+  font-weight: 600;
+}

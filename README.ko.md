@@ -12,6 +12,10 @@
 
 로그인과 서버 없이 브라우저에서만 동작한다. 보드는 브라우저 저장소에 자동 저장되고, 읽을 수 있는 JSON인 `.stormlet` 파일로 내려받을 수 있다.
 
+![회고 보드를 연 Stormlet: 위에 메뉴와 Google Drive 버튼, 왼쪽에 도구, 가운데에 포스트잇이 든 프레임 세 개와 미니맵](public/manual/images/ko/overview.png)
+
+처음이라면 [사용 설명서](https://sejoung.github.io/Stormlet/manual/)를 읽어 보세요([원본](public/manual/index.html)).
+
 ## 기능
 
 **포스트잇**
@@ -93,15 +97,16 @@ Google Drive는 선택 기능이다. `.env.example`을 `.env.local`로 복사해
 
 ## 스크립트
 
-| 스크립트           | 설명                                                |
-| ------------------ | --------------------------------------------------- |
-| `npm run dev`      | 개발 서버 실행                                      |
-| `npm run build`    | 타입 검사 후 `dist/`에 빌드                         |
-| `npm run verify`   | 포맷 검사, 린트, 타입 검사, 테스트와 커버리지, 빌드 |
-| `npm test`         | 단위 테스트 (Vitest, jsdom)                         |
-| `npm run test:e2e` | E2E 테스트 (Playwright, Chromium)                   |
-| `npm run arch`     | 계층 의존 규칙 보고서                               |
-| `npm run format`   | Prettier로 포맷                                     |
+| 스크립트                 | 설명                                                |
+| ------------------------ | --------------------------------------------------- |
+| `npm run dev`            | 개발 서버 실행                                      |
+| `npm run build`          | 타입 검사 후 `dist/`에 빌드                         |
+| `npm run verify`         | 포맷 검사, 린트, 타입 검사, 테스트와 커버리지, 빌드 |
+| `npm test`               | 단위 테스트 (Vitest, jsdom)                         |
+| `npm run test:e2e`       | E2E 테스트 (Playwright, Chromium)                   |
+| `npm run manual:capture` | 사용 설명서 화면 다시 캡처 (`public/manual/images`) |
+| `npm run arch`           | 계층 의존 규칙 보고서                               |
+| `npm run format`         | Prettier로 포맷                                     |
 
 ### E2E 테스트
 
