@@ -17,6 +17,19 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'toolbar.searchHint': '메모 검색 (Ctrl/Cmd+F)',
   'toolbar.settings': '설정',
   'menu.bar': '메뉴',
+  'menu.newBoard': '새 보드…',
+  'newBoard.title': '새 보드',
+  'newBoard.description': '빈 보드에서 시작합니다.',
+  'newBoard.replaceLocal':
+    '이 브라우저에는 보드를 하나만 둡니다. 새 보드가 지금 보드를 대신하며, 실행 취소로만 되돌릴 수 있습니다. 보관하려면 먼저 내려받으세요.',
+  'newBoard.leaveDrive':
+    '지금 보드는 Drive의 {name}에 남습니다. 아직 저장하지 못한 변경을 먼저 저장한 뒤 이 파일과의 동기화를 멈춥니다.',
+  'newBoard.download': '지금 보드 내려받기',
+  'newBoard.cancel': '취소',
+  'newBoard.create': '새 보드 만들기',
+  'files.newBoard': '새 보드를 만들었습니다. 실행 취소하면 이전 보드로 돌아갑니다.',
+  'drive.newBlocked':
+    'Drive에 아직 저장하지 못한 변경이 있어 새 보드를 만들지 않았습니다. 다시 연결하거나 충돌을 해결한 뒤 시도하세요.',
   'menu.file': '파일',
   'menu.edit': '편집',
   'menu.view': '보기',

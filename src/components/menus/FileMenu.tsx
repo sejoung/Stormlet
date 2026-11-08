@@ -24,11 +24,13 @@ export interface FileMenuDrive {
  */
 export function FileMenu({
   fileInput,
+  onNew,
   onOpenFile,
   onDownload,
   drive,
 }: {
   fileInput: RefObject<HTMLInputElement | null>;
+  onNew(): void;
   onOpenFile(file: File): void;
   onDownload(): void;
   drive?: FileMenuDrive;
@@ -42,6 +44,7 @@ export function FileMenu({
       <MenuButton label={t('menu.file')} icon="file" onOpen={drive?.onPrepare}>
         {(close) => (
           <>
+            <MenuItem label={t('menu.newBoard')} icon="newFile" close={close} onSelect={onNew} />
             <MenuItem
               label={t('menu.openFile')}
               icon="open"

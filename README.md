@@ -49,7 +49,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 - Autosave in the browser, synced across tabs of the same browser
 - Optional Google Drive sync: save the board to a Drive folder or open one from Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Rename the board by double-clicking its title; the title becomes the download filename
-- A menu bar under the title, listing each command with its shortcut: File (open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap) and Settings (language, keyboard help, troubleshooting)
+- A menu bar under the title, listing each command with its shortcut: File (new board, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap) and Settings (language, keyboard help, troubleshooting)
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 - Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports

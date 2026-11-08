@@ -2,18 +2,22 @@ import type { Board } from '../../domain/model';
 import { BulkDialog } from '../../components/dialogs/BulkDialog';
 import { HelpDialog } from '../../components/dialogs/HelpDialog';
 import { DiagnosticsDialog } from '../../components/dialogs/DiagnosticsDialog';
+import { NewBoardDialog } from '../../components/dialogs/NewBoardDialog';
+import { isEmptyBoard } from '../../domain/model';
 import { DriveDialog } from '../../components/drive/DriveDialog';
 import { DriveConflictDialog } from '../../components/drive/DriveConflictDialog';
 import type { Diagnostics } from '../diagnostics/diagnostics';
 import type { Drive } from '../drive/useDrive';
 
-export type DialogName = 'bulk' | 'help' | 'diagnostics' | 'drive' | 'conflict';
+export type DialogName = 'new' | 'bulk' | 'help' | 'diagnostics' | 'drive' | 'conflict';
 
 interface Props {
   dialog: DialogName | null;
   onDialog(dialog: DialogName | null): void;
   board: Board;
   onBulkAdd(texts: string[]): void;
+  onNewBoard(title: string): void;
+  onDownload(): void;
   diagnostics: Diagnostics;
   drive: Drive;
 }
@@ -22,6 +26,19 @@ interface Props {
 export function WorkspaceDialogs({ dialog, onDialog, drive, ...props }: Props) {
   const close = () => onDialog(null);
   switch (dialog) {
+    case 'new':
+      return (
+        <NewBoardDialog
+          hasWork={!isEmptyBoard(props.board)}
+          driveFile={'file' in drive.state ? drive.state.file.name : null}
+          onDownload={props.onDownload}
+          onCreate={(title) => {
+            close();
+            void drive.release().then((released) => released && props.onNewBoard(title));
+          }}
+          onClose={close}
+        />
+      );
     case 'bulk':
       return <BulkDialog onClose={close} onAdd={props.onBulkAdd} />;
     case 'help':

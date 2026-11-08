@@ -252,3 +252,44 @@
   font-size: 12px;
   line-height: 1.6;
 }
+.new-board label {
+  display: block;
+  margin: 18px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.new-board input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline-color: var(--focus);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.new-board-note {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.new-board-note.attention {
+  border-left: 3px solid #e07b24;
+}
+.new-board-note p {
+  margin: 0 0 10px;
+}
+.new-board-note button {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}

@@ -173,6 +173,20 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
       // Saving resumes when the token arrives.
       else run('drive.connect-failed', ({ auth }) => auth.connect());
     },
+    /**
+     * Before a new board replaces this one: save what is pending to the linked file, then
+     * stop syncing. False, with a message, when that cannot be saved now.
+     */
+    release: async () => {
+      if (!services || !('file' in services.sync.current)) return true;
+      flushEditor();
+      if (!(await services.sync.settle())) {
+        onStatus(t('drive.newBlocked'));
+        return false;
+      }
+      services.sync.unlink();
+      return true;
+    },
     resolve: (choices: Record<string, Side>) => void services?.sync.resolve(choices),
     unlink: () => services?.sync.unlink(),
     disconnect: () =>

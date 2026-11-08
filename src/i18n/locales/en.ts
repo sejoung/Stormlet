@@ -20,6 +20,19 @@ export const en = {
   'toolbar.searchHint': 'Search notes (Ctrl/Cmd+F)',
   'toolbar.settings': 'Settings',
   'menu.bar': 'Menu',
+  'menu.newBoard': 'New board…',
+  'newBoard.title': 'New board',
+  'newBoard.description': 'Start from an empty board.',
+  'newBoard.replaceLocal':
+    'This browser keeps one board, so the new board replaces this one. Only undo brings it back; download it first to keep a copy.',
+  'newBoard.leaveDrive':
+    'This board stays in {name} on Drive. Changes not saved yet are saved there first, then syncing with it stops.',
+  'newBoard.download': 'Download this board',
+  'newBoard.cancel': 'Cancel',
+  'newBoard.create': 'Create board',
+  'files.newBoard': 'Started a new board. Undo returns to the previous one.',
+  'drive.newBlocked':
+    'Changes are not saved to Drive yet, so no new board was started. Reconnect or resolve the conflict, then try again.',
   'menu.file': 'File',
   'menu.edit': 'Edit',
   'menu.view': 'View',

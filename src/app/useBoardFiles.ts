@@ -2,6 +2,7 @@ import type { Board } from '../domain/model';
 import type { BoardStore } from '../domain/store';
 import { diffBoards } from '../domain/patch';
 import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
+import { emptyBoard } from '../domain/model';
 import { downloadText, readFileText } from '../adapters/files/download';
 import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
 import { errorDetails, log } from '../adapters/diagnostics/log';
@@ -44,6 +45,16 @@ export function useBoardFiles({
   };
   return {
     replace,
+    /** Start an empty board named `title` (the default name when blank), as one undoable edit. */
+    newBoard: (title: string) => {
+      flushEditor();
+      beforeOpen?.();
+      edit((current) =>
+        diffBoards(current, { ...emptyBoard(), title: normalizeBoardTitle(title) }),
+      );
+      reset();
+      onStatus(t('files.newBoard'));
+    },
     save: () => {
       flushEditor();
       downloadBoard(store.load());

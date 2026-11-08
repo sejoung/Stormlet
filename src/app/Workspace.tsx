@@ -177,7 +177,7 @@ export function Workspace({
     selectFrame,
     selectConnection: selected.selectConnection,
   });
-  const { save, onOpen, replace } = useBoardFiles({
+  const { save, onOpen, replace, newBoard } = useBoardFiles({
     store,
     edit,
     flushEditor,
@@ -240,6 +240,7 @@ export function Workspace({
             menus={
               <ToolbarMenus
                 fileInput={fileInput}
+                onNew={() => setDialog('new')}
                 onOpenFile={onOpen}
                 onDownload={save}
                 keys={keys}
@@ -382,6 +383,8 @@ export function Workspace({
             dialog={dialog}
             onDialog={setDialog}
             board={board}
+            onNewBoard={newBoard}
+            onDownload={save}
             onBulkAdd={(texts) =>
               actions.addCells(texts.map((text, row) => ({ text, row, column: 0 })))
             }

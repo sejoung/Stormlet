@@ -50,7 +50,7 @@ describe('toolbar menus', () => {
     expect(file).toHaveAttribute('aria-expanded', 'true');
     // A build without Drive has only the local file commands.
     const items = screen.getAllByRole('menuitem');
-    expect(items.map(label)).toEqual(['열기…', '파일로 내려받기']);
+    expect(items.map(label)).toEqual(['새 보드…', '열기…', '파일로 내려받기']);
     expect(items[0]).toHaveFocus();
     await user.keyboard('{ArrowDown}');
     expect(items[1]).toHaveFocus();
@@ -150,5 +150,40 @@ describe('toolbar menus', () => {
     expect(screen.getByRole('application', { name: /미니맵/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '보기' }));
     expect(screen.getByRole('menuitemcheckbox', { name: '미니맵' })).toBeChecked();
+  });
+
+  it('starts a new board, warning that it replaces this one, and undo brings it back', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore({ ...boardOf(sticky('a'), sticky('b')), title: 'Plan' });
+    render(<App store={store} newId={ids()} />);
+    boardBounds();
+    choose('파일', '새 보드…');
+    const dialog = screen.getByRole('dialog', { name: '새 보드' });
+    expect(within(dialog).getByRole('note')).toHaveTextContent('보드를 하나만 둡니다');
+    const name = within(dialog).getByRole('textbox', { name: '보드 이름' });
+    expect(name).toHaveFocus();
+    await user.click(within(dialog).getByRole('button', { name: '지금 보드 내려받기' }));
+    expect(vi.mocked(downloadText).mock.calls.at(-1)?.[0]).toBe('Plan.stormlet');
+    await user.type(name, '회고{Enter}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(store.board).toEqual({ stickies: {}, title: '회고' });
+    expect(screen.getByRole('status')).toHaveTextContent('새 보드를 만들었습니다.');
+    choose('편집', '실행 취소');
+    expect(store.board.title).toBe('Plan');
+    expect(Object.keys(store.board.stickies).sort()).toEqual(['a', 'b']);
+  });
+
+  it('names an empty new board by default without warning about an empty one', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore({ stickies: {}, title: 'Old' });
+    render(<App store={store} newId={ids()} />);
+    choose('파일', '새 보드…');
+    const dialog = screen.getByRole('dialog', { name: '새 보드' });
+    expect(within(dialog).queryByRole('note')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(store.board.title).toBe('Old');
+    choose('파일', '새 보드…');
+    await user.click(screen.getByRole('button', { name: '새 보드 만들기' }));
+    expect(store.board.title).toBe('My idea board');
   });
 });

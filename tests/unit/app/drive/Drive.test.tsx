@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../../../src/app/App';
 import { DriveSync } from '../../../../src/application/drive-sync';
@@ -130,6 +130,7 @@ describe('Google Drive', () => {
         .getAllByRole('menuitem')
         .map((item) => item.textContent),
     ).toEqual([
+      '새 보드…',
       '열기…⌘ / Ctrl+O',
       '파일로 내려받기⌘ / Ctrl+S',
       'Drive에서 열기…',
@@ -324,5 +325,33 @@ describe('Google Drive', () => {
     expect(recentLog().map((entry) => entry.event)).toEqual(
       expect.arrayContaining(['drive.renewed', 'drive.renew-failed']),
     );
+  });
+
+  it('saves to Drive before a new board stops syncing, and keeps the board when it cannot', async () => {
+    const { auth, drive, sync } = renderWithDrive(boardOf(sticky('a', { text: 'kept' })));
+    auth.pick.mockResolvedValueOnce({ id: 'folder', name: 'Boards' });
+    await chooseFromFile('Drive 폴더에 저장…');
+    await waitFor(() => expect(sync.current.status).toBe('synced'));
+    act(() => sync.apply([{ op: 'set', id: 'a', field: 'text', value: 'pending' }]));
+    await chooseFromFile('새 보드…');
+    const dialog = screen.getByRole('dialog', { name: '새 보드' });
+    expect(dialog).toHaveTextContent('Drive의 board.stormlet에 남습니다');
+    fireEvent.click(within(dialog).getByRole('button', { name: '새 보드 만들기' }));
+    expect(await screen.findByText(/새 보드를 만들었습니다/)).toBeInTheDocument();
+    expect(drive.files.get('file1')!.board.stickies.a.text).toBe('pending');
+    expect(sync.current.status).toBe('unlinked');
+    noDriveButton();
+
+    // Access lapsed with changes waiting: the board stays as it is.
+    const link = { file: { id: 'file1', name: 'b.stormlet', version: '9' }, base: boardOf() };
+    cleanup();
+    const paused = renderWithDrive(boardOf(sticky('x')), link);
+    await chooseFromFile('새 보드…');
+    fireEvent.click(screen.getByRole('button', { name: '새 보드 만들기' }));
+    expect(
+      await screen.findByText(/Drive에 아직 저장하지 못한 변경이 있어 새 보드를 만들지 않았습니다/),
+    ).toBeInTheDocument();
+    expect(Object.keys(paused.store.board.stickies)).toEqual(['x']);
+    expect(paused.sync.current.status).toBe('paused');
   });
 });
