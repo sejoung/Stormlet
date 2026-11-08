@@ -24,16 +24,26 @@ export function useBoardFiles({
   edit,
   flushEditor,
   reset,
+  beforeOpen,
   onStatus,
 }: {
   store: BoardStore;
   edit: Edit;
   flushEditor(): void;
   reset(): void;
+  /** Called before a local file replaces the board, e.g. to stop syncing the previous file. */
+  beforeOpen?(): void;
   onStatus(message: string): void;
 }) {
   const t = useT();
+  /** Put `opened` on the board as an undoable edit, titled after `name` if it has no title. */
+  const replace = (opened: Board, name: string) => {
+    const title = opened.title ?? titleFromFileName(name);
+    edit((current) => diffBoards(current, { ...opened, title }));
+    reset();
+  };
   return {
+    replace,
     save: () => {
       flushEditor();
       downloadBoard(store.load());
@@ -41,9 +51,8 @@ export function useBoardFiles({
     onOpen: async (file: File) => {
       try {
         const opened = parseBoard(await readFileText(file));
-        const title = opened.title ?? titleFromFileName(file.name);
-        edit((current) => diffBoards(current, { ...opened, title }));
-        reset();
+        beforeOpen?.();
+        replace(opened, file.name);
         onStatus(t('files.opened', { name: file.name }));
       } catch (error) {
         log.warn('files.open-failed', { size: file.size, ...errorDetails(error) });

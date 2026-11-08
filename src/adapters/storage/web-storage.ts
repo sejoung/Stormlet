@@ -25,6 +25,14 @@ export function writeItem(key: string, value: string): boolean {
   }
 }
 
+export function removeItem(key: string): void {
+  try {
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    log.warn('storage.remove-failed', { key, ...errorDetails(error, false) });
+  }
+}
+
 /** Characters each Stormlet key holds, for diagnosing a full quota. */
 export function storageUsage(): Record<string, number> {
   try {

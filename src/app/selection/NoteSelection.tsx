@@ -1,13 +1,13 @@
 import type { RefObject } from 'react';
-import type { Sticky } from '../domain/model';
-import type { StickySize } from '../domain/sticky-size';
-import { setColor } from '../domain/commands';
-import type { Point, View } from '../engine/viewport';
-import { SelectionToolbar } from '../components/selection/SelectionToolbar';
-import { localToClient } from '../components/common/points';
-import type { Size } from '../components/common/useElementSize';
-import type { NoteActions } from './useNoteActions';
-import type { Edit } from './useBoardSession';
+import type { Sticky } from '../../domain/model';
+import type { StickySize } from '../../domain/sticky-size';
+import { setColor } from '../../domain/commands';
+import type { Point, View } from '../../engine/viewport';
+import { SelectionToolbar } from '../../components/selection/SelectionToolbar';
+import { localToClient } from '../../components/common/points';
+import type { Size } from '../../components/common/useElementSize';
+import type { NoteActions } from '../useNoteActions';
+import type { Edit } from '../useBoardSession';
 
 export function NoteSelection({
   notes,

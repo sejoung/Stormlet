@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { BoardTitle } from './BoardTitle';
 import { Icon } from './Icon';
 import { useT } from '../common/i18n';
@@ -17,6 +17,8 @@ interface Props {
   onOpen(file: File): void;
   onSave(): void;
   onSettings(): void;
+  /** The Google Drive control, when Drive is available. */
+  drive?: ReactNode;
 }
 
 /** Board-wide actions stay at the top; creation tools live in the left rail. */
@@ -90,6 +92,7 @@ export function Toolbar(props: Props) {
             <Icon name="save" />
             {t('toolbar.save')}
           </button>
+          {props.drive}
           <button
             type="button"
             className="icon-button"

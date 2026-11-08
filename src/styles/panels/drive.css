@@ -1,0 +1,83 @@
+.drive-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.drive-file div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.drive-file strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drive-file span,
+.drive-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.drive-note {
+  margin: 0 0 12px;
+}
+.drive-note.attention {
+  color: var(--text);
+}
+.drive-actions {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.drive-actions button:not(.primary-button),
+.conflict-list + footer button:not(.primary-button) {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+.drive-actions button:hover:not(:disabled) {
+  background: var(--selected);
+}
+.drive-actions button:disabled {
+  opacity: 0.55;
+}
+.conflict-list {
+  display: grid;
+  gap: 12px;
+  max-height: 50vh;
+  overflow: auto;
+}
+.conflict-item {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.conflict-item legend {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.conflict-side {
+  min-width: 56px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.conflict-value {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

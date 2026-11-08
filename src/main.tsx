@@ -7,6 +7,11 @@ import { pickLocale, translate } from './i18n/messages';
 import { log } from './adapters/diagnostics/log';
 import { logUncaughtErrors } from './adapters/diagnostics/global-errors';
 import { APP_VERSION } from './adapters/diagnostics/build-info';
+import { driveConfig } from './adapters/drive/config';
+import { GoogleConnection } from './adapters/drive/google';
+import { DriveClient } from './adapters/drive/client';
+import { LocalDriveLinks } from './adapters/drive/links';
+import { DriveSync } from './application/drive-sync';
 import './styles.css';
 
 const root = document.getElementById('root')!;
@@ -16,11 +21,29 @@ if (window.top !== window.self)
 else {
   // Listen first, so errors while starting up are recorded too.
   logUncaughtErrors();
-  log.info('app.started', { version: APP_VERSION });
-  const store = new LocalBoardStore();
+  const google = driveConfig();
+  log.info('app.started', { version: APP_VERSION, drive: google !== null });
+  const local = new LocalBoardStore();
+  // With Drive configured, the board store also keeps the linked Drive file in sync.
+  const auth = google && new GoogleConnection(google);
+  const drive = auth && {
+    auth,
+    sync: new DriveSync(
+      local,
+      new DriveClient(auth.getToken),
+      new LocalDriveLinks(),
+      Date.now,
+      local.damaged !== null,
+    ),
+  };
   createRoot(root).render(
     <StrictMode>
-      <App store={store} damaged={store.damaged} newId={() => crypto.randomUUID()} />
+      <App
+        store={drive?.sync ?? local}
+        drive={drive ?? undefined}
+        damaged={local.damaged}
+        newId={() => crypto.randomUUID()}
+      />
     </StrictMode>,
   );
 }

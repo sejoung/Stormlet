@@ -1,10 +1,10 @@
-import type { Board } from '../domain/model';
-import type { View } from '../engine/viewport';
-import type { FrameInteraction } from '../components/frames/types';
-import { FrameToolbar } from '../components/frames/FrameToolbar';
-import { ConnectionToolbar } from '../components/connections/ConnectionToolbar';
-import type { Size } from '../components/common/useElementSize';
-import type { ConnectionSession } from './useConnectionSession';
+import type { Board } from '../../domain/model';
+import type { View } from '../../engine/viewport';
+import type { FrameInteraction } from '../../components/frames/types';
+import { FrameToolbar } from '../../components/frames/FrameToolbar';
+import { ConnectionToolbar } from '../../components/connections/ConnectionToolbar';
+import type { Size } from '../../components/common/useElementSize';
+import type { ConnectionSession } from '../useConnectionSession';
 
 export function ObjectToolbars({
   board,

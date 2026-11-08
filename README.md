@@ -47,6 +47,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 - Context menus on notes, frames, lines and the empty canvas (also Shift+F10)
 - Undo and redo for every change, including deletions that remove attached lines
 - Autosave in the browser, synced across tabs of the same browser
+- Optional Google Drive sync: save the board to a Drive folder or open one from Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Rename the board by double-clicking its title; the title becomes the download filename
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
@@ -86,6 +87,8 @@ npm run dev      # http://127.0.0.1:5173
 
 `npm run build` writes a static site to `dist/` with relative paths, so it can be served from any static host or subfolder.
 
+Google Drive is optional: copy `.env.example` to `.env.local` and fill in the three public Google values to enable it. See [docs/google-drive.md](docs/google-drive.md) for the Google Cloud setup.
+
 ## Scripts
 
 | Script             | Description                                                     |
@@ -113,15 +116,15 @@ The test server starts on port 4173 and stops when the tests finish. The HTML re
 
 ## Architecture
 
-| Layer             | Responsibility                                                                         |
-| ----------------- | -------------------------------------------------------------------------------------- |
-| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface            |
-| `src/application` | Editing session and undo/redo built on inverse patches                                 |
-| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view            |
-| `src/adapters`    | `.stormlet` file format, localStorage store, clipboard, file download, diagnostics log |
-| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                           |
-| `src/app`         | Composition, session hooks, shortcuts                                                  |
-| `src/i18n`        | Message catalogs per language and the translate function                               |
+| Layer             | Responsibility                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface                          |
+| `src/application` | Editing session, undo/redo built on inverse patches, Google Drive sync                               |
+| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view                          |
+| `src/adapters`    | `.stormlet` file format, localStorage store, Google Drive, clipboard, file download, diagnostics log |
+| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                                         |
+| `src/app`         | Composition, session hooks, shortcuts                                                                |
+| `src/i18n`        | Message catalogs per language and the translate function                                             |
 
 Dependencies point inward, from `app` towards `domain`. The rules are enforced by tests in `tests/architecture`, and lint keeps every file under 400 lines and every folder at 10 files or fewer.
 
@@ -137,7 +140,6 @@ UI text lives in one file per language under [`src/i18n/locales`](src/i18n/local
 
 ## Roadmap
 
-- Google Drive storage
 - Real-time collaboration: a Yjs implementation of `BoardStore` and a relay server ([ADR 0002](docs/adr/0002-collaboration-ready-model.md))
 
 ## Reporting a bug

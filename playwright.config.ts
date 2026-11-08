@@ -39,6 +39,12 @@ export default defineConfig({
     command: 'npm run dev -- --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
+    // Public test values enable the Drive UI; Google itself is mocked (tests/e2e/google.ts).
+    env: {
+      VITE_GOOGLE_CLIENT_ID: 'e2e-client',
+      VITE_GOOGLE_API_KEY: 'e2e-key',
+      VITE_GOOGLE_APP_ID: 'e2e-app',
+    },
     gracefulShutdown: { signal: 'SIGTERM', timeout: 1000 },
     timeout: 30000,
   },

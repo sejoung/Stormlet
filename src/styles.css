@@ -3,6 +3,8 @@
 @import './styles/context-menu.css';
 @import './styles/selection.css';
 @import './styles/dialogs.css';
+@import './styles/panels/recovery.css';
+@import './styles/panels/drive.css';
 @import './styles/workspace.css';
 @import './styles/responsive.css';
 @import './styles/connections.css';

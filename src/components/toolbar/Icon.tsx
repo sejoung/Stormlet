@@ -1,6 +1,11 @@
 import {
   ArrowUpRight,
   CircleQuestionMark,
+  Cloud,
+  CloudAlert,
+  CloudCheck,
+  CloudOff,
+  CloudUpload,
   Copy,
   CornerDownRight,
   Download,
@@ -61,9 +66,15 @@ const icons = {
   map: Map,
   settings: Settings,
   help: CircleQuestionMark,
+  cloud: Cloud,
+  cloudCheck: CloudCheck,
+  cloudUpload: CloudUpload,
+  cloudOff: CloudOff,
+  cloudAlert: CloudAlert,
 };
+export type IconName = keyof typeof icons;
 
-export function Icon({ name }: { name: keyof typeof icons }) {
+export function Icon({ name }: { name: IconName }) {
   const Glyph = icons[name];
   return <Glyph className="app-icon" size={18} strokeWidth={2} aria-hidden="true" />;
 }

@@ -1,0 +1,85 @@
+.diagnostics-copy {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  margin-top: 6px;
+}
+.diagnostics-copy button {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.diagnostics-copy button:hover {
+  background: var(--selected);
+}
+.diagnostics-result {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.diagnostics-result:empty {
+  display: none;
+}
+.diagnostics-text {
+  width: 100%;
+  resize: vertical;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    11px/1.5 ui-monospace,
+    monospace;
+}
+.recovery {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 24px 16px;
+  background: var(--bg);
+}
+.recovery-card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.recovery-card h1 {
+  margin: 0;
+  font-size: 20px;
+}
+.recovery-card h1:focus {
+  outline: none;
+}
+.recovery-card > p {
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.recovery-actions button:not(.primary-button) {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.recovery-card > .recovery-hint {
+  margin-bottom: 4px;
+  font-size: 12px;
+}

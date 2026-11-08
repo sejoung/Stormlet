@@ -217,3 +217,20 @@
 .local-badge.unsaved::before {
   background: #e07b24;
 }
+.actions .drive-button {
+  gap: 6px;
+  max-width: 150px;
+}
+.actions .drive-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.actions .drive-button.attention {
+  border-color: #e07b24;
+  color: var(--text);
+  font-weight: 600;
+}
+.actions .drive-button.attention .app-icon {
+  color: #e07b24;
+}
