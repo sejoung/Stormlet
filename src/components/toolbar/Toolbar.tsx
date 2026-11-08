@@ -28,7 +28,7 @@ interface Props {
 
 /**
  * One row, as in a desktop editor: the app, the board's menus, the board's name and where
- * it is saved; then frequent actions as icons and the app's settings. Creation tools live
+ * it is saved; then frequent actions as icons, the user guide and the app's settings. Creation tools live
  * in the left rail.
  */
 export function Toolbar(props: Props) {
@@ -88,6 +88,17 @@ export function Toolbar(props: Props) {
         </button>
         <span className="toolbar-divider" aria-hidden="true" />
         {props.drive}
+        {/* Always in sight, as in Maplet: the guide opens beside the board, in this language. */}
+        <a
+          className="menu-trigger guide-link"
+          href={t('manual.path')}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={t('menu.manual')}
+        >
+          <Icon name="manual" size={16} />
+          <span className="menu-label">{t('menu.manual')}</span>
+        </a>
         {props.settings}
       </div>
       {props.status && (

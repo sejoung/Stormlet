@@ -20,7 +20,7 @@ async function checkGuide(guide: Page, contents: string) {
   }
 }
 
-test('opens the user guide from Settings and the shortcut help, in both languages', async ({
+test('opens the user guide from the toolbar, Settings and the shortcut help, in both languages', async ({
   page,
   context,
 }) => {
@@ -33,9 +33,17 @@ test('opens the user guide from Settings and the shortcut help, in both language
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: '설정', exact: true }).click();
-  const [guide] = await Promise.all([
+  const [fromSettings] = await Promise.all([
     context.waitForEvent('page'),
     page.getByRole('menuitem', { name: '사용 설명서' }).click(),
+  ]);
+  await expect(fromSettings).toHaveTitle('Stormlet 사용 설명서');
+  await fromSettings.close();
+
+  // The toolbar keeps the guide in sight, beside Settings.
+  const [guide] = await Promise.all([
+    context.waitForEvent('page'),
+    page.getByRole('banner').getByRole('link', { name: '사용 설명서', exact: true }).click(),
   ]);
   await guide.waitForLoadState();
   await expect(guide).toHaveTitle('Stormlet 사용 설명서');

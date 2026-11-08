@@ -1,21 +1,42 @@
-@media (max-width: 900px) {
-  .board-help {
-    display: none;
-  }
-  .brand strong {
-    display: none;
-  }
-  /* The dot alone says it is saved here; the name needs the room. */
+/* The toolbar row gives up words in steps so the board's name keeps room to be read. */
+@media (max-width: 1279px) {
+  /* The dot alone says where the board is kept (its tooltip says more). */
   .local-badge:not(.unsaved) {
     gap: 0;
     font-size: 0;
   }
+  /* The guide keeps its book icon and tooltip. */
+  .guide-link .menu-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 1100px) {
+  .brand strong {
+    display: none;
+  }
+  /* The board's menus keep their icons and chevrons; names stay for tooltips and screen readers. */
+  .menu-bar .menu-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 900px) {
+  .board-help {
+    display: none;
+  }
   .toolbar {
     gap: 10px 12px;
   }
-}
-@media (max-width: 760px) {
-  /* Menus keep their icons; their names stay for screen readers and tooltips. */
+  /* Every menu, Settings too, keeps its icon; names stay for screen readers and tooltips. */
   .menu-label {
     position: absolute;
     width: 1px;
@@ -24,13 +45,17 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .menu-chevron,
-  .title-rename {
+  .menu-chevron {
     display: none;
   }
   .toolbar .menu-trigger,
   .toolbar .menu-trigger.framed {
     padding: 6px;
+  }
+}
+@media (max-width: 760px) {
+  .title-rename {
+    display: none;
   }
   .brand {
     gap: 6px;
@@ -101,5 +126,11 @@
     left: auto;
     right: 12px;
     bottom: 12px;
+  }
+}
+@media (max-width: 520px) {
+  /* On a phone the board's name needs the room; the guide stays in Settings. */
+  .toolbar .guide-link {
+    display: none;
   }
 }

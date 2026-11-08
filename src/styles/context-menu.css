@@ -118,6 +118,9 @@
 .toolbar .menu-trigger.open {
   background: var(--selected);
 }
+.toolbar a.menu-trigger {
+  text-decoration: none;
+}
 .toolbar .menu-trigger.framed {
   padding: 6px 10px;
   border-color: var(--border);
