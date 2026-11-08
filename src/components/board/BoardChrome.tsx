@@ -61,7 +61,7 @@ export function BoardChrome({
             aria-label={t('chrome.zoomOut')}
             onClick={() => onZoom(zoom / ZOOM_STEP)}
           >
-            −
+            <Icon name="minus" />
           </button>
           <button type="button" aria-label={t('chrome.zoomReset')} onClick={() => onZoom(1)}>
             {Math.round(zoom * 100)}%
@@ -71,7 +71,7 @@ export function BoardChrome({
             aria-label={t('chrome.zoomIn')}
             onClick={() => onZoom(zoom * ZOOM_STEP)}
           >
-            +
+            <Icon name="plus" />
           </button>
           <button
             type="button"

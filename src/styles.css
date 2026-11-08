@@ -78,6 +78,10 @@ select:focus-visible {
 button svg {
   flex-shrink: 0;
 }
+.app-icon {
+  display: block;
+  flex-shrink: 0;
+}
 .app {
   position: relative;
   display: block;

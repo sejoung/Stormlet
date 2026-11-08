@@ -17,7 +17,7 @@ const LAYERS = {
 
 /** npm packages a layer may use; a layer missing here is pure TypeScript. */
 const PACKAGES = {
-  components: ['react', 'react-dom'],
+  components: ['react', 'react-dom', 'lucide-react'],
   app: ['react', 'react-dom'],
 };
 
