@@ -45,6 +45,19 @@ describe('board name editing', () => {
     expect(store.board.title).toBe('회고/기획: 1차');
   });
 
+  it('renames from the pencil button beside the name', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore();
+    render(<App store={store} newId={ids()} />);
+    await user.click(screen.getByRole('button', { name: '보드 이름 바꾸기' }));
+    const input = screen.getByRole('textbox', { name: '보드 이름' });
+    expect(input).toHaveFocus();
+    expect(screen.queryByRole('button', { name: '보드 이름 바꾸기' })).not.toBeInTheDocument();
+    await user.clear(input);
+    await user.type(input, '스프린트{Enter}');
+    expect(store.board.title).toBe('스프린트');
+  });
+
   it('supports keyboard editing, Escape cancellation, IME input and blur confirmation', async () => {
     const user = userEvent.setup();
     const store = memoryStore({ title: '원래 이름', ...boardOf(sticky('a')) });

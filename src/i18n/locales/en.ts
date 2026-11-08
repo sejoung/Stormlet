@@ -35,6 +35,7 @@ export const en = {
   'board.titleField': 'Board name',
   'board.titleLabel': 'Board name: {title}',
   'board.titleHint': 'Double-click or press Enter to rename the board',
+  'board.rename': 'Rename board',
   'board.autosaved': 'Autosaved in this browser',
   'board.notSaved': 'Not saved',
   'board.notSavedHint':

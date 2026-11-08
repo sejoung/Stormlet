@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { MenuButton, MenuItem } from './MenuButton';
+import { MenuButton, MenuItem, MenuSection } from './MenuButton';
 import { useT } from '../common/i18n';
 
 /** What the File menu needs from Google Drive, when this build has it. */
@@ -39,30 +39,32 @@ export function FileMenu({
   const unavailable = drive ? drive.busy || (!drive.connected && !drive.ready) : true;
   return (
     <>
-      <MenuButton label={t('menu.file')} onOpen={drive?.onPrepare}>
+      <MenuButton label={t('menu.file')} icon="file" onOpen={drive?.onPrepare}>
         {(close) => (
           <>
             <MenuItem
               label={t('menu.openFile')}
+              icon="open"
               shortcut="⌘ / Ctrl+O"
               close={close}
               onSelect={choose}
             />
             <MenuItem
               label={t('menu.download')}
+              icon="save"
               shortcut="⌘ / Ctrl+S"
               close={close}
               onSelect={onDownload}
             />
             {drive && (
               <>
-                <div className="context-separator" role="separator" />
-                <span className="context-caption">
-                  {drive.connected || drive.ready ? t('drive.title') : t('drive.loading')}
-                </span>
+                <MenuSection
+                  heading={drive.connected || drive.ready ? t('drive.title') : t('drive.loading')}
+                />
                 {!drive.connected && (
                   <MenuItem
                     label={drive.linked ? t('drive.reconnect') : t('drive.connect')}
+                    icon="cloud"
                     disabled={unavailable}
                     close={close}
                     onSelect={drive.onConnect}
@@ -70,12 +72,14 @@ export function FileMenu({
                 )}
                 <MenuItem
                   label={t('drive.open')}
+                  icon="cloudDownload"
                   disabled={unavailable}
                   close={close}
                   onSelect={drive.onOpen}
                 />
                 <MenuItem
                   label={drive.linked ? t('drive.saveCopy') : t('drive.saveToFolder')}
+                  icon="cloudUpload"
                   disabled={unavailable}
                   close={close}
                   onSelect={drive.onSaveToFolder}
@@ -84,12 +88,14 @@ export function FileMenu({
                   <>
                     <MenuItem
                       label={t('menu.syncNow')}
+                      icon="sync"
                       disabled={unavailable}
                       close={close}
                       onSelect={drive.onSyncNow}
                     />
                     <MenuItem
                       label={t('drive.unlink')}
+                      icon="unlink"
                       title={t('drive.unlinkHint')}
                       disabled={drive.busy}
                       close={close}
@@ -100,6 +106,7 @@ export function FileMenu({
                 {drive.connected && (
                   <MenuItem
                     label={t('drive.disconnect')}
+                    icon="signOut"
                     disabled={drive.busy}
                     close={close}
                     onSelect={drive.onDisconnect}

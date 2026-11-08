@@ -3,6 +3,7 @@ import { MAX_BOARD_TITLE_LENGTH } from '../../domain/board-title';
 import { useInlineEdit } from '../common/useInlineEdit';
 import { isComposing } from '../common/keyboard';
 import { useT } from '../common/i18n';
+import { Icon } from './Icon';
 
 export function BoardTitle({
   title,
@@ -71,6 +72,17 @@ export function BoardTitle({
           }}
         >
           {title}
+        </button>
+      )}
+      {!editing && (
+        <button
+          type="button"
+          className="title-rename"
+          aria-label={t('board.rename')}
+          title={t('board.rename')}
+          onClick={begin}
+        >
+          <Icon name="pencil" size={14} />
         </button>
       )}
       {saved ? (

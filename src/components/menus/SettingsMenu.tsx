@@ -1,5 +1,5 @@
 import { LOCALES, translate, type LocalePreference } from '../../i18n/messages';
-import { MenuButton, MenuItem } from './MenuButton';
+import { MenuButton, MenuItem, MenuSection } from './MenuButton';
 import { useT } from '../common/i18n';
 
 const CHOICES: readonly LocalePreference[] = ['auto', ...LOCALES];
@@ -18,7 +18,7 @@ export function SettingsMenu({
 }) {
   const t = useT();
   return (
-    <MenuButton label={t('toolbar.settings')}>
+    <MenuButton label={t('toolbar.settings')} icon="settings" framed>
       {(close) => (
         <>
           <span className="context-caption">{t('settings.language')}</span>
@@ -34,9 +34,20 @@ export function SettingsMenu({
               onSelect={() => onLanguage(choice)}
             />
           ))}
-          <div className="context-separator" role="separator" />
-          <MenuItem label={t('chrome.shortcuts')} shortcut="?" close={close} onSelect={onHelp} />
-          <MenuItem label={t('menu.diagnostics')} close={close} onSelect={onDiagnostics} />
+          <MenuSection />
+          <MenuItem
+            label={t('chrome.shortcuts')}
+            icon="help"
+            shortcut="?"
+            close={close}
+            onSelect={onHelp}
+          />
+          <MenuItem
+            label={t('menu.diagnostics')}
+            icon="troubleshoot"
+            close={close}
+            onSelect={onDiagnostics}
+          />
         </>
       )}
     </MenuButton>

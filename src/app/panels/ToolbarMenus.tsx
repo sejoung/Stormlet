@@ -1,8 +1,8 @@
 import type { RefObject } from 'react';
-import type { LocalePreference } from '../../i18n/messages';
 import { FileMenu } from '../../components/menus/FileMenu';
-import { SettingsMenu } from '../../components/menus/SettingsMenu';
 import { EditMenu } from '../../components/menus/EditMenu';
+import { SettingsMenu } from '../../components/menus/SettingsMenu';
+import type { LocalePreference } from '../../i18n/messages';
 import { ViewMenu } from '../../components/menus/ViewMenu';
 import type { ShortcutHandlers } from '../useShortcuts';
 import type { Clipboard } from '../useClipboard';
@@ -12,7 +12,7 @@ import { needsAttention } from '../../components/drive/drive-status';
 import type { Drive } from '../drive/useDrive';
 import type { DialogName } from './WorkspaceDialogs';
 
-/** The menu bar under the board's name: File, Edit, View and Settings. */
+/** The board's menus: File, Edit and View. */
 export function ToolbarMenus({
   fileInput,
   onOpenFile,
@@ -24,9 +24,6 @@ export function ToolbarMenus({
   history,
   selection,
   drive,
-  language,
-  onLanguage,
-  onDialog,
 }: {
   fileInput: RefObject<HTMLInputElement | null>;
   onOpenFile(file: File): void;
@@ -40,9 +37,6 @@ export function ToolbarMenus({
   /** The selected notes, and the selected frame or connection. */
   selection: { ids: readonly string[]; object: string | null | undefined };
   drive: Drive;
-  language: LocalePreference;
-  onLanguage(language: LocalePreference): void;
-  onDialog(dialog: DialogName): void;
 }) {
   const selected = selection.ids.length > 0 || Boolean(selection.object);
   return (
@@ -90,12 +84,6 @@ export function ToolbarMenus({
           onMinimap: minimap.toggle,
         }}
       />
-      <SettingsMenu
-        language={language}
-        onLanguage={onLanguage}
-        onHelp={() => onDialog('help')}
-        onDiagnostics={() => onDialog('diagnostics')}
-      />
     </>
   );
 }
@@ -123,6 +111,26 @@ export function SyncStatus({
         if (state.status === 'paused' && drive.ready) drive.connect();
         else onDialog(state.status === 'conflict' ? 'conflict' : 'drive');
       }}
+    />
+  );
+}
+
+/** The app's settings menu, at the far end of the toolbar. */
+export function AppSettings({
+  language,
+  onLanguage,
+  onDialog,
+}: {
+  language: LocalePreference;
+  onLanguage(language: LocalePreference): void;
+  onDialog(dialog: DialogName): void;
+}) {
+  return (
+    <SettingsMenu
+      language={language}
+      onLanguage={onLanguage}
+      onHelp={() => onDialog('help')}
+      onDiagnostics={() => onDialog('diagnostics')}
     />
   );
 }

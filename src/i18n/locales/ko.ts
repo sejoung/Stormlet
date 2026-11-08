@@ -32,6 +32,7 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'board.titleField': '보드 이름',
   'board.titleLabel': '보드 이름: {title}',
   'board.titleHint': '더블클릭 또는 Enter로 보드 이름 수정',
+  'board.rename': '보드 이름 바꾸기',
   'board.autosaved': '브라우저에 자동 저장',
   'board.notSaved': '저장되지 않음',
   'board.notSavedHint':

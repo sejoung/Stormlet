@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../../../src/app/App';
@@ -18,23 +18,20 @@ vi.mock('../../../../src/adapters/browser/clipboard', () => ({
   writeClipboard: vi.fn(),
 }));
 
+/** An item's name as shown, without its icon or shortcut. */
+const label = (item: HTMLElement) => item.querySelector('.menu-text')?.textContent;
 /** Open the menu `menu` and run its item `item`. */
 const choose = (menu: string, item: RegExp | string) => {
   fireEvent.click(screen.getByRole('button', { name: menu }));
-  const target = screen.getByRole('menu', { name: menu });
   fireEvent.click(
-    [...target.querySelectorAll<HTMLElement>('[role^="menuitem"]')].find((element) =>
-      typeof item === 'string'
-        ? element.firstChild?.textContent === item
-        : item.test(element.textContent ?? ''),
-    )!,
+    within(screen.getByRole('menu', { name: menu })).getByRole('menuitem', { name: item }),
   );
 };
 const itemsOf = (menu: string) => {
   fireEvent.click(screen.getByRole('button', { name: menu }));
   const items = screen.getAllByRole('menuitem');
   const state = Object.fromEntries(
-    items.map((item) => [item.firstChild?.textContent, !item.hasAttribute('disabled')]),
+    items.map((item) => [label(item), !item.hasAttribute('disabled')]),
   );
   fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
   return state;
@@ -53,7 +50,7 @@ describe('toolbar menus', () => {
     expect(file).toHaveAttribute('aria-expanded', 'true');
     // A build without Drive has only the local file commands.
     const items = screen.getAllByRole('menuitem');
-    expect(items.map((item) => item.firstChild?.textContent)).toEqual(['열기…', '파일로 내려받기']);
+    expect(items.map(label)).toEqual(['열기…', '파일로 내려받기']);
     expect(items[0]).toHaveFocus();
     await user.keyboard('{ArrowDown}');
     expect(items[1]).toHaveFocus();
@@ -79,7 +76,7 @@ describe('toolbar menus', () => {
     fireEvent.keyDown(window, { key: 'o', ctrlKey: true });
     expect(choose).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: '파일' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /^열기…/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '열기…' }));
     expect(choose).toHaveBeenCalledTimes(2);
     fireEvent.keyDown(window, { key: 's', metaKey: true });
     expect(downloadText).toHaveBeenCalledTimes(1);
@@ -88,7 +85,7 @@ describe('toolbar menus', () => {
   it('lists help and troubleshooting under Settings', () => {
     render(<App store={memoryStore()} newId={ids()} />);
     fireEvent.click(screen.getByRole('button', { name: '설정' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /^단축키 도움말/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '단축키 도움말' }));
     expect(screen.getByRole('dialog', { name: '단축키' })).toBeInTheDocument();
   });
 

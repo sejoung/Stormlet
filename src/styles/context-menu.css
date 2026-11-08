@@ -88,3 +88,77 @@
     color: #ff9ca5;
   }
 }
+
+/* The toolbar's menus (File, Edit, View, Settings) and their drop-down lists. */
+.menu-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.menu-button {
+  position: relative;
+  flex-shrink: 0;
+}
+.toolbar .menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+.toolbar .menu-trigger:hover,
+.toolbar .menu-trigger.open {
+  background: var(--selected);
+}
+.toolbar .menu-trigger.framed {
+  padding: 6px 10px;
+  border-color: var(--border);
+}
+.menu-chevron {
+  display: inline-flex;
+  color: var(--muted);
+}
+.sticky-context-menu.toolbar-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 280px;
+}
+.toolbar-menu button {
+  justify-content: flex-start;
+  gap: 10px;
+}
+.menu-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 16px;
+  color: var(--muted);
+}
+.toolbar-menu [aria-checked='true'] .menu-icon {
+  color: var(--accent);
+}
+.menu-text {
+  flex: 1;
+  min-width: 0;
+}
+.menu-shortcut {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.toolbar-menu button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.toolbar-menu button:disabled:hover {
+  background: transparent;
+}

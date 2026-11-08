@@ -1,4 +1,4 @@
-import { MenuButton, MenuItem } from './MenuButton';
+import { MenuButton, MenuItem, MenuSection } from './MenuButton';
 import { useT } from '../common/i18n';
 
 /** The state and commands behind the Edit menu; the same ones the shortcuts run. */
@@ -27,11 +27,12 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
   const t = useT();
   const none = !c.selected;
   return (
-    <MenuButton label={t('menu.edit')}>
+    <MenuButton label={t('menu.edit')} icon="edit">
       {(close) => (
         <>
           <MenuItem
             label={t('toolbar.undo')}
+            icon="undo"
             shortcut="⌘ / Ctrl+Z"
             disabled={!c.canUndo}
             close={close}
@@ -39,14 +40,16 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
           />
           <MenuItem
             label={t('toolbar.redo')}
+            icon="redo"
             shortcut="⌘ / Ctrl+Shift+Z"
             disabled={!c.canRedo}
             close={close}
             onSelect={c.onRedo}
           />
-          <div className="context-separator" role="separator" />
+          <MenuSection />
           <MenuItem
             label={t('contextMenu.cut')}
+            icon="cut"
             shortcut="⌘ / Ctrl+X"
             disabled={none}
             close={close}
@@ -54,6 +57,7 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
           />
           <MenuItem
             label={t('contextMenu.copy')}
+            icon="copy"
             shortcut="⌘ / Ctrl+C"
             disabled={none}
             close={close}
@@ -61,12 +65,14 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
           />
           <MenuItem
             label={t('contextMenu.paste')}
+            icon="paste"
             shortcut="⌘ / Ctrl+V"
             close={close}
             onSelect={c.onPaste}
           />
           <MenuItem
             label={t('noteMenu.duplicate')}
+            icon="duplicate"
             shortcut="⌘ / Ctrl+D"
             disabled={none}
             close={close}
@@ -74,20 +80,23 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
           />
           <MenuItem
             label={t('noteMenu.delete')}
+            icon="delete"
             shortcut="Delete"
             disabled={none}
             close={close}
             onSelect={c.onDelete}
           />
-          <div className="context-separator" role="separator" />
+          <MenuSection />
           <MenuItem
             label={t('menu.selectAll')}
+            icon="selectAll"
             shortcut="⌘ / Ctrl+A"
             close={close}
             onSelect={c.onSelectAll}
           />
           <MenuItem
             label={t('selection.group')}
+            icon="group"
             shortcut="⌘ / Ctrl+G"
             disabled={c.notes < 2}
             close={close}
@@ -95,6 +104,7 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
           />
           <MenuItem
             label={t('selection.ungroup')}
+            icon="ungroup"
             shortcut="⌘ / Ctrl+Shift+G"
             disabled={c.notes < 1}
             close={close}
@@ -102,14 +112,16 @@ export function EditMenu({ commands: c }: { commands: EditCommands }) {
           />
           <MenuItem
             label={t('menu.toggleLock')}
+            icon="lock"
             shortcut="⌘ / Ctrl+Shift+L"
             disabled={none}
             close={close}
             onSelect={c.onLock}
           />
-          <div className="context-separator" role="separator" />
+          <MenuSection />
           <MenuItem
             label={t('toolbar.search')}
+            icon="search"
             shortcut="⌘ / Ctrl+F"
             close={close}
             onSelect={c.onSearch}

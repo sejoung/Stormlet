@@ -38,7 +38,7 @@ import { diagnostics } from './diagnostics/diagnostics';
 import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
 import { WorkspaceDialogs, type DialogName } from './panels/WorkspaceDialogs';
-import { SyncStatus, ToolbarMenus } from './panels/ToolbarMenus';
+import { AppSettings, SyncStatus, ToolbarMenus } from './panels/ToolbarMenus';
 
 export interface WorkspaceProps {
   store: BoardStore;
@@ -249,10 +249,10 @@ export function Workspace({
                 history={{ canUndo, canRedo }}
                 selection={{ ids: activeIds, object: selected.frameId ?? selected.connectionId }}
                 drive={drive}
-                language={language}
-                onLanguage={onLanguage}
-                onDialog={setDialog}
               />
+            }
+            settings={
+              <AppSettings language={language} onLanguage={onLanguage} onDialog={setDialog} />
             }
             sync={
               'file' in drive.state ? <SyncStatus drive={drive} onDialog={setDialog} /> : undefined

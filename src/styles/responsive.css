@@ -2,11 +2,46 @@
   .board-help {
     display: none;
   }
+  .brand strong {
+    display: none;
+  }
+  /* The dot alone says it is saved here; the name needs the room. */
+  .local-badge:not(.unsaved) {
+    gap: 0;
+    font-size: 0;
+  }
   .toolbar {
     gap: 10px 12px;
   }
 }
 @media (max-width: 760px) {
+  /* Menus keep their icons; their names stay for screen readers and tooltips. */
+  .menu-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .menu-chevron,
+  .title-rename {
+    display: none;
+  }
+  .toolbar .menu-trigger,
+  .toolbar .menu-trigger.framed {
+    padding: 6px;
+  }
+  .brand {
+    gap: 6px;
+  }
+  .board-caption {
+    padding-left: 6px;
+  }
+  /* The cloud's icon says how syncing goes; words remain for what needs the user. */
+  .drive-button:not(.attention) span {
+    display: none;
+  }
   .actions button svg {
     width: 16px;
     height: 16px;
@@ -36,16 +71,10 @@
   }
 }
 @media (max-width: 600px) {
-  .brand strong {
+  /* Undo and redo stay in the Edit menu, so the board's name keeps room. */
+  .actions > .action-group,
+  .actions > .action-group + .toolbar-divider {
     display: none;
-  }
-  .board-heading {
-    max-width: none;
-  }
-  /* The dot alone says it is saved here; the name needs the room. */
-  .local-badge:not(.unsaved) {
-    gap: 0;
-    font-size: 0;
   }
   .tool-panel {
     left: 10px;

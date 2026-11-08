@@ -20,14 +20,14 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 }
 .app-brand {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 9px;
-  padding-right: 18px;
+  padding-right: 12px;
   border-right: 1px solid var(--border);
 }
 .brand strong {
@@ -43,70 +43,32 @@
   background: #ffe79a;
   color: #3b3430;
 }
-.board-heading {
-  flex: 0 1 460px;
-  min-width: 0;
-  max-width: 460px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-}
 .board-caption {
-  max-width: 100%;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 2px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
   color: var(--text);
   font-size: 12px;
 }
-.menu-bar {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.menu-button {
-  position: relative;
-}
-.menu-trigger {
-  min-height: 22px;
-  padding: 2px 6px;
+.title-rename {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: 5px;
   background: transparent;
-  color: var(--text);
-  font-size: 12px;
-  line-height: 18px;
-}
-.menu-trigger:hover,
-.menu-trigger.open {
-  background: var(--selected);
-}
-.sticky-context-menu.toolbar-menu {
-  position: absolute;
-  z-index: 60;
-  top: calc(100% + 6px);
-  left: 0;
-  width: 260px;
-}
-.toolbar-menu .menu-choice {
-  position: relative;
-  justify-content: flex-start;
-  padding-left: 28px;
-}
-.toolbar-menu .menu-choice[aria-checked='true']::before {
-  position: absolute;
-  left: 10px;
-  color: var(--accent);
-  content: '✓';
-}
-.toolbar-menu button:disabled {
   color: var(--muted);
-  cursor: default;
 }
-.toolbar-menu button:disabled:hover {
-  background: transparent;
+.title-rename:hover {
+  background: var(--bg);
+  color: var(--text);
 }
 .local-badge {
   display: inline-flex;
@@ -138,7 +100,8 @@
   align-items: center;
   gap: 4px;
 }
-.actions button,
+.actions > button,
+.action-group > button,
 .zoom-controls button {
   display: inline-flex;
   align-items: center;
@@ -152,7 +115,8 @@
   color: var(--text);
   font-size: 11px;
 }
-.actions button:hover:not(:disabled),
+.actions > button:hover:not(:disabled),
+.action-group > button:hover:not(:disabled),
 .zoom-controls button:hover {
   background: var(--selected);
 }

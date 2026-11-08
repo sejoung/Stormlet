@@ -16,15 +16,18 @@ interface Props {
   onRedo(): void;
   /** ⌘/Ctrl+S while renaming. */
   onSave(): void;
-  /** The menu bar under the title: File and Settings. */
+  /** The board's menus (File, Edit, View), before its name. */
   menus: ReactNode;
+  /** The app's settings, apart from the board's menus at the far end. */
+  settings: ReactNode;
   /** Where the board syncs to (Google Drive), shown in place of the local badge. */
   sync?: ReactNode;
 }
 
 /**
- * The board's name with its save state and menus, as in a desktop editor; frequent
- * actions stay as icons on the right, and creation tools live in the left rail.
+ * One row, as in a desktop editor: the app, the board's menus, the board's name and where
+ * it is saved; then frequent actions as icons and the app's settings. Creation tools live
+ * in the left rail.
  */
 export function Toolbar(props: Props) {
   const t = useT();
@@ -37,18 +40,16 @@ export function Toolbar(props: Props) {
           </span>
           <strong>Stormlet</strong>
         </div>
-        <div className="board-heading">
-          <BoardTitle
-            title={props.title}
-            saved={props.saved}
-            sync={props.sync}
-            onRename={props.onRename}
-            onSave={props.onSave}
-          />
-          <nav className="menu-bar" aria-label={t('menu.bar')}>
-            {props.menus}
-          </nav>
-        </div>
+        <nav className="menu-bar" aria-label={t('menu.bar')}>
+          {props.menus}
+        </nav>
+        <BoardTitle
+          title={props.title}
+          saved={props.saved}
+          sync={props.sync}
+          onRename={props.onRename}
+          onSave={props.onSave}
+        />
       </div>
       <div className="actions" role="group" aria-label={t('toolbar.boardActions')}>
         <div className="action-group" role="group" aria-label={t('toolbar.history')}>
@@ -83,6 +84,8 @@ export function Toolbar(props: Props) {
         >
           <Icon name="search" />
         </button>
+        <span className="toolbar-divider" aria-hidden="true" />
+        {props.settings}
       </div>
       {props.status && (
         <p className="status" role="status">

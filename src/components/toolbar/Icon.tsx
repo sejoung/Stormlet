@@ -1,5 +1,26 @@
 import {
   ArrowUpRight,
+  Check,
+  ChevronDown,
+  ClipboardCopy,
+  ClipboardPaste,
+  CloudDownload,
+  Eye,
+  FileText,
+  Languages,
+  LifeBuoy,
+  LocateFixed,
+  LogOut,
+  Pencil,
+  RefreshCw,
+  ScanSearch,
+  Scissors,
+  SquareDashedMousePointer,
+  SquarePen,
+  Ungroup,
+  Unlink,
+  ZoomIn,
+  ZoomOut,
   CircleQuestionMark,
   Cloud,
   CloudAlert,
@@ -71,10 +92,31 @@ const icons = {
   cloudUpload: CloudUpload,
   cloudOff: CloudOff,
   cloudAlert: CloudAlert,
+  cloudDownload: CloudDownload,
+  chevron: ChevronDown,
+  check: Check,
+  pencil: Pencil,
+  file: FileText,
+  edit: SquarePen,
+  view: Eye,
+  cut: Scissors,
+  copy: ClipboardCopy,
+  paste: ClipboardPaste,
+  selectAll: SquareDashedMousePointer,
+  ungroup: Ungroup,
+  zoomIn: ZoomIn,
+  zoomOut: ZoomOut,
+  zoomReset: LocateFixed,
+  fitSelection: ScanSearch,
+  sync: RefreshCw,
+  unlink: Unlink,
+  signOut: LogOut,
+  language: Languages,
+  troubleshoot: LifeBuoy,
 };
 export type IconName = keyof typeof icons;
 
-export function Icon({ name }: { name: IconName }) {
+export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const Glyph = icons[name];
-  return <Glyph className="app-icon" size={18} strokeWidth={2} aria-hidden="true" />;
+  return <Glyph className="app-icon" size={size} strokeWidth={2} aria-hidden="true" />;
 }
