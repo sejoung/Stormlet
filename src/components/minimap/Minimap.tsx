@@ -9,6 +9,7 @@ import { COLOR_STYLES } from '../board/kinds';
 import { FRAME_STYLES } from '../frames/colors';
 import { LINE_COLORS } from '../connections/colors';
 import { ARROW_DELTAS } from '../common/keyboard';
+import { useT } from '../common/i18n';
 
 /** Minimap size in screen pixels. */
 export const MINIMAP_SIZE = { width: 200, height: 136 };
@@ -43,6 +44,7 @@ const contains = (rect: Rect, point: Point) =>
  * there; dragging the outline pans; arrow keys pan while it has focus.
  */
 export function Minimap({ board, view, viewport, onViewChange }: Props) {
+  const t = useT();
   const [drag, setDrag] = useState<Drag | null>(null);
   const content = useMemo(() => boundsOf(contentRects(board)), [board]);
   const visible = visibleRect(view, viewport);
@@ -62,7 +64,7 @@ export function Minimap({ board, view, viewport, onViewChange }: Props) {
     <svg
       className="minimap"
       role="application"
-      aria-label="미니맵: 클릭하거나 끌어서 화면 이동, 방향키로 이동"
+      aria-label={t('minimap.label')}
       tabIndex={0}
       width={MINIMAP_SIZE.width}
       height={MINIMAP_SIZE.height}

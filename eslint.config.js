@@ -14,6 +14,11 @@ export default ts.config(
     rules: { 'max-lines': ['error', { max: 400, skipBlankLines: false, skipComments: false }] },
   },
   {
+    // Message catalogs are flat data that grows with the UI; one file per language by design.
+    files: ['src/i18n/locales/*.ts'],
+    rules: { 'max-lines': 'off' },
+  },
+  {
     // Tool configs that must stay CommonJS (dependency-cruiser and its shared layer map).
     files: ['**/*.cjs'],
     languageOptions: { sourceType: 'commonjs', globals: globals.node },

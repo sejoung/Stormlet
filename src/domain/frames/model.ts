@@ -37,8 +37,11 @@ export const DEFAULT_FRAME_SIZE: Readonly<FrameSize> = { width: 640, height: 400
 export const MIN_FRAME_SIZE: Readonly<FrameSize> = { width: 160, height: 120 };
 export const MAX_FRAME_SIZE: Readonly<FrameSize> = { width: 20000, height: 20000 };
 export const FRAME_TITLE_LIMIT = 100;
-/** Name of a frame whose title was cleared, and the stem of numbered new frames. */
-export const DEFAULT_FRAME_TITLE = '프레임';
+/**
+ * Name of a frame whose title was cleared, and the stem of numbered new frames. Generated
+ * titles are data, so they are English in every language for consistency.
+ */
+export const DEFAULT_FRAME_TITLE = 'Frame';
 export const frameTitle = (value: string) =>
   value.trim().slice(0, FRAME_TITLE_LIMIT) || DEFAULT_FRAME_TITLE;
 export const isFrameBorderWidth = (value: unknown): value is number =>

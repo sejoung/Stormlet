@@ -30,6 +30,7 @@ import { clientCenter, clientToLocal } from '../common/points';
 import { isMenuKey, TEXT_ENTRY } from '../common/keyboard';
 import { cx } from '../common/cx';
 import type { Size } from '../common/useElementSize';
+import { useT } from '../common/i18n';
 
 interface Props {
   board: Board;
@@ -60,6 +61,7 @@ interface Props {
 const DRAG_THRESHOLD = 3;
 
 export function BoardCanvas(props: Props) {
+  const t = useT();
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
@@ -234,7 +236,7 @@ export function BoardCanvas(props: Props) {
         gesture?.type === 'pan' && 'is-panning',
       )}
       role="application"
-      aria-label="포스트잇 보드"
+      aria-label={t('chrome.canvas')}
       tabIndex={0}
       onKeyDownCapture={(event) => {
         if (event.target === event.currentTarget && isMenuKey(event)) {

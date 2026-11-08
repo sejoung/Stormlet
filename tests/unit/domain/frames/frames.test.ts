@@ -62,12 +62,12 @@ describe('frames', () => {
   it('numbers new frames past every existing number, so titles never repeat', () => {
     const board = boardOf();
     const first = applyPatches(board, addFrame(board, 'a', frame('a'))).board;
-    expect(first.frames?.a.title).toBe('프레임 1');
+    expect(first.frames?.a.title).toBe('Frame 1');
     const second = applyPatches(first, addFrame(first, 'b', frame('b'))).board;
     const afterDelete = applyPatches(second, deleteFrame(second, 'a')).board;
     expect(
       applyPatches(afterDelete, addFrame(afterDelete, 'c', frame('c'))).board.frames?.c.title,
-    ).toBe('프레임 3');
+    ).toBe('Frame 3');
   });
 
   it('moves frames to whole board units', () => {
@@ -104,7 +104,7 @@ describe('frames', () => {
     expect(applyPatches(updated.board, updated.inverse).board).toEqual(added);
     expect(
       applyPatches(added, updateFrame(added, 'new', { title: ' ' })).board.frames?.new.title,
-    ).toBe('프레임');
+    ).toBe('Frame');
     expect(updateFrame(added, 'missing', { title: 'x' })).toEqual([]);
     expect(updateFrame(added, 'new', { height: NaN })).toEqual([]);
   });

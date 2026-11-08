@@ -2,14 +2,21 @@ import { useCallback, type CSSProperties, type KeyboardEvent, type PointerEvent 
 import { FRAME_TITLE_LIMIT, type Frame } from '../../domain/frames/model';
 import { Icon } from '../toolbar/Icon';
 import { FRAME_STYLES } from './colors';
+import type { MessageKey } from '../../i18n/messages';
 import { ConnectionPorts } from '../connections/ConnectionPorts';
 import type { ConnectionSide } from '../../domain/connections/model';
 import { useInlineEdit } from '../common/useInlineEdit';
 import { ARROW_DELTAS, isComposing } from '../common/keyboard';
 import { DRAFT_FIELD } from '../common/drafts';
 import { cx } from '../common/cx';
+import { useT } from '../common/i18n';
 
-const EDGE_LABELS = { top: '위쪽', right: '오른쪽', bottom: '아래쪽', left: '왼쪽' } as const;
+const EDGE_LABELS = {
+  top: 'frame.edgeTop',
+  right: 'frame.edgeRight',
+  bottom: 'frame.edgeBottom',
+  left: 'frame.edgeLeft',
+} as const satisfies Record<string, MessageKey>;
 const EDGES = Object.keys(EDGE_LABELS) as (keyof typeof EDGE_LABELS)[];
 
 export function FrameItem({
@@ -35,6 +42,7 @@ export function FrameItem({
   onConnect(event: PointerEvent, side: ConnectionSide): void;
   onKeyboardConnect(side: ConnectionSide): void;
 }) {
+  const t = useT();
   const title = useInlineEdit<HTMLButtonElement>(frame.title, (draft) =>
     onChange(frame.id, { title: draft }),
   );
@@ -79,7 +87,7 @@ export function FrameItem({
           key={side}
           type="button"
           className={`frame-edge edge-${side}`}
-          aria-label={`프레임 테두리: ${frame.title} · ${EDGE_LABELS[side]}`}
+          aria-label={t('frame.edge', { title: frame.title, edge: t(EDGE_LABELS[side]) })}
           aria-pressed={selected}
           onPointerDown={(event) => onDown(event, frame.id)}
           onClick={selectOnKeyboardClick}
@@ -89,7 +97,7 @@ export function FrameItem({
       {title.editing ? (
         <input
           className="frame-title-input"
-          aria-label="프레임 이름"
+          aria-label={t('frame.titleField')}
           data-draft={DRAFT_FIELD.label}
           value={title.draft}
           maxLength={FRAME_TITLE_LIMIT}
@@ -111,9 +119,9 @@ export function FrameItem({
           ref={title.trigger}
           type="button"
           className="frame-title"
-          aria-label={`프레임: ${frame.title}`}
+          aria-label={t('frame.titleLabel', { title: frame.title })}
           aria-pressed={selected}
-          title="더블클릭으로 이름 수정"
+          title={t('frame.titleHint')}
           onPointerDown={(event) => onDown(event, frame.id)}
           onClick={selectOnKeyboardClick}
           onDoubleClick={start}
@@ -130,7 +138,7 @@ export function FrameItem({
         <button
           type="button"
           className="resize-handle frame-resize"
-          aria-label="프레임 크기 조절"
+          aria-label={t('frame.resize')}
           onPointerDown={(event) => onDown(event, frame.id, true)}
           onKeyDown={(event) => {
             const delta = ARROW_DELTAS[event.key];

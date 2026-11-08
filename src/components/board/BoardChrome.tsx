@@ -1,13 +1,15 @@
 import type { BoardTool } from './kinds';
 import { Icon } from '../toolbar/Icon';
 import { ZOOM_STEP } from '../../engine/viewport';
+import { useT } from '../common/i18n';
+import type { MessageKey } from '../../i18n/messages';
 
-const TOOL_HINTS: Record<BoardTool, string> = {
-  frame: '드래그로 프레임 영역 지정 · Esc 취소',
-  sticky: '원하는 곳을 클릭해 붙이기 · Esc 취소',
-  connect: '포스트잇·프레임 클릭 · 드래그로 연결 · Esc 취소',
-  interact: '드래그로 선택 · Space+드래그로 이동 · N 포스트잇 · L 연결선',
-  hand: '드래그로 선택 · Space+드래그로 이동 · N 포스트잇 · L 연결선',
+const TOOL_HINTS: Record<BoardTool, MessageKey> = {
+  frame: 'chrome.hintFrame',
+  sticky: 'chrome.hintSticky',
+  connect: 'chrome.hintConnect',
+  interact: 'chrome.hintSelect',
+  hand: 'chrome.hintSelect',
 };
 
 export function BoardChrome({
@@ -29,45 +31,58 @@ export function BoardChrome({
   onMinimap(): void;
   onHelp(): void;
 }) {
+  const t = useT();
+  // The key name is markup, so the sentence is split around its `{key}` placeholder.
+  const [emptyBefore, emptyAfter] = t('chrome.emptyHint').split('{key}');
   return (
     <>
       {empty && (
         <div className="empty-hint">
           <p>
-            왼쪽 포스트잇 도구나 <kbd>N</kbd>을 누른 뒤 보드를 클릭하세요.
+            {emptyBefore}
+            <kbd>N</kbd>
+            {emptyAfter}
           </p>
         </div>
       )}
       <div className="board-footer">
-        <span className="board-help">{TOOL_HINTS[tool]}</span>
-        <div className="zoom-controls" role="group" aria-label="확대 및 축소">
+        <span className="board-help">{t(TOOL_HINTS[tool])}</span>
+        <div className="zoom-controls" role="group" aria-label={t('chrome.zoom')}>
           <button
             type="button"
-            aria-label="모든 메모 보기"
-            title="모든 메모 보기 (Alt/Option+1)"
+            aria-label={t('chrome.fit')}
+            title={t('chrome.fitHint')}
             onClick={onFit}
           >
             <Icon name="fit" />
           </button>
-          <button type="button" aria-label="축소" onClick={() => onZoom(zoom / ZOOM_STEP)}>
+          <button
+            type="button"
+            aria-label={t('chrome.zoomOut')}
+            onClick={() => onZoom(zoom / ZOOM_STEP)}
+          >
             −
           </button>
-          <button type="button" aria-label="확대 비율 초기화" onClick={() => onZoom(1)}>
+          <button type="button" aria-label={t('chrome.zoomReset')} onClick={() => onZoom(1)}>
             {Math.round(zoom * 100)}%
           </button>
-          <button type="button" aria-label="확대" onClick={() => onZoom(zoom * ZOOM_STEP)}>
+          <button
+            type="button"
+            aria-label={t('chrome.zoomIn')}
+            onClick={() => onZoom(zoom * ZOOM_STEP)}
+          >
             +
           </button>
           <button
             type="button"
-            aria-label="미니맵"
-            title={minimap ? '미니맵 닫기' : '미니맵 열기'}
+            aria-label={t('chrome.minimap')}
+            title={minimap ? t('chrome.minimapClose') : t('chrome.minimapOpen')}
             aria-pressed={minimap}
             onClick={onMinimap}
           >
             <Icon name="map" />
           </button>
-          <button type="button" aria-label="단축키 도움말" onClick={onHelp}>
+          <button type="button" aria-label={t('chrome.shortcuts')} onClick={onHelp}>
             <Icon name="help" />
           </button>
         </div>

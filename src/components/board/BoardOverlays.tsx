@@ -4,6 +4,7 @@ import { COLOR_STYLES } from './kinds';
 import { rectangle, type Gesture } from './gestures/gestures';
 import { own } from '../../domain/ids';
 import type { Size } from '../common/useElementSize';
+import { useT } from '../common/i18n';
 
 export function BoardOverlays({
   board,
@@ -16,6 +17,7 @@ export function BoardOverlays({
   view: View;
   viewport: Size;
 }) {
+  const t = useT();
   const dragging = gesture?.type === 'drag' ? gesture : null;
   return (
     <>
@@ -37,7 +39,7 @@ export function BoardOverlays({
                 color: COLOR_STYLES[note.color].ink,
               }}
             >
-              {note.text || '복제'}
+              {note.text || t('note.copyPreview')}
             </div>
           );
         })}

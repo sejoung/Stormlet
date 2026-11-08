@@ -21,6 +21,7 @@ import type { NoteDetails } from '../domain/note-details';
 import type { Point } from '../engine/viewport';
 import { cellPositions, MAX_PASTE_NOTES, type TextCell } from '../engine/paste';
 import type { Edit, EditWith } from './useBoardSession';
+import { useT } from '../components/common/i18n';
 
 /** Formatting toggles that have a keyboard shortcut. */
 export type FormatToggle = 'bold' | 'italic' | 'underline';
@@ -57,6 +58,7 @@ interface Options {
 }
 
 export function useNoteActions(options: Options): NoteActions {
+  const t = useT();
   const { board, ids, reactor, newId, edit, editWith, onSelect, onStatus } = options;
   const format = (details: NoteDetails) => edit((current) => updateNotes(current, ids, details));
   /** Run a clone command, select the copies and, when `announce`, say how many were added. */
@@ -66,7 +68,7 @@ export function useNoteActions(options: Options): NoteActions {
   ) => {
     const { ids: created } = editWith(clone);
     onSelect(created);
-    if (announce) onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
+    if (announce) onStatus(t('noteActions.pasted', { count: created.length }));
   };
   return {
     format,
@@ -115,7 +117,7 @@ export function useNoteActions(options: Options): NoteActions {
       }));
       edit((current) => addStickies(current, created));
       onSelect(created.map((note) => note.id));
-      onStatus(`${created.length}개의 포스트잇을 붙였습니다.`);
+      onStatus(t('noteActions.pasted', { count: created.length }));
     },
     group: (ungroup = ids.some((id) => own(board.stickies, id)?.groupId)) => {
       if (!ungroup && ids.length < 2) return;

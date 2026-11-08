@@ -1,6 +1,7 @@
 import { MAX_BOARD_TITLE_LENGTH } from '../../domain/board-title';
 import { useInlineEdit } from '../common/useInlineEdit';
 import { isComposing } from '../common/keyboard';
+import { useT } from '../common/i18n';
 
 export function BoardTitle({
   title,
@@ -11,6 +12,7 @@ export function BoardTitle({
   onRename(title: string): void;
   onSave(): void;
 }) {
+  const t = useT();
   const { editing, draft, setDraft, trigger, begin, finish } = useInlineEdit<HTMLButtonElement>(
     title,
     onRename,
@@ -20,7 +22,7 @@ export function BoardTitle({
       {editing ? (
         <input
           className="board-title-input"
-          aria-label="보드 이름"
+          aria-label={t('board.titleField')}
           maxLength={MAX_BOARD_TITLE_LENGTH}
           // Editing is initiated explicitly by double-click, Enter or F2.
           // eslint-disable-next-line jsx-a11y/no-autofocus
@@ -50,8 +52,8 @@ export function BoardTitle({
           ref={trigger}
           type="button"
           className="board-title"
-          aria-label={`보드 이름: ${title}`}
-          title="더블클릭 또는 Enter로 보드 이름 수정"
+          aria-label={t('board.titleLabel', { title })}
+          title={t('board.titleHint')}
           onDoubleClick={begin}
           onKeyDown={(event) => {
             if (event.key === 'Enter' || event.key === 'F2') {
@@ -64,7 +66,7 @@ export function BoardTitle({
           {title}
         </button>
       )}
-      <span className="local-badge">브라우저에 자동 저장</span>
+      <span className="local-badge">{t('board.autosaved')}</span>
     </div>
   );
 }

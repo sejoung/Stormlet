@@ -1,8 +1,12 @@
 import { useCallback, useState } from 'react';
+import { I18nProvider } from '../components/common/i18n';
+import { SettingsDialog } from '../components/dialogs/SettingsDialog';
+import { useLanguage } from './settings/useLanguage';
 import { deleteStickies, editableIds } from '../domain/commands';
 import { isEmptyBoard } from '../domain/model';
 import { boardTitle, renameBoard } from '../domain/board-title';
 import type { BoardStore } from '../domain/store';
+import type { LocalePreference } from '../i18n/messages';
 import { reactionIdentity } from '../adapters/storage/web-storage';
 import { BoardCanvas } from '../components/board/BoardCanvas';
 import type { BoardTool } from '../components/board/kinds';
@@ -35,7 +39,27 @@ import { useNoteEditing } from './notes/useNoteEditing';
 import { useMinimap } from './view/useMinimap';
 import { Minimap } from '../components/minimap/Minimap';
 
-export function App({ store, newId }: { store: BoardStore; newId(): string }) {
+interface Props {
+  store: BoardStore;
+  newId(): string;
+}
+
+/** The board in the chosen language; everything below reads it through `useT`. */
+export function App(props: Props) {
+  const language = useLanguage();
+  return (
+    <I18nProvider locale={language.locale}>
+      <Workspace {...props} language={language.preference} onLanguage={language.choose} />
+    </I18nProvider>
+  );
+}
+
+function Workspace({
+  store,
+  newId,
+  language,
+  onLanguage,
+}: Props & { language: LocalePreference; onLanguage(language: LocalePreference): void }) {
   // --- Board, history and view ---
   const { session, edit, editWith, undo, redo } = useBoardSession(store);
   const { board } = session;
@@ -64,7 +88,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const { activeIds } = notes;
 
   // --- Panels and messages ---
-  const [dialog, setDialog] = useState<'bulk' | 'help' | null>(null);
+  const [dialog, setDialog] = useState<'bulk' | 'help' | 'settings' | null>(null);
   const closeDialog = useCallback(() => setDialog(null), []);
   const search = useBoardSearch(board);
   const [status, setStatus] = useStatus();
@@ -203,6 +227,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
             onRedo={redo}
             onOpen={onOpen}
             onSave={save}
+            onSettings={() => setDialog('settings')}
           />
           <main className="workspace">
             <CreationToolbar
@@ -333,6 +358,9 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
             />
           )}
           {dialog === 'help' && <HelpDialog onClose={closeDialog} />}
+          {dialog === 'settings' && (
+            <SettingsDialog language={language} onLanguage={onLanguage} onClose={closeDialog} />
+          )}
         </div>
       </FitProvider>
     </DraftProvider>

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { BoardTitle } from './BoardTitle';
 import { Icon } from './Icon';
+import { useT } from '../common/i18n';
 
 interface Props {
   title: string;
@@ -13,11 +14,13 @@ interface Props {
   onRedo(): void;
   onOpen(file: File): void;
   onSave(): void;
+  onSettings(): void;
 }
 
 /** Board-wide actions stay at the top; creation tools live in the left rail. */
 export function Toolbar(props: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const t = useT();
   return (
     <header className="toolbar">
       <div className="brand">
@@ -29,15 +32,15 @@ export function Toolbar(props: Props) {
         </div>
         <BoardTitle title={props.title} onRename={props.onRename} onSave={props.onSave} />
       </div>
-      <div className="actions" role="group" aria-label="보드 작업">
-        <div className="action-group" role="group" aria-label="편집 기록">
+      <div className="actions" role="group" aria-label={t('toolbar.boardActions')}>
+        <div className="action-group" role="group" aria-label={t('toolbar.history')}>
           <button
             className="icon-button"
             type="button"
             disabled={!props.canUndo}
             onClick={props.onUndo}
-            title="실행 취소 (Ctrl/Cmd+Z)"
-            aria-label="실행 취소"
+            title={t('toolbar.undoHint')}
+            aria-label={t('toolbar.undo')}
           >
             <Icon name="undo" />
           </button>
@@ -46,35 +49,48 @@ export function Toolbar(props: Props) {
             type="button"
             disabled={!props.canRedo}
             onClick={props.onRedo}
-            title="다시 실행 (Ctrl/Cmd+Shift+Z)"
-            aria-label="다시 실행"
+            title={t('toolbar.redoHint')}
+            aria-label={t('toolbar.redo')}
           >
             <Icon name="redo" />
           </button>
         </div>
         <span className="toolbar-divider" aria-hidden="true" />
-        <div className="action-group" role="group" aria-label="검색 및 파일">
+        <div className="action-group" role="group" aria-label={t('toolbar.searchAndFiles')}>
           <button
             type="button"
             className="icon-button"
-            aria-label="메모 검색"
-            title="메모 검색 (Ctrl/Cmd+F)"
+            aria-label={t('toolbar.search')}
+            title={t('toolbar.searchHint')}
             onClick={props.onSearch}
           >
             <Icon name="search" />
           </button>
-          <button type="button" title="보드 파일 열기" onClick={() => fileInput.current?.click()}>
+          <button
+            type="button"
+            title={t('toolbar.openHint')}
+            onClick={() => fileInput.current?.click()}
+          >
             <Icon name="open" />
-            열기
+            {t('toolbar.open')}
           </button>
           <button
             className="save-button"
             type="button"
-            title="보드 파일로 저장"
+            title={t('toolbar.saveHint')}
             onClick={props.onSave}
           >
             <Icon name="save" />
-            저장
+            {t('toolbar.save')}
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t('toolbar.settings')}
+            title={t('toolbar.settings')}
+            onClick={props.onSettings}
+          >
+            <Icon name="settings" />
           </button>
         </div>
         <input

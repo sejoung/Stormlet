@@ -10,12 +10,13 @@ import { COLOR_STYLES } from '../board/kinds';
 import { LINE_COLORS } from '../connections/colors';
 import type { CreationDefaults } from '../../domain/creation-defaults';
 import { Icon } from './Icon';
+import { useT } from '../common/i18n';
 
 const LINE_PRESETS = [
-  { label: '선', icon: 'line', path: 'straight', endArrow: false },
-  { label: '화살표', icon: 'arrow', path: 'straight', endArrow: true },
-  { label: '꺾인 화살표', icon: 'connect', path: 'elbow', endArrow: true },
-  { label: '곡선 화살표', icon: 'curve', path: 'curve', endArrow: true },
+  { label: 'creation.presetLine', icon: 'line', path: 'straight', endArrow: false },
+  { label: 'creation.presetArrow', icon: 'arrow', path: 'straight', endArrow: true },
+  { label: 'creation.presetElbow', icon: 'connect', path: 'elbow', endArrow: true },
+  { label: 'creation.presetCurve', icon: 'curve', path: 'curve', endArrow: true },
 ] as const;
 /** The colour grid has two columns, so Up/Down move a whole row. */
 const COLOR_GRID_COLUMNS = 2;
@@ -34,6 +35,7 @@ export function CreationFlyout({
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   onClose(): void;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     (
@@ -51,14 +53,14 @@ export function CreationFlyout({
       className={`creation-flyout flyout-${kind}`}
       role="dialog"
       aria-modal="false"
-      aria-label={kind === 'sticky' ? '포스트잇 기본 설정' : '연결선 기본 설정'}
+      aria-label={t(kind === 'sticky' ? 'creation.stickyDefaults' : 'creation.connectDefaults')}
     >
       <header>
-        <h2>{kind === 'sticky' ? '포스트잇' : '연결선'}</h2>
+        <h2>{t(kind === 'sticky' ? 'creation.stickyHeading' : 'creation.connectHeading')}</h2>
         <button
           type="button"
           className="close-button"
-          aria-label="기본 설정 닫기"
+          aria-label={t('creation.closeDefaults')}
           onClick={onClose}
         >
           <Icon name="close" />
@@ -66,26 +68,26 @@ export function CreationFlyout({
       </header>
       {kind === 'sticky' ? (
         <>
-          <div className="default-color-grid" role="group" aria-label="새 포스트잇 기본 색상">
+          <div className="default-color-grid" role="group" aria-label={t('creation.stickyColors')}>
             {STICKY_COLORS.map((color) => (
               <button
                 key={color}
                 type="button"
                 data-default-choice
                 onKeyDown={navigate}
-                aria-label={`${COLOR_STYLES[color].label} 기본 색상`}
-                title={COLOR_STYLES[color].label}
+                aria-label={t('creation.stickyColor', { color: t(COLOR_STYLES[color].label) })}
+                title={t(COLOR_STYLES[color].label)}
                 aria-pressed={defaults.stickyColor === color}
                 style={{ background: COLOR_STYLES[color].paper }}
                 onClick={() => onStickyColor(color)}
               />
             ))}
           </div>
-          <p className="creation-flyout-hint">색을 고른 뒤 보드를 클릭해 붙이세요.</p>
+          <p className="creation-flyout-hint">{t('creation.stickyFlyoutHint')}</p>
         </>
       ) : (
         <>
-          <div className="default-line-presets" role="group" aria-label="새 연결선 기본 종류">
+          <div className="default-line-presets" role="group" aria-label={t('creation.linePresets')}>
             {LINE_PRESETS.map((preset) => (
               <button
                 key={preset.label}
@@ -105,20 +107,22 @@ export function CreationFlyout({
                 }
               >
                 <Icon name={preset.icon} />
-                <span>{preset.label}</span>
+                <span>{t(preset.label)}</span>
                 {defaults.connection.path === preset.path &&
-                  defaults.connection.endArrow === preset.endArrow && <small>기본</small>}
+                  defaults.connection.endArrow === preset.endArrow && (
+                    <small>{t('creation.default')}</small>
+                  )}
               </button>
             ))}
           </div>
           <div className="creation-flyout-divider" />
-          <span className="creation-flyout-caption">기본 선 색상</span>
-          <div className="default-line-colors" role="group" aria-label="새 연결선 기본 색상">
+          <span className="creation-flyout-caption">{t('creation.lineColorCaption')}</span>
+          <div className="default-line-colors" role="group" aria-label={t('creation.lineColors')}>
             {CONNECTION_COLORS.map((color) => (
               <button
                 key={color}
                 type="button"
-                aria-label={`${LINE_COLORS[color].label} 기본 연결선`}
+                aria-label={t('creation.lineColor', { color: t(LINE_COLORS[color].label) })}
                 aria-pressed={defaults.connection.color === color}
                 style={{ background: LINE_COLORS[color].color }}
                 onClick={() => onConnectionStyle({ color })}
@@ -127,9 +131,9 @@ export function CreationFlyout({
           </div>
           <div className="default-line-options">
             <label>
-              두께
+              {t('creation.width')}
               <select
-                aria-label="기본 연결선 두께"
+                aria-label={t('creation.widthField')}
                 value={defaults.connection.width}
                 onChange={(event) => onConnectionStyle({ width: Number(event.target.value) })}
               >
@@ -146,10 +150,10 @@ export function CreationFlyout({
                 checked={defaults.connection.dashed}
                 onChange={(event) => onConnectionStyle({ dashed: event.target.checked })}
               />
-              점선
+              {t('creation.dashed')}
             </label>
           </div>
-          <p className="creation-flyout-hint">포스트잇·프레임을 차례로 클릭하세요.</p>
+          <p className="creation-flyout-hint">{t('creation.connectFlyoutHint')}</p>
         </>
       )}
     </div>

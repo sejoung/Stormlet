@@ -22,6 +22,8 @@ import {
 import type { Point } from '../engine/viewport';
 import { isTyping } from '../components/common/keyboard';
 import { useLatest } from '../components/common/useStableCallback';
+import { useT } from '../components/common/i18n';
+import type { Translate } from '../i18n/messages';
 
 const STORMLET_TYPE = 'application/x-stormlet';
 
@@ -64,9 +66,9 @@ function selectionPayload({ board, ids, frameId }: Options): ClipboardContent {
   return { structured: serializeBoard(slice), plain: text || title };
 }
 
-function announce({ ids, frameId, onStatus }: Options, cut: boolean) {
-  const verb = cut ? '잘랐습니다' : '복사했습니다';
-  onStatus(frameId ? `프레임을 ${verb}.` : `${ids.length}개의 포스트잇을 ${verb}.`);
+function announce({ ids, frameId, onStatus }: Options, cut: boolean, t: Translate) {
+  if (frameId) onStatus(t(cut ? 'clipboard.cutFrame' : 'clipboard.copiedFrame'));
+  else onStatus(t(cut ? 'clipboard.cutNotes' : 'clipboard.copiedNotes', { count: ids.length }));
 }
 
 const tooLarge = (board: Board) =>
@@ -78,6 +80,7 @@ function accept(
   options: Options,
   content: ClipboardContent,
   last: ClipboardContent | null,
+  t: Translate,
   at?: Point,
 ) {
   if (!content.structured && !content.plain) return;
@@ -92,18 +95,23 @@ function accept(
     options.onText(textCells(content.plain), at);
     if (exceedsPasteLimits(content.plain))
       options.onStatus(
-        `붙여넣기는 최대 ${MAX_PASTE_ROWS}행 × ${MAX_PASTE_COLUMNS}열, 메모당 ${MAX_NOTE_LENGTH.toLocaleString()}자까지 반영됩니다.`,
+        t('clipboard.pasteLimits', {
+          rows: MAX_PASTE_ROWS,
+          columns: MAX_PASTE_COLUMNS,
+          length: MAX_NOTE_LENGTH.toLocaleString(),
+        }),
       );
   } catch {
-    options.onStatus('포스트잇을 붙여넣을 수 없습니다. 파일 형식을 확인해 주세요.');
+    options.onStatus(t('clipboard.pasteFailed'));
   }
 }
 
 /**
  * Native editing uses clipboard events; menu actions use the browser's clipboard API.
- * The listeners are registered once and read the latest options through a ref.
+ * The listeners are registered once per language and read the latest options through a ref.
  */
 export function useClipboard(options: Options): Clipboard {
+  const t = useT();
   const latest = useLatest(options);
   const cached = useRef<ClipboardContent | null>(null);
 
@@ -119,7 +127,7 @@ export function useClipboard(options: Options): Clipboard {
       event.clipboardData.setData('text/plain', content.plain);
       event.preventDefault();
       if (cut) current.onCut();
-      announce(current, cut);
+      announce(current, cut, t);
     };
     const onPaste = (event: ClipboardEvent) => {
       if (isTyping(event.target) || !event.clipboardData) return;
@@ -129,7 +137,7 @@ export function useClipboard(options: Options): Clipboard {
       };
       if (!content.structured && !content.plain) return;
       event.preventDefault();
-      accept(latest.current, content, cached.current);
+      accept(latest.current, content, cached.current, t);
     };
     document.addEventListener('copy', onCopy);
     document.addEventListener('cut', onCopy);
@@ -139,7 +147,7 @@ export function useClipboard(options: Options): Clipboard {
       document.removeEventListener('cut', onCopy);
       document.removeEventListener('paste', onPaste);
     };
-  }, [latest]);
+  }, [latest, t]);
 
   return {
     copy: async (cut = false) => {
@@ -149,16 +157,16 @@ export function useClipboard(options: Options): Clipboard {
         await writeClipboard(content);
         cached.current = content;
         if (cut) options.onCut();
-        announce(options, cut);
+        announce(options, cut, t);
       } catch {
-        options.onStatus('클립보드에 접근할 수 없습니다. Ctrl/Cmd+C 또는 X를 사용하세요.');
+        options.onStatus(t('clipboard.copyUnavailable'));
       }
     },
     paste: async (at) => {
       try {
-        accept(options, await readClipboard(), cached.current, at);
+        accept(options, await readClipboard(), cached.current, t, at);
       } catch {
-        options.onStatus('클립보드에 접근할 수 없습니다. Ctrl/Cmd+V를 사용하세요.');
+        options.onStatus(t('clipboard.pasteUnavailable'));
       }
     },
   };

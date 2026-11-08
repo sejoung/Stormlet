@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { MAX_NOTE_LENGTH } from '../../domain/note-details';
 import { MAX_PASTE_NOTES } from '../../engine/paste';
 import { Modal } from './Modal';
+import { useT } from '../common/i18n';
 
 export function BulkDialog({ onClose, onAdd }: { onClose(): void; onAdd(texts: string[]): void }) {
+  const t = useT();
   const [text, setText] = useState('');
   const lines = text
     .split(/\r?\n/)
@@ -12,16 +14,16 @@ export function BulkDialog({ onClose, onAdd }: { onClose(): void; onAdd(texts: s
   const invalid =
     lines.length > MAX_PASTE_NOTES || lines.some((line) => line.length > MAX_NOTE_LENGTH);
   return (
-    <Modal title="포스트잇 여러 개 추가" onClose={onClose}>
-      <p className="modal-description">한 줄당 포스트잇 하나가 추가됩니다.</p>
+    <Modal title={t('bulk.title')} onClose={onClose}>
+      <p className="modal-description">{t('bulk.description')}</p>
       <label className="sr-only" htmlFor="bulk-notes">
-        포스트잇 여러 개 입력
+        {t('bulk.inputLabel')}
       </label>
       <textarea
         id="bulk-notes"
         className="bulk-input"
         value={text}
-        placeholder={'첫 번째 메모\n두 번째 메모\n세 번째 메모'}
+        placeholder={t('bulk.placeholder')}
         onChange={(event) => setText(event.target.value)}
       />
       <div className="bulk-preview" aria-hidden="true">
@@ -32,11 +34,14 @@ export function BulkDialog({ onClose, onAdd }: { onClose(): void; onAdd(texts: s
       <footer>
         <span role="status">
           {invalid
-            ? `최대 ${MAX_PASTE_NOTES.toLocaleString()}개 · 포스트잇당 ${MAX_NOTE_LENGTH.toLocaleString()}자`
-            : `포스트잇 ${lines.length}개`}
+            ? t('bulk.limit', {
+                max: MAX_PASTE_NOTES.toLocaleString(),
+                length: MAX_NOTE_LENGTH.toLocaleString(),
+              })
+            : t('bulk.count', { count: lines.length })}
         </span>
         <button type="button" onClick={onClose}>
-          취소
+          {t('bulk.cancel')}
         </button>
         <button
           type="button"
@@ -47,7 +52,7 @@ export function BulkDialog({ onClose, onAdd }: { onClose(): void; onAdd(texts: s
             onClose();
           }}
         >
-          보드에 붙이기
+          {t('bulk.add')}
         </button>
       </footer>
     </Modal>

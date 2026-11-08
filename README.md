@@ -49,6 +49,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 - Autosave in the browser, synced across tabs of the same browser
 - Rename the board by double-clicking its title; the title becomes the download filename
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
+- English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 
 Reactions use a stable local identifier, so no profile is shown.
 
@@ -119,6 +120,7 @@ The test server starts on port 4173 and stops when the tests finish. The HTML re
 | `src/adapters`    | `.stormlet` file format, localStorage store, clipboard, file download       |
 | `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                |
 | `src/app`         | Composition, session hooks, shortcuts                                       |
+| `src/i18n`        | Message catalogs per language and the translate function                    |
 
 Dependencies point inward, from `app` towards `domain`. The rules are enforced by tests in `tests/architecture`, and lint keeps every file under 400 lines and every folder at 10 files or fewer.
 
@@ -127,6 +129,10 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 ### File format
 
 `.stormlet` files are JSON with a `format` and `version` field. The current version is 8 and stores the title, notes, connections, frames and their styles. Files from versions 1–7 can still be opened.
+
+### Translations
+
+UI text lives in one file per language under [`src/i18n/locales`](src/i18n/locales); code refers to it by key, such as `t('toolbar.undo')`. `en.ts` defines every key and is the fallback. To add a language, copy `en.ts` to `<code>.ts`, translate the values (keep `{placeholders}`), and list the language in `LOCALES` and the catalog map in [`src/i18n/messages.ts`](src/i18n/messages.ts). Type checking and tests catch missing keys or placeholders. Generated board and frame titles stay English in every language ([ADR 0008](docs/adr/0008-i18n.md)).
 
 ## Roadmap
 

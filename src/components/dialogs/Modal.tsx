@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../toolbar/Icon';
+import { useT } from '../common/i18n';
 
 export function Modal({
   title,
@@ -11,6 +12,7 @@ export function Modal({
   onClose(): void;
   children: ReactNode;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -51,7 +53,12 @@ export function Modal({
       <div ref={ref} className="board-modal" role="dialog" aria-modal="true" aria-label={title}>
         <header>
           <h2>{title}</h2>
-          <button type="button" className="close-button" aria-label="닫기" onClick={onClose}>
+          <button
+            type="button"
+            className="close-button"
+            aria-label={t('modal.close')}
+            onClick={onClose}
+          >
             <Icon name="close" />
           </button>
         </header>

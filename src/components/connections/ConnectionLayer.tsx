@@ -7,6 +7,7 @@ import { LINE_COLORS } from './colors';
 import { cx } from '../common/cx';
 import { connectionGeometry } from '../../engine/connections/geometry';
 import type { ConnectionInteraction } from './types';
+import { useT } from '../common/i18n';
 
 /** Lines drawn with the in-progress draft standing in for the line it is rewiring. */
 const withDraft = (board: Board, draft: Connection | null) => {
@@ -31,6 +32,7 @@ export function ConnectionEndpoints({
   onReconnect(event: PointerEvent, id: string, end: 'from' | 'to'): void;
   onKeyboardReconnect(id: string, end: 'from' | 'to'): void;
 }) {
+  const t = useT();
   const selected =
     draft && draft.id === selectedId
       ? draft
@@ -39,7 +41,7 @@ export function ConnectionEndpoints({
         : undefined;
   const geometry = selected && !selected.locked ? connectionGeometry(board, selected) : null;
   return (
-    <svg className="connection-layer connection-overlay" aria-label="연결선 끝점">
+    <svg className="connection-layer connection-overlay" aria-label={t('connection.endpoints')}>
       {selected &&
         geometry &&
         (['from', 'to'] as const).map((end) => (
@@ -49,7 +51,7 @@ export function ConnectionEndpoints({
             data-connection-id={selected.id}
             role="button"
             tabIndex={0}
-            aria-label={`연결선 ${end === 'from' ? '시작점' : '끝점'} 이동`}
+            aria-label={t(end === 'from' ? 'connection.moveStart' : 'connection.moveEnd')}
             cx={geometry[end].x}
             cy={geometry[end].y}
             r={6 / zoom}
@@ -79,10 +81,11 @@ export function ConnectionLayer({
   draft: Connection | null;
   links: Pick<ConnectionInteraction, 'selectedId' | 'onSelect' | 'onEditLabel'>;
 }) {
+  const t = useT();
   const prefix = useId().replace(/:/g, '');
   const lines = withDraft(board, draft);
   return (
-    <svg className="connection-layer" aria-label="흐름 연결선">
+    <svg className="connection-layer" aria-label={t('connection.layer')}>
       <defs>
         {CONNECTION_COLORS.map((color) => (
           <marker
@@ -108,7 +111,16 @@ export function ConnectionLayer({
         if (preview && sameAttachment(line.from, line.to)) return null;
         const label =
           line.label ||
-          `${endpointLabel(board, line.from, '자유 시작점')} → ${endpointLabel(board, line.to, '자유 끝점')}`;
+          t('connection.route', {
+            from: endpointLabel(board, line.from, {
+              free: t('connection.freeStart'),
+              emptyNote: t('connection.emptyNote'),
+            }),
+            to: endpointLabel(board, line.to, {
+              free: t('connection.freeEnd'),
+              emptyNote: t('connection.emptyNote'),
+            }),
+          });
         return (
           <g
             key={line.id}
@@ -120,7 +132,7 @@ export function ConnectionLayer({
             role="button"
             aria-hidden={preview}
             tabIndex={preview ? -1 : 0}
-            aria-label={`연결선: ${label}`}
+            aria-label={t('connection.lineLabel', { label })}
             aria-pressed={line.id === links.selectedId}
             data-connection-id={line.id}
             onFocus={() => {

@@ -4,6 +4,7 @@ import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-
 import { downloadText, readFileText } from '../adapters/files/download';
 import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
 import type { Edit } from './useBoardSession';
+import { useT } from '../components/common/i18n';
 
 /** A file's name without the board extension, as a title for boards saved without one. */
 const titleFromFileName = (name: string) =>
@@ -24,6 +25,7 @@ export function useBoardFiles({
   reset(): void;
   onStatus(message: string): void;
 }) {
+  const t = useT();
   return {
     save: () => {
       flushEditor();
@@ -39,9 +41,9 @@ export function useBoardFiles({
         const title = opened.title ?? titleFromFileName(file.name);
         edit((current) => diffBoards(current, { ...opened, title }));
         reset();
-        onStatus(`${file.name}을(를) 열었습니다.`);
+        onStatus(t('files.opened', { name: file.name }));
       } catch (error) {
-        onStatus(`열 수 없는 파일입니다: ${(error as Error).message}`);
+        onStatus(t('files.openFailed', { reason: (error as Error).message }));
       }
     },
   };

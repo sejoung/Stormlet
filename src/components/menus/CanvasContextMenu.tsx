@@ -1,5 +1,6 @@
 import type { Point } from '../../engine/viewport';
 import { ContextMenu } from './ContextMenu';
+import { useT } from '../common/i18n';
 
 export type MenuAction =
   | { label: string; run(): void; disabled?: boolean; shortcut?: string; destructive?: boolean }
@@ -28,8 +29,9 @@ export function CanvasContextMenu({
   actions: MenuAction[];
   onClose(): void;
 }) {
+  const t = useT();
   return (
-    <ContextMenu point={point} label="캔버스 메뉴" onClose={onClose}>
+    <ContextMenu point={point} label={t('canvasMenu.label')} onClose={onClose}>
       {actions.map((action, index) =>
         'separator' in action ? (
           <div key={index} className="context-separator" role="separator" />

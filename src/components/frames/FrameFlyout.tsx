@@ -1,22 +1,29 @@
 import type { FrameInteraction } from './types';
 import { Icon } from '../toolbar/Icon';
 import { DEFAULT_FRAME_SIZE } from '../../domain/frames/model';
+import { useT } from '../common/i18n';
+import type { MessageKey } from '../../i18n/messages';
 
-const PRESETS = [
-  { label: '자유 크기', ...DEFAULT_FRAME_SIZE },
-  { label: '가로 레인', width: 1200, height: 280 },
-  { label: '세로 레인', width: 320, height: 1000 },
+const PRESETS: readonly { label: MessageKey; width: number; height: number }[] = [
+  { label: 'frame.presetFree', ...DEFAULT_FRAME_SIZE },
+  { label: 'frame.presetWide', width: 1200, height: 280 },
+  { label: 'frame.presetTall', width: 320, height: 1000 },
 ];
 
 export function FrameFlyout({ frames, onClose }: { frames: FrameInteraction; onClose(): void }) {
+  const t = useT();
   return (
-    <section className="creation-flyout flyout-frame" role="dialog" aria-label="프레임 기본 설정">
+    <section
+      className="creation-flyout flyout-frame"
+      role="dialog"
+      aria-label={t('frame.defaults')}
+    >
       <header>
-        <h2>프레임</h2>
+        <h2>{t('frame.heading')}</h2>
         <button
           type="button"
           className="close-button"
-          aria-label="기본 설정 닫기"
+          aria-label={t('creation.closeDefaults')}
           onClick={onClose}
         >
           <Icon name="close" />
@@ -35,11 +42,11 @@ export function FrameFlyout({ frames, onClose }: { frames: FrameInteraction; onC
             <span
               className={`frame-preset-shape ${preset.width > preset.height * 2 ? 'is-wide' : preset.height > preset.width ? 'is-tall' : ''}`}
             />
-            {preset.label}
+            {t(preset.label)}
           </button>
         ))}
       </div>
-      <p className="creation-flyout-hint">드래그로 영역 지정 · 클릭으로 기본 크기 추가</p>
+      <p className="creation-flyout-hint">{t('frame.flyoutHint')}</p>
     </section>
   );
 }

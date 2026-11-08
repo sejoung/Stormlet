@@ -1,7 +1,8 @@
 import type { Board } from './model';
 import type { Patch } from './patch';
 
-export const DEFAULT_BOARD_TITLE = '나의 아이디어 보드';
+/** Generated titles are data, so they are English in every language for consistency. */
+export const DEFAULT_BOARD_TITLE = 'My idea board';
 export const MAX_BOARD_TITLE_LENGTH = 80;
 
 export const normalizeBoardTitle = (value: string): string =>

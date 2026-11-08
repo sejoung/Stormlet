@@ -7,6 +7,8 @@ import {
   type StickySize,
 } from '../../domain/sticky-size';
 import type { Point } from '../../engine/viewport';
+import { useT } from '../common/i18n';
+import type { MessageKey } from '../../i18n/messages';
 
 interface Props {
   point: Point;
@@ -23,14 +25,15 @@ interface Props {
   onLock(): void;
 }
 
-const PRESETS = [
-  { label: '작게', width: 160, height: 160 },
-  { label: '보통', width: 240, height: 240 },
-  { label: '크게', width: 320, height: 320 },
+const PRESETS: { label: MessageKey; width: number; height: number }[] = [
+  { label: 'noteMenu.sizeSmall', width: 160, height: 160 },
+  { label: 'noteMenu.sizeMedium', width: 240, height: 240 },
+  { label: 'noteMenu.sizeLarge', width: 320, height: 320 },
 ];
 
 /** Render outside the transformed board, so zoom and clipping cannot affect the menu. */
 export function StickyContextMenu(props: Props) {
+  const t = useT();
   const [width, setWidth] = useState(String(props.size.width));
   const [height, setHeight] = useState(String(props.size.height));
   const { onClose } = props;
@@ -39,9 +42,9 @@ export function StickyContextMenu(props: Props) {
     onClose();
   };
   return (
-    <ContextMenu point={props.point} label="포스트잇 메뉴" onClose={onClose}>
+    <ContextMenu point={props.point} label={t('noteMenu.label')} onClose={onClose}>
       <span className="context-caption">
-        {props.count > 1 ? `포스트잇 ${props.count}개` : '포스트잇'}
+        {props.count > 1 ? t('noteMenu.count', { count: props.count }) : t('noteMenu.single')}
       </span>
       <button
         type="button"
@@ -49,7 +52,7 @@ export function StickyContextMenu(props: Props) {
         disabled={props.locked}
         onClick={() => run(props.onFront)}
       >
-        맨 앞으로
+        {t('noteMenu.front')}
       </button>
       <button
         type="button"
@@ -57,21 +60,25 @@ export function StickyContextMenu(props: Props) {
         disabled={props.locked}
         onClick={() => run(props.onBack)}
       >
-        맨 뒤로
+        {t('noteMenu.back')}
       </button>
       <div className="context-separator" role="separator" />
-      <span className="context-caption">크기</span>
+      <span className="context-caption">{t('noteMenu.size')}</span>
       <div className="size-presets">
         {PRESETS.map((size) => (
           <button
             key={size.label}
             type="button"
             role="menuitem"
-            aria-label={`${size.label} ${size.width} × ${size.height}`}
+            aria-label={t('noteMenu.preset', {
+              size: t(size.label),
+              width: size.width,
+              height: size.height,
+            })}
             disabled={props.locked}
             onClick={() => run(() => props.onResize(size))}
           >
-            {size.label}
+            {t(size.label)}
             <span>
               {size.width} × {size.height}
             </span>
@@ -87,9 +94,9 @@ export function StickyContextMenu(props: Props) {
         }}
       >
         <label>
-          너비
+          {t('noteMenu.width')}
           <input
-            aria-label="포스트잇 너비"
+            aria-label={t('noteMenu.widthField')}
             type="number"
             value={width}
             min={MIN_STICKY_SIZE.width}
@@ -101,9 +108,9 @@ export function StickyContextMenu(props: Props) {
         </label>
         <span aria-hidden="true">×</span>
         <label>
-          높이
+          {t('noteMenu.height')}
           <input
-            aria-label="포스트잇 높이"
+            aria-label={t('noteMenu.heightField')}
             type="number"
             value={height}
             min={MIN_STICKY_SIZE.height}
@@ -114,7 +121,7 @@ export function StickyContextMenu(props: Props) {
           />
         </label>
         <button type="submit" role="menuitem" disabled={props.locked}>
-          적용
+          {t('noteMenu.apply')}
         </button>
       </form>
       <div className="context-separator" role="separator" />
@@ -125,14 +132,14 @@ export function StickyContextMenu(props: Props) {
           disabled={props.locked}
           onClick={() => run(props.onEdit)}
         >
-          내용 편집
+          {t('noteMenu.edit')}
         </button>
       )}
       <button type="button" role="menuitem" onClick={() => run(props.onDuplicate)}>
-        복제 <span>⌘ / Ctrl+D</span>
+        {t('noteMenu.duplicate')} <span>⌘ / Ctrl+D</span>
       </button>
       <button type="button" role="menuitem" onClick={() => run(props.onLock)}>
-        {props.locked ? '잠금 해제' : '잠금'} <span>⌘ / Ctrl+Shift+L</span>
+        {props.locked ? t('noteMenu.unlock') : t('noteMenu.lock')} <span>⌘ / Ctrl+Shift+L</span>
       </button>
       <button
         type="button"
@@ -141,7 +148,7 @@ export function StickyContextMenu(props: Props) {
         disabled={props.locked}
         onClick={() => run(props.onDelete)}
       >
-        삭제
+        {t('noteMenu.delete')}
       </button>
     </ContextMenu>
   );

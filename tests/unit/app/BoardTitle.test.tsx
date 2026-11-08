@@ -20,7 +20,7 @@ describe('board name editing', () => {
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);
     boardBounds();
-    const title = screen.getByRole('button', { name: '보드 이름: 나의 아이디어 보드' });
+    const title = screen.getByRole('button', { name: '보드 이름: My idea board' });
     await user.click(title);
     expect(screen.queryByRole('textbox', { name: '보드 이름' })).not.toBeInTheDocument();
     await user.dblClick(title);
@@ -39,9 +39,7 @@ describe('board name editing', () => {
     expect(store.board.title).toBe('회고/기획: 1차');
     await user.keyboard('{Control>}z{/Control}{Control>}z{/Control}{Control>}z{/Control}');
     expect(store.board.title).toBeUndefined();
-    expect(
-      screen.getByRole('button', { name: '보드 이름: 나의 아이디어 보드' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '보드 이름: My idea board' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '다시 실행' }));
     expect(store.board.title).toBe('회고/기획: 1차');
   });
@@ -72,7 +70,7 @@ describe('board name editing', () => {
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);
     boardBounds();
-    await user.dblClick(screen.getByRole('button', { name: '보드 이름: 나의 아이디어 보드' }));
+    await user.dblClick(screen.getByRole('button', { name: '보드 이름: My idea board' }));
     const input = screen.getByRole('textbox', { name: '보드 이름' });
     await user.clear(input);
     await user.type(input, '저장할 이름');
@@ -82,7 +80,7 @@ describe('board name editing', () => {
     await user.dblClick(screen.getByRole('button', { name: '보드 이름: 저장할 이름' }));
     await user.clear(screen.getByRole('textbox', { name: '보드 이름' }));
     await user.keyboard('{Enter}');
-    expect(store.board.title).toBe('나의 아이디어 보드');
+    expect(store.board.title).toBe('My idea board');
   });
 
   it('restores embedded titles and uses the filename when importing an older untitled board', async () => {

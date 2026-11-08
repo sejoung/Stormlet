@@ -1,11 +1,12 @@
 import type { PointerEvent } from 'react';
 import type { ConnectionSide } from '../../domain/connections/model';
+import { useT } from '../common/i18n';
 
 const PORTS = [
-  ['top', '위'],
-  ['right', '오른쪽'],
-  ['bottom', '아래'],
-  ['left', '왼쪽'],
+  ['top', 'connection.portTop'],
+  ['right', 'connection.portRight'],
+  ['bottom', 'connection.portBottom'],
+  ['left', 'connection.portLeft'],
 ] as const;
 
 export function ConnectionPorts({
@@ -15,6 +16,7 @@ export function ConnectionPorts({
   onStart(event: PointerEvent, side: ConnectionSide): void;
   onKeyboardStart(side: ConnectionSide): void;
 }) {
+  const t = useT();
   return (
     <>
       {PORTS.map(([side, label]) => (
@@ -22,8 +24,8 @@ export function ConnectionPorts({
           key={side}
           type="button"
           className={`connection-port port-${side}`}
-          aria-label={`${label} 연결점`}
-          title="드래그하거나 클릭한 뒤 다른 오브젝트를 눌러 연결"
+          aria-label={t(label)}
+          title={t('connection.portHint')}
           onPointerDown={(event) => onStart(event, side)}
           onDoubleClick={(event) => event.stopPropagation()}
           onClick={(event) => {

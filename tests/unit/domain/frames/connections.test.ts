@@ -43,8 +43,9 @@ describe('connections attached to frames', () => {
       endpointAnchor(linked, { frameId: 'f', side: 'right' }, { x: 1000, y: 200 }),
     ).toMatchObject({ x: 646, y: 200 });
     expect(endpointCenter(linked, { frameId: 'gone', side: 'auto' })).toBeNull();
-    expect(endpointLabel(linked, { frameId: 'f', side: 'auto' }, '')).toBe('프레임 1');
-    expect(endpointLabel(linked, { frameId: 'missing', side: 'auto' }, '')).toBe('프레임');
+    const names = { free: '', emptyNote: '빈 메모' };
+    expect(endpointLabel(linked, { frameId: 'f', side: 'auto' }, names)).toBe('프레임 1');
+    expect(endpointLabel(linked, { frameId: 'missing', side: 'auto' }, names)).toBe('Frame');
     expect(
       addConnection(source, 'bad', { frameId: 'f', side: 'right' }, { frameId: 'f', side: 'left' }),
     ).toEqual([]);

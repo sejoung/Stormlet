@@ -14,6 +14,8 @@ import type { Arrangement } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
 import { Icon } from '../toolbar/Icon';
+import { useT } from '../common/i18n';
+import type { MessageKey } from '../../i18n/messages';
 
 interface Props {
   notes: readonly Sticky[];
@@ -58,19 +60,23 @@ function Tool({
   );
 }
 
-const ARRANGEMENTS: [Arrangement, string][] = [
-  ['left', '왼쪽 맞춤'],
-  ['center', '가로 가운데 맞춤'],
-  ['right', '오른쪽 맞춤'],
-  ['top', '위쪽 맞춤'],
-  ['middle', '세로 가운데 맞춤'],
-  ['bottom', '아래쪽 맞춤'],
-  ['horizontal', '가로 간격 맞춤'],
-  ['vertical', '세로 간격 맞춤'],
-  ['grid', '격자로 정리'],
+const ARRANGEMENTS: [Arrangement, MessageKey][] = [
+  ['left', 'selection.arrangeLeft'],
+  ['center', 'selection.arrangeCenter'],
+  ['right', 'selection.arrangeRight'],
+  ['top', 'selection.arrangeTop'],
+  ['middle', 'selection.arrangeMiddle'],
+  ['bottom', 'selection.arrangeBottom'],
+  ['horizontal', 'selection.arrangeHorizontal'],
+  ['vertical', 'selection.arrangeVertical'],
+  ['grid', 'selection.arrangeGrid'],
 ];
 
-const ALIGN_LABELS: Record<TextAlign, string> = { left: '왼쪽', center: '가운데', right: '오른쪽' };
+const ALIGN_LABELS: Record<TextAlign, MessageKey> = {
+  left: 'selection.alignLeft',
+  center: 'selection.alignCenter',
+  right: 'selection.alignRight',
+};
 const FONT_SIZES = [8, 10, 12, 14, 16, 18, 24, 32, 48, 64];
 /** Rectangle notes keep their width and take this share of it as height. */
 const RECTANGLE_RATIO = 0.75;
@@ -79,6 +85,7 @@ const PANEL = { width: 660, height: 300, margin: 12, above: 60, below: 16, minTo
 
 /** Screen-space controls stay readable at every board zoom level. */
 export function SelectionToolbar(props: Props) {
+  const t = useT();
   const [panel, setPanel] = useState<'color' | 'align' | 'emoji' | null>(null);
   const note = props.notes[0];
   const locked = props.notes.some((s) => s.locked);
@@ -115,7 +122,7 @@ export function SelectionToolbar(props: Props) {
       <div
         className="selection-toolbar"
         role="toolbar"
-        aria-label="포스트잇 편집 도구"
+        aria-label={t('selection.toolbar')}
         onKeyDown={(event) => {
           if (event.target instanceof HTMLButtonElement)
             moveFocus(event, event.currentTarget, 'button:not(:disabled)', HORIZONTAL_KEYS);
@@ -127,10 +134,12 @@ export function SelectionToolbar(props: Props) {
         }}
       >
         <span className="selection-count">
-          {props.notes.length > 1 ? `${props.notes.length}개 선택` : '포스트잇'}
+          {props.notes.length > 1
+            ? t('selection.count', { count: props.notes.length })
+            : t('selection.single')}
         </span>
         <Tool
-          label="포스트잇 색 변경"
+          label={t('selection.color')}
           disabled={locked}
           active={panel === 'color'}
           onClick={() => toggle('color')}
@@ -139,7 +148,7 @@ export function SelectionToolbar(props: Props) {
         </Tool>
         <span className="selection-divider" />
         <Tool
-          label="굵게"
+          label={t('selection.bold')}
           active={!!note.bold}
           disabled={locked}
           onClick={() => props.onFormat({ bold: !note.bold })}
@@ -147,7 +156,7 @@ export function SelectionToolbar(props: Props) {
           <b>B</b>
         </Tool>
         <Tool
-          label="기울임"
+          label={t('selection.italic')}
           active={!!note.italic}
           disabled={locked}
           onClick={() => props.onFormat({ italic: !note.italic })}
@@ -155,7 +164,7 @@ export function SelectionToolbar(props: Props) {
           <i>I</i>
         </Tool>
         <Tool
-          label="밑줄"
+          label={t('selection.underline')}
           active={!!note.underline}
           disabled={locked}
           onClick={() => props.onFormat({ underline: !note.underline })}
@@ -163,7 +172,7 @@ export function SelectionToolbar(props: Props) {
           <u>U</u>
         </Tool>
         <select
-          aria-label="글자 크기"
+          aria-label={t('selection.fontSize')}
           disabled={locked}
           value={shownSize === null ? 'auto' : String(shownSize)}
           onChange={(event) =>
@@ -174,7 +183,7 @@ export function SelectionToolbar(props: Props) {
             )
           }
         >
-          <option value="auto">자동</option>
+          <option value="auto">{t('selection.fontAuto')}</option>
           {fontSizes.map((size) => (
             <option key={size} value={size} disabled={size > largestFit}>
               {size}
@@ -182,26 +191,30 @@ export function SelectionToolbar(props: Props) {
           ))}
         </select>
         <Tool
-          label="정렬과 배치"
+          label={t('selection.alignAndArrange')}
           active={panel === 'align'}
           disabled={locked}
           onClick={() => toggle('align')}
         >
           <Icon name="align" />
         </Tool>
-        <Tool label="반응 추가" active={panel === 'emoji'} onClick={() => toggle('emoji')}>
+        <Tool
+          label={t('selection.react')}
+          active={panel === 'emoji'}
+          onClick={() => toggle('emoji')}
+        >
           <Icon name="emoji" />
         </Tool>
         <span className="selection-divider" />
-        <Tool label="포스트잇 복제" onClick={props.onDuplicate}>
+        <Tool label={t('selection.duplicate')} onClick={props.onDuplicate}>
           <Icon name="duplicate" />
         </Tool>
-        <Tool label="프레임 만들기" onClick={props.onFrame}>
+        <Tool label={t('selection.frame')} onClick={props.onFrame}>
           <Icon name="frame" />
         </Tool>
         {props.notes.length > 1 && (
           <Tool
-            label={grouped ? '그룹 해제' : '그룹으로 묶기'}
+            label={grouped ? t('selection.ungroup') : t('selection.group')}
             disabled={locked}
             onClick={props.onGroup}
           >
@@ -209,13 +222,13 @@ export function SelectionToolbar(props: Props) {
           </Tool>
         )}
         <Tool
-          label={locked ? '잠금 해제' : '포스트잇 잠금'}
+          label={locked ? t('selection.unlock') : t('selection.lock')}
           active={locked}
           onClick={() => props.onFormat({ locked: !locked })}
         >
           <Icon name={locked ? 'lock' : 'unlock'} />
         </Tool>
-        <Tool label="더 보기" onClick={() => props.onMore({ x: left, y: top })}>
+        <Tool label={t('selection.more')} onClick={() => props.onMore({ x: left, y: top })}>
           <Icon name="more" />
         </Tool>
       </div>
@@ -223,13 +236,13 @@ export function SelectionToolbar(props: Props) {
         <div className={`selection-popover panel-${panel}`}>
           {panel === 'color' && (
             <>
-              <span className="popover-label">색상</span>
+              <span className="popover-label">{t('selection.colorHeading')}</span>
               <div className="color-grid">
                 {STICKY_COLORS.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    aria-label={`${COLOR_STYLES[color].label}으로 변경`}
+                    aria-label={t('selection.colorOption', { color: t(COLOR_STYLES[color].label) })}
                     aria-pressed={props.notes.every((s) => s.color === color)}
                     style={{ background: COLOR_STYLES[color].paper }}
                     onClick={() => {
@@ -239,13 +252,13 @@ export function SelectionToolbar(props: Props) {
                   />
                 ))}
               </div>
-              <span className="popover-label">모양</span>
+              <span className="popover-label">{t('selection.shapeHeading')}</span>
               <div className="shape-options">
                 <button
                   type="button"
                   onClick={() => props.onResize({ width: note.width, height: note.width })}
                 >
-                  □ 정사각형
+                  {t('selection.square')}
                 </button>
                 <button
                   type="button"
@@ -256,14 +269,14 @@ export function SelectionToolbar(props: Props) {
                     })
                   }
                 >
-                  ▭ 직사각형
+                  {t('selection.rectangle')}
                 </button>
               </div>
             </>
           )}
           {panel === 'align' && (
             <>
-              <span className="popover-label">텍스트 정렬</span>
+              <span className="popover-label">{t('selection.textAlignHeading')}</span>
               <div className="shape-options">
                 {TEXT_ALIGNS.map((align) => (
                   <button
@@ -272,17 +285,17 @@ export function SelectionToolbar(props: Props) {
                     aria-pressed={(note.textAlign ?? 'center') === align}
                     onClick={() => props.onFormat({ textAlign: align })}
                   >
-                    {ALIGN_LABELS[align]}
+                    {t(ALIGN_LABELS[align])}
                   </button>
                 ))}
               </div>
               {props.notes.length > 1 && (
                 <>
-                  <span className="popover-label">배치</span>
+                  <span className="popover-label">{t('selection.arrangeHeading')}</span>
                   <div className="arrange-options">
                     {ARRANGEMENTS.map(([action, label]) => (
                       <button key={action} type="button" onClick={() => props.onArrange(action)}>
-                        {label}
+                        {t(label)}
                       </button>
                     ))}
                   </div>
@@ -292,13 +305,13 @@ export function SelectionToolbar(props: Props) {
           )}
           {panel === 'emoji' && (
             <>
-              <span className="popover-label">반응</span>
+              <span className="popover-label">{t('selection.reactionHeading')}</span>
               <div className="emoji-options">
                 {REACTION_EMOJI.map((emoji) => (
                   <button
                     key={emoji}
                     type="button"
-                    aria-label={`${emoji} 반응`}
+                    aria-label={t('selection.reaction', { emoji })}
                     onClick={() => props.onReact(emoji)}
                   >
                     {emoji}

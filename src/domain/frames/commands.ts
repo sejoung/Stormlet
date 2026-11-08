@@ -31,7 +31,7 @@ export const FRAME_PADDING = 32;
 
 const NUMBERED_TITLE = new RegExp(`^${DEFAULT_FRAME_TITLE} (\\d+)$`);
 
-/** `프레임 N` with N past both the frame count and every numbered title, so names never repeat. */
+/** `Frame N` with N past both the frame count and every numbered title, so names never repeat. */
 function nextFrameTitle(board: Board): string {
   const frames = Object.values(board.frames ?? {});
   const highest = frames.reduce(

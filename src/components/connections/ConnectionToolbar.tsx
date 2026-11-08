@@ -14,6 +14,7 @@ import { LINE_COLORS, PATH_LABELS } from './colors';
 import { DRAFT_FIELD, useDraft } from '../common/drafts';
 import { isComposing } from '../common/keyboard';
 import { connectionToolbarPosition } from '../../engine/connections/toolbar-position';
+import { useT } from '../common/i18n';
 
 export function ConnectionToolbar({
   board,
@@ -32,6 +33,7 @@ export function ConnectionToolbar({
   onDelete(): void;
   viewport: { width: number; height: number };
 }) {
+  const t = useT();
   const panel = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 330, height: 180 });
   useLayoutEffect(() => {
@@ -78,25 +80,25 @@ export function ConnectionToolbar({
       ref={panel}
       className="connection-toolbar"
       role="toolbar"
-      aria-label="연결선 편집 도구"
+      aria-label={t('connection.toolbar')}
       style={{ left: position.x, top: position.y }}
     >
       <div className="connection-tools">
-        <span>연결선</span>
+        <span>{t('connection.title')}</span>
         <select
-          aria-label="연결선 종류"
+          aria-label={t('connection.path')}
           disabled={line.locked}
           value={line.path}
           onChange={(event) => onChange({ path: event.target.value as Connection['path'] })}
         >
           {CONNECTION_PATHS.map((path) => (
             <option key={path} value={path}>
-              {PATH_LABELS[path]}
+              {t(PATH_LABELS[path])}
             </option>
           ))}
         </select>
         <select
-          aria-label="연결선 두께"
+          aria-label={t('connection.width')}
           disabled={line.locked}
           value={line.width}
           onChange={(event) => onChange({ width: Number(event.target.value) })}
@@ -109,13 +111,18 @@ export function ConnectionToolbar({
         </select>
         <button
           type="button"
-          aria-label="연결선 잠금"
+          aria-label={t('connection.lock')}
           aria-pressed={!!line.locked}
           onClick={() => onChange({ locked: !line.locked })}
         >
           <Icon name={line.locked ? 'lock' : 'unlock'} />
         </button>
-        <button type="button" aria-label="연결선 삭제" disabled={line.locked} onClick={onDelete}>
+        <button
+          type="button"
+          aria-label={t('connection.delete')}
+          disabled={line.locked}
+          onClick={onDelete}
+        >
           <Icon name="delete" />
         </button>
       </div>
@@ -127,7 +134,7 @@ export function ConnectionToolbar({
             disabled={line.locked}
             onChange={(event) => onChange({ startArrow: event.target.checked })}
           />
-          시작 화살표
+          {t('connection.startArrow')}
         </label>
         <label>
           <input
@@ -136,7 +143,7 @@ export function ConnectionToolbar({
             disabled={line.locked}
             onChange={(event) => onChange({ endArrow: event.target.checked })}
           />
-          끝 화살표
+          {t('connection.endArrow')}
         </label>
         <label>
           <input
@@ -145,7 +152,7 @@ export function ConnectionToolbar({
             disabled={line.locked}
             onChange={(event) => onChange({ dashed: event.target.checked })}
           />
-          점선
+          {t('connection.dashed')}
         </label>
       </div>
       <div className="connection-tools connection-colors">
@@ -153,7 +160,7 @@ export function ConnectionToolbar({
           <button
             key={color}
             type="button"
-            aria-label={`${LINE_COLORS[color].label} 연결선`}
+            aria-label={t('connection.colorOption', { color: t(LINE_COLORS[color].label) })}
             aria-pressed={line.color === color}
             disabled={line.locked}
             style={{ background: LINE_COLORS[color].color }}
@@ -164,12 +171,12 @@ export function ConnectionToolbar({
       <input
         ref={input}
         className="connection-label-input"
-        aria-label="연결선 설명"
+        aria-label={t('connection.labelField')}
         value={label}
         data-draft={DRAFT_FIELD.label}
         maxLength={MAX_CONNECTION_LABEL_LENGTH}
         disabled={line.locked}
-        placeholder="연결선 설명을 입력하세요"
+        placeholder={t('connection.labelPlaceholder')}
         onChange={(event) => setLabel(event.target.value)}
         onBlur={() => {
           if (cancelBlur.current) {

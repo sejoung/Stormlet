@@ -5,6 +5,7 @@ import { MAX_NOTE_LENGTH } from '../../domain/note-details';
 import { noteTextStyle, useFittedText } from './useFittedText';
 import { DRAFT_FIELD, useDraft } from '../common/drafts';
 import { isComposing } from '../common/keyboard';
+import { useT } from '../common/i18n';
 
 export function StickyText({ note, size }: { note: Sticky; size: StickySize }) {
   const { ref, fontSize } = useFittedText(note.id, note.text, size, note);
@@ -35,6 +36,7 @@ export function StickyEditor({
   size: StickySize;
   onDone(text: string): void;
 }) {
+  const t = useT();
   const [text, setText] = useState(initial);
   const composing = useRef(false);
   const completed = useRef(false);
@@ -70,7 +72,7 @@ export function StickyEditor({
         </p>
         <textarea
           className="sticky-editor"
-          aria-label="스티키 내용"
+          aria-label={t('note.editor')}
           data-draft={DRAFT_FIELD.note}
           style={noteTextStyle(note, fontSize)}
           // Focus follows an explicit edit or creation action.
@@ -93,7 +95,7 @@ export function StickyEditor({
         />
       </div>
       <span className="editing-hint">
-        Enter 완료 · Shift+Enter 줄바꿈{' '}
+        {t('note.editingHint')}{' '}
         <span>
           {text.length.toLocaleString()} / {MAX_NOTE_LENGTH.toLocaleString()}
         </span>

@@ -10,13 +10,14 @@ export const test = base.extend({
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto('/');
-    await expect(page.getByRole('application', { name: '포스트잇 보드' })).toBeVisible();
+    await expect(canvas(page)).toBeVisible();
     await use(page);
     expect(errors, 'The application should not raise browser errors').toEqual([]);
   },
 });
 
-export const canvas = (page: Page) => page.getByRole('application', { name: '포스트잇 보드' });
+/** The board canvas, found by its role and class so it is found in every language. */
+export const canvas = (page: Page) => page.locator('.board[role="application"]');
 export async function point(page: Page, x: number, y: number) {
   const box = await canvas(page).boundingBox();
   if (!box) throw new Error('Canvas has no rendered bounds');

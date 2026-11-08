@@ -9,6 +9,7 @@ import {
 import { isDrawable } from '../engine/connections/geometry';
 import type { ConnectionInteraction } from '../components/connections/types';
 import type { Edit, EditWith } from './useBoardSession';
+import { useT } from '../components/common/i18n';
 
 /** The selected connection and the commands the app runs on it. */
 export interface ConnectionSession extends ConnectionInteraction {
@@ -44,6 +45,7 @@ export function useConnectionSession({
   onStatus(message: string): void;
   style: ConnectionStyle;
 }): ConnectionSession {
+  const t = useT();
   const selected = selectedId ? (own(board.connections ?? {}, selectedId) ?? null) : null;
   return {
     style,
@@ -59,7 +61,7 @@ export function useConnectionSession({
         patches: isDrawable(current, line) ? addConnection(current, id, from, to, style) : [],
       }));
       if (!patches.length) {
-        onStatus('서로 다른 메모나 떨어진 두 지점을 연결해 주세요.');
+        onStatus(t('connectionSession.invalid'));
         return false;
       }
       onSelect(id);

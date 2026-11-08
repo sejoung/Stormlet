@@ -9,7 +9,7 @@ export interface SourceFile {
 }
 
 /** Layers that run without a browser. */
-const PURE_LAYERS = ['domain', 'application', 'engine'];
+const PURE_LAYERS = ['domain', 'application', 'engine', 'i18n'];
 /** Persistent browser storage is an adapter concern (ADR 0001); the rest gets it injected. */
 const STORAGE_GLOBALS = ['localStorage', 'sessionStorage', 'indexedDB'];
 const STORAGE_LAYERS = ['adapters'];
@@ -24,6 +24,10 @@ const BROWSER_GLOBALS = [
 ];
 /** Files that build stateful adapters (Drive client, auth, draft store) for the app. */
 export const COMPOSITION_ROOTS = ['main.tsx'];
+/** Translated text lives in the message catalogs; code refers to it by key. */
+const CATALOG_FOLDER = 'i18n/locales/';
+/** A letter from a script other than Latin, which can only be untranslated UI text. */
+const FOREIGN_LETTER = /[^\P{L}\p{Script=Latin}]/u;
 /** React hooks belong to the UI and composition layers. */
 const HOOK_LAYERS = ['components', 'app'];
 const HOOK_FILES: string[] = [];
@@ -37,7 +41,8 @@ const layerOf = (name: string) => name.split('/')[0];
  * - stateful adapter classes (exported from adapters without a base class; implementing a
  *   port does not count) are constructed only in a composition root, so everything else
  *   depends on what it is handed;
- * - `use…` hooks are declared only where React runs.
+ * - `use…` hooks are declared only where React runs;
+ * - strings and JSX text in non-Latin scripts appear only in the message catalogs.
  */
 export function codeViolations(files: SourceFile[]): string[] {
   const parsed = files.map(({ name, source }) => ({
@@ -112,6 +117,12 @@ export function codeViolations(files: SourceFile[]): string[] {
         !HOOK_FILES.includes(name)
       )
         violations.push(`Hook outside the UI layers: ${name} → ${declared}`);
+      if (
+        (ts.isStringLiteralLike(node) || ts.isTemplateLiteralToken(node) || ts.isJsxText(node)) &&
+        FOREIGN_LETTER.test(node.text) &&
+        !name.startsWith(CATALOG_FOLDER)
+      )
+        violations.push(`Text outside the message catalogs: ${name} → ${node.text.trim()}`);
       ts.forEachChild(node, visit);
     };
     visit(ast);

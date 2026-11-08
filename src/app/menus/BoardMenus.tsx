@@ -6,6 +6,7 @@ import { clientToBoard } from '../../components/common/points';
 import type { Edit } from '../useBoardSession';
 import type { Menu } from './useBoardMenus';
 import { canvasMenuItems, type CanvasMenuContext } from './canvas-menu';
+import { useT } from '../../components/common/i18n';
 
 /** The open context menu, rendered outside the transformed board. */
 export function BoardMenus({
@@ -27,6 +28,7 @@ export function BoardMenus({
   onEdit(id: string): void;
   onDuplicate(ids: readonly string[]): void;
 }) {
+  const t = useT();
   if (menu?.kind === 'notes')
     return (
       <BoardContextMenu
@@ -47,7 +49,7 @@ export function BoardMenus({
     <CanvasContextMenu
       key={`${menu.point.x}:${menu.point.y}`}
       point={menu.point}
-      actions={canvasMenuItems({ ...context, board, at, target: menu.target })}
+      actions={canvasMenuItems({ ...context, board, at, target: menu.target }, t)}
       onClose={onClose}
     />
   );

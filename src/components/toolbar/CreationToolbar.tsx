@@ -8,6 +8,7 @@ import { CreationFlyout } from './CreationFlyout';
 import type { CreationDefaults } from '../../domain/creation-defaults';
 import { FrameFlyout } from '../frames/FrameFlyout';
 import type { FrameInteraction } from '../frames/types';
+import { useT } from '../common/i18n';
 
 /** The connection tool shows the shape new lines will get. */
 function connectionIcon({ path, endArrow }: ConnectionStyle) {
@@ -35,6 +36,7 @@ export function CreationToolbar({
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   frames: FrameInteraction;
 }) {
+  const t = useT();
   const [panel, setPanel] = useState<'sticky' | 'connect' | 'frame' | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const open = panel && tool === panel ? panel : null;
@@ -68,13 +70,13 @@ export function CreationToolbar({
   };
   return (
     <div ref={ref} className="creation-tools">
-      <aside className="tool-panel" aria-label="보드 도구">
+      <aside className="tool-panel" aria-label={t('creation.boardTools')}>
         <button
           type="button"
           className="creation-tool"
-          aria-label="선택 · 이동"
+          aria-label={t('creation.select')}
           aria-pressed={tool === 'interact'}
-          title="선택 (V) · 드래그로 영역 선택"
+          title={t('creation.selectHint')}
           onClick={() => onTool('interact')}
         >
           <Icon name="select" />
@@ -82,9 +84,9 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
-          aria-label="손 도구"
+          aria-label={t('creation.hand')}
           aria-pressed={tool === 'hand'}
-          title="손 도구 (H) · Space+드래그로 보드 이동"
+          title={t('creation.handHint')}
           onClick={() => onTool('hand')}
         >
           <Icon name="pan" />
@@ -92,12 +94,12 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
-          aria-label="포스트잇 도구"
+          aria-label={t('creation.sticky')}
           data-creation-tool="sticky"
           aria-haspopup="dialog"
           aria-expanded={open === 'sticky'}
           aria-pressed={tool === 'sticky'}
-          title="포스트잇 (N) · 보드를 클릭해 붙이기"
+          title={t('creation.stickyHint')}
           onClick={() => chooseTool('sticky')}
         >
           <Icon name="note" />
@@ -109,12 +111,12 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
-          aria-label="연결선 도구"
+          aria-label={t('creation.connect')}
           data-creation-tool="connect"
           aria-haspopup="dialog"
           aria-expanded={open === 'connect'}
           aria-pressed={tool === 'connect'}
-          title="연결선 (L) · 포스트잇·프레임을 차례로 클릭"
+          title={t('creation.connectHint')}
           onClick={() => chooseTool('connect')}
         >
           <Icon name={connectionIcon(defaults.connection)} />
@@ -122,12 +124,12 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
-          aria-label="프레임 도구"
+          aria-label={t('creation.frame')}
           data-creation-tool="frame"
           aria-haspopup="dialog"
           aria-expanded={open === 'frame'}
           aria-pressed={tool === 'frame'}
-          title="프레임 (F) · 드래그로 영역 지정"
+          title={t('creation.frameHint')}
           onClick={() => chooseTool('frame')}
         >
           <Icon name="frame" />
@@ -136,8 +138,8 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
-          aria-label="가운데 붙이기"
-          title="가운데에 포스트잇 붙이기"
+          aria-label={t('creation.addCenter')}
+          title={t('creation.addCenterHint')}
           onClick={onAddCenter}
         >
           <Icon name="plus" />
@@ -145,8 +147,8 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
-          aria-label="여러 개 한 번에"
-          title="여러 개 한 번에 붙이기"
+          aria-label={t('creation.bulk')}
+          title={t('creation.bulkHint')}
           onClick={() => {
             close();
             onBulk();

@@ -34,7 +34,7 @@ describe('frame editing', () => {
     });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByText('왼쪽 포스트잇 도구나', { exact: false })).not.toBeInTheDocument();
-    await user.dblClick(screen.getByRole('button', { name: '프레임: 프레임 1' }));
+    await user.dblClick(screen.getByRole('button', { name: '프레임: Frame 1' }));
     const title = screen.getByRole('textbox', { name: '프레임 이름' });
     expect(title).toHaveFocus();
     await user.keyboard('고객{Enter}');

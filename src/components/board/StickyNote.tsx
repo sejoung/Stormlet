@@ -10,6 +10,7 @@ import type { ConnectionSide } from '../../domain/connections/model';
 import { ARROW_DELTAS, isMenuKey } from '../common/keyboard';
 import { clientCenter } from '../common/points';
 import { cx } from '../common/cx';
+import { useT } from '../common/i18n';
 
 interface Props {
   sticky: Sticky;
@@ -35,10 +36,13 @@ interface Props {
 
 /** Every handler takes the note's ID, so one stable function serves all notes and `memo` holds. */
 export const StickyNote = memo(function StickyNote(props: Props) {
+  const t = useT();
   const { sticky, selected, editing, offset } = props;
   const size = props.resized ?? sticky;
   const style = COLOR_STYLES[sticky.color];
-  const label = sticky.kind ? KIND_LABELS[sticky.kind] : `${style.label} 포스트잇`;
+  const label = sticky.kind
+    ? t(KIND_LABELS[sticky.kind])
+    : t('note.colorLabel', { color: t(style.label) });
   const contextMenu = (event: MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -57,7 +61,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       )}
       role="button"
       tabIndex={0}
-      aria-label={`${label}: ${sticky.text || '빈 스티키'}`}
+      aria-label={t('note.label', { label, text: sticky.text || t('note.empty') })}
       aria-pressed={selected}
       aria-haspopup="menu"
       data-sticky-id={sticky.id}
@@ -117,7 +121,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         />
       )}
       {sticky.locked && (
-        <span className="note-lock" aria-label="잠긴 메모">
+        <span className="note-lock" aria-label={t('note.locked')}>
           <Icon name="lock" />
         </span>
       )}
@@ -127,9 +131,12 @@ export const StickyNote = memo(function StickyNote(props: Props) {
             <button
               key={reaction.emoji}
               type="button"
-              aria-label={`${reaction.emoji} 반응 ${reaction.people.length}개`}
+              aria-label={t('note.reaction', {
+                emoji: reaction.emoji,
+                count: reaction.people.length,
+              })}
               aria-pressed={reaction.people.includes(props.reactor)}
-              title={`${reaction.people.length}개의 반응`}
+              title={t('note.reactionCount', { count: reaction.people.length })}
               onPointerDown={(event) => event.stopPropagation()}
               onDoubleClick={(event) => event.stopPropagation()}
               onClick={(event) => {
@@ -146,8 +153,8 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         <button
           type="button"
           className="resize-handle"
-          aria-label="포스트잇 크기 조절"
-          title="드래그로 크기 조절 · 방향키로 20px씩 조절"
+          aria-label={t('note.resize')}
+          title={t('note.resizeHint')}
           onPointerDown={(event) => props.onResizeStart(event, sticky.id)}
           onDoubleClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => {

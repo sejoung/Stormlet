@@ -20,7 +20,7 @@ test('draws a frame, edits its name and preserves its border and fill after relo
   await canvas(page).focus();
   await page.keyboard.press('f');
   await drag(page, await point(page, 120, 180), await point(page, 640, 480));
-  const title = page.getByRole('button', { name: '프레임: 프레임 1', exact: true });
+  const title = page.getByRole('button', { name: '프레임: Frame 1', exact: true });
   await expect(title).toBeVisible();
   await title.dblclick();
   const name = page.getByRole('textbox', { name: '프레임 이름', exact: true });
