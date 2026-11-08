@@ -1,7 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
-import { LocalBoardStore } from './adapters/storage/local-board-store';
+import { BOARD_KEY, LocalBoardStore, SAVE_DELAY } from './adapters/storage/local-board-store';
+import { markSaved, slotKey } from './adapters/storage/board-slots';
+import { LocalBoardLibrary, startTab, type TabBoard } from './adapters/storage/tab-board';
+import { renameBoard } from './domain/board-title';
 import { browserLanguages } from './adapters/browser/languages';
 import { pickLocale, translate } from './i18n/messages';
 import { log } from './adapters/diagnostics/log';
@@ -23,9 +26,19 @@ if (window.top !== window.self)
 else {
   // Listen first, so errors while starting up are recorded too.
   logUncaughtErrors();
+  // Each tab shows one board of its own (ADR 0011); which one is decided first.
+  void startTab().then(start, (error: unknown) => {
+    log.error('tab.start-failed', { message: (error as Error).message });
+    start({ slot: crypto.randomUUID(), newTitle: null });
+  });
+}
+
+function start({ slot, newTitle }: TabBoard) {
   const google = driveConfig();
   log.info('app.started', { version: APP_VERSION, drive: google !== null });
-  const local = new LocalBoardStore();
+  const local = new LocalBoardStore(slotKey(BOARD_KEY, slot), SAVE_DELAY, () => markSaved(slot));
+  // Another tab's "New board" opened this one with the title to start from.
+  if (newTitle !== null) local.apply(renameBoard(local.load(), newTitle));
   // With Drive configured, the board store also keeps the linked Drive file in sync.
   const auth = google && new GoogleConnection(google, openAuthChannel(google.clientId));
   const drive = auth && {
@@ -36,9 +49,9 @@ else {
         auth.getToken,
         undefined,
         (token) => auth.clearToken(token),
-        new LocalCreations(),
+        new LocalCreations(slot),
       ),
-      new LocalDriveLinks(),
+      new LocalDriveLinks(slot),
       Date.now,
       local.damaged !== null,
     ),
@@ -49,6 +62,7 @@ else {
         store={drive?.sync ?? local}
         drive={drive ?? undefined}
         damaged={local.damaged}
+        library={new LocalBoardLibrary(slot)}
         newId={() => crypto.randomUUID()}
       />
     </StrictMode>,

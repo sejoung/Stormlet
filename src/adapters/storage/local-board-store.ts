@@ -35,6 +35,8 @@ export class LocalBoardStore implements BoardStore {
   constructor(
     private readonly key = BOARD_KEY,
     private readonly delay = SAVE_DELAY,
+    /** Called after each save lands, e.g. to note when this board was last saved. */
+    private readonly onWrite: () => void = () => {},
   ) {
     const content = readItem(this.key);
     const board = content === null ? null : this.parse(content, 'store.damaged');
@@ -81,6 +83,7 @@ export class LocalBoardStore implements BoardStore {
     this.cancelSave();
     const content = serializeBoard(this.board, { compact: true });
     const saved = writeItem(this.key, content);
+    if (saved) this.onWrite();
     if (saved === this.saved) return;
     this.saved = saved;
     if (saved) log.info('store.save-recovered');

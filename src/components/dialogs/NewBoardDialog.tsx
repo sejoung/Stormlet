@@ -4,11 +4,13 @@ import { Modal } from './Modal';
 import { useT } from '../common/i18n';
 
 /**
- * Starting an empty board. The browser keeps one board, so when the current one has work
- * the dialog says where it stays: in its Drive file, or only in undo unless downloaded.
+ * Starting an empty board. With tabs of their own (ADR 0011) a board with work stays in
+ * this tab and the new one opens in another. Otherwise the new board takes this one's
+ * place, and the dialog says where the old one stays: in its Drive file, or only in undo.
  */
 export function NewBoardDialog({
   hasWork,
+  inNewTab,
   driveFile,
   onDownload,
   onCreate,
@@ -16,6 +18,8 @@ export function NewBoardDialog({
 }: {
   /** The current board has something on it. */
   hasWork: boolean;
+  /** The new board opens in a new tab, leaving this one as it is. */
+  inNewTab: boolean;
   /** The Drive file the current board syncs with, if any. */
   driveFile: string | null;
   onDownload(): void;
@@ -45,7 +49,10 @@ export function NewBoardDialog({
           placeholder={DEFAULT_BOARD_TITLE}
           onChange={(event) => setTitle(event.target.value)}
         />
-        {hasWork &&
+        {inNewTab ? (
+          <p className="new-board-note">{t('newBoard.inNewTab')}</p>
+        ) : (
+          hasWork &&
           (driveFile ? (
             <p className="new-board-note">{t('newBoard.leaveDrive', { name: driveFile })}</p>
           ) : (
@@ -55,7 +62,8 @@ export function NewBoardDialog({
                 {t('newBoard.download')}
               </button>
             </div>
-          ))}
+          ))
+        )}
         <footer>
           <button type="button" onClick={onClose}>
             {t('newBoard.cancel')}

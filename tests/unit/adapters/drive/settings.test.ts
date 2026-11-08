@@ -57,23 +57,12 @@ describe('Drive link storage', () => {
     expect(localStorage.getItem(DRIVE_BASE_KEY)).toBeNull();
   });
 
-  it('reports links written by another tab, but not records it cannot read', () => {
-    const links = new LocalDriveLinks();
-    const seen = vi.fn();
-    const unsubscribe = links.watch(seen);
-    const elsewhere = (key: string | null, write: () => void) => {
-      write();
-      window.dispatchEvent(new StorageEvent('storage', { key }));
-    };
-    elsewhere('stormlet.board', () => {});
-    elsewhere(DRIVE_FILE_KEY, () => new LocalDriveLinks().write(link));
-    elsewhere(DRIVE_FILE_KEY, () => localStorage.setItem(DRIVE_FILE_KEY, '{'));
-    elsewhere(DRIVE_FILE_KEY, () => new LocalDriveLinks().write(null));
-    elsewhere(null, () => localStorage.clear());
-    expect(seen.mock.calls).toEqual([[link], [null], [null]]);
-    unsubscribe();
-    elsewhere(DRIVE_FILE_KEY, () => {});
-    expect(seen).toHaveBeenCalledTimes(3);
+  it('keeps a separate link for each board slot', () => {
+    new LocalDriveLinks('one').write(link);
+    expect(new LocalDriveLinks('two').read()).toBeNull();
+    expect(new LocalDriveLinks('one').read()).toEqual(link);
+    expect(localStorage.getItem(`${DRIVE_FILE_KEY}.one`)).not.toBeNull();
+    expect(localStorage.getItem(DRIVE_FILE_KEY)).toBeNull();
   });
 
   it('ignores a broken record and logs it', () => {
@@ -91,6 +80,13 @@ describe('Drive link storage', () => {
 });
 
 describe('pending creation storage', () => {
+  it('keeps one record for each board slot', () => {
+    new LocalCreations('one').write({ folderId: 'folder', id: 'reserved', at: 5 });
+    expect(new LocalCreations('two').read()).toBeNull();
+    expect(new LocalCreations('one').read()).toMatchObject({ id: 'reserved' });
+    expect(localStorage.getItem(DRIVE_CREATING_KEY)).toBeNull();
+  });
+
   it('keeps the reserved ID across pages, and ignores a broken record', () => {
     const creation = { folderId: 'folder', id: 'reserved', at: 5 };
     new LocalCreations().write(creation);

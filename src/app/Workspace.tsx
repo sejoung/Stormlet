@@ -3,7 +3,7 @@ import { useLocale } from '../components/common/i18n';
 import { deleteStickies, editableIds } from '../domain/commands';
 import { isEmptyBoard } from '../domain/model';
 import { boardTitle, renameBoard } from '../domain/board-title';
-import type { BoardStore } from '../domain/store';
+import type { BoardLibrary, BoardStore } from '../domain/store';
 import type { LocalePreference } from '../i18n/messages';
 import { reactionIdentity } from '../adapters/storage/web-storage';
 import { BoardCanvas } from '../components/board/BoardCanvas';
@@ -45,6 +45,7 @@ export interface WorkspaceProps {
   newId(): string;
   /** Google Drive, when this build is configured for it. */
   drive?: DriveServices;
+  library?: BoardLibrary;
   language: LocalePreference;
   onLanguage(language: LocalePreference): void;
 }
@@ -54,6 +55,7 @@ export function Workspace({
   store,
   newId,
   drive: driveServices,
+  library,
   language,
   onLanguage,
 }: WorkspaceProps) {
@@ -241,6 +243,7 @@ export function Workspace({
               <ToolbarMenus
                 fileInput={fileInput}
                 onNew={() => setDialog('new')}
+                onRecent={library && (() => setDialog('recent'))}
                 onOpenFile={onOpen}
                 onDownload={save}
                 keys={keys}
@@ -383,8 +386,7 @@ export function Workspace({
             dialog={dialog}
             onDialog={setDialog}
             board={board}
-            onNewBoard={newBoard}
-            onDownload={save}
+            boards={{ library, create: newBoard, download: save }}
             onBulkAdd={(texts) =>
               actions.addCells(texts.map((text, row) => ({ text, row, column: 0 })))
             }

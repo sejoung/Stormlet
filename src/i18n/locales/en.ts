@@ -33,6 +33,22 @@ export const en = {
   'files.newBoard': 'Started a new board. Undo returns to the previous one.',
   'drive.newBlocked':
     'Changes are not saved to Drive yet, so no new board was started. Reconnect or resolve the conflict, then try again.',
+  'menu.recentBoards': 'Recent boards…',
+  'newBoard.inNewTab': 'The new board opens in a new tab; this board stays here as it is.',
+  'recent.title': 'Recent boards',
+  'recent.descriptionHere':
+    'Boards of tabs you closed, kept in this browser. Choose one to open it in this tab.',
+  'recent.descriptionTab':
+    'Boards of tabs you closed, kept in this browser. A board opens in a new tab, so this one stays here.',
+  'recent.loading': 'Looking for boards…',
+  'recent.empty': 'No boards from closed tabs.',
+  'recent.unreadable': 'Board that cannot be read',
+  'recent.notes': '{count} notes',
+  'recent.drive': 'Drive: {name}',
+  'recent.openHere': 'Open',
+  'recent.openTab': 'Open in new tab',
+  'recent.remove': 'Delete',
+  'recent.confirmRemove': 'Delete for good',
   'menu.file': 'File',
   'menu.edit': 'Edit',
   'menu.view': 'View',

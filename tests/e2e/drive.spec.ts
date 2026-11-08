@@ -94,7 +94,7 @@ test('opens a board from Drive', async ({ page }) => {
   expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
 });
 
-test('a new tab takes over an open tab’s connection, and a disconnect ends both', async ({
+test('a new tab has a board of its own but takes over the connection, and a disconnect ends both', async ({
   page,
   context,
 }) => {
@@ -106,8 +106,15 @@ test('a new tab takes over an open tab’s connection, and a disconnect ends bot
 
   const second = await context.newPage();
   await second.goto('/');
-  // The open tab hands over its token: no sign-in popup and nothing stored.
-  await expect(driveButton(second)).toHaveText('저장됨');
+  // Its own, empty board; but the open tab hands over its token, with nothing stored.
+  await expect(second.locator('.sticky')).toHaveCount(0);
+  await expect(driveButton(second)).toHaveCount(0);
+  await second.getByRole('button', { name: '파일', exact: true }).click();
+  await expect(second.getByRole('menuitem', { name: 'Google Drive 연결 해제' })).toBeVisible();
+  await expect(
+    second.getByRole('menuitem', { name: 'Google Drive 연결', exact: true }),
+  ).toHaveCount(0);
+  await second.keyboard.press('Escape');
   expect(await second.evaluate(() => document.documentElement.dataset.signIns)).toBeUndefined();
   expect(
     await second.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage })),
@@ -115,7 +122,6 @@ test('a new tab takes over an open tab’s connection, and a disconnect ends bot
   expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
 
   await fromFile(second, 'Google Drive 연결 해제');
-  await expect(driveButton(second)).toHaveCount(0);
   await expect(driveButton(page)).toHaveCount(0);
 });
 
@@ -153,7 +159,7 @@ test('saving to a folder makes one file even when Drive’s answer is lost', asy
   expect(drive.requests.filter((request) => request.startsWith('POST'))).toHaveLength(1);
 });
 
-test('an open tab follows the file another tab opens, and saves its edits there', async ({
+test('tabs keep their own files: opening one in a tab leaves the other tab’s alone', async ({
   page,
   context,
 }) => {
@@ -162,9 +168,6 @@ test('an open tab follows the file another tab opens, and saves its edits there'
   await fromFile(page, 'Drive 폴더에 저장…');
   await pickFolder(page);
   await expect(driveButton(page)).toHaveText('저장됨');
-  const second = await context.newPage();
-  await second.goto('/');
-  await expect(driveButton(second)).toHaveText('저장됨');
 
   drive.files.set('shared', {
     name: 'Shared.stormlet',
@@ -172,23 +175,31 @@ test('an open tab follows the file another tab opens, and saves its edits there'
     parents: [],
     content: serializeBoard({ title: 'Shared', stickies: {} }),
   });
-  await fromFile(page, 'Drive에서 열기…');
-  await page.getByRole('dialog', { name: 'Stormlet 보드 열기' }).getByRole('button').click();
+  const second = await context.newPage();
+  await second.goto('/');
+  await fromFile(second, 'Drive에서 열기…');
+  await second.getByRole('dialog', { name: 'Stormlet 보드 열기' }).getByRole('button').click();
   await expect(second.getByRole('button', { name: '보드 이름: Shared' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '보드 이름: My idea board' })).toBeVisible();
+  await expect(driveButton(page)).toHaveAttribute('title', /^My idea board\.stormlet/);
 
-  // The other tab's edit goes to the file it now follows, not the one it started with.
-  const before = drive.files.get('created-1')!.version;
-  await canvas(second).focus();
-  await second.keyboard.press('n');
-  const at = await point(second, 300, 300);
-  await second.mouse.click(at.x, at.y);
-  await second.keyboard.type('Second tab');
-  await second.keyboard.press('Escape');
-  await expect(driveButton(second)).toHaveText('저장 중…');
-  await expect(driveButton(second)).toHaveText('저장됨');
-  const shared = parseBoard(drive.files.get('shared')!.content);
-  expect(Object.values(shared.stickies).map((note) => note.text)).toEqual(['Second tab']);
-  expect(drive.files.get('created-1')!.version).toBe(before);
+  // Each tab's edit goes to its own file.
+  for (const [tab, text] of [
+    [page, 'First tab'],
+    [second, 'Second tab'],
+  ] as const) {
+    await canvas(tab).focus();
+    await tab.keyboard.press('n');
+    const at = await point(tab, 300, 300);
+    await tab.mouse.click(at.x, at.y);
+    await tab.keyboard.type(text);
+    await tab.keyboard.press('Escape');
+    await expect(driveButton(tab)).toHaveText('저장 중…');
+    await expect(driveButton(tab)).toHaveText('저장됨');
+  }
+  const texts = (id: string) =>
+    Object.values(parseBoard(drive.files.get(id)!.content).stickies).map((note) => note.text);
+  expect([texts('created-1'), texts('shared')]).toEqual([['First tab'], ['Second tab']]);
 });
 
 test('a page closed before Drive answered a creation links that file after reconnecting', async ({

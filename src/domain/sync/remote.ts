@@ -49,6 +49,4 @@ export interface RemoteLink {
 export interface RemoteLinks {
   read(): RemoteLink | null;
   write(link: RemoteLink | null): void;
-  /** Called when another tab links, re-saves or unlinks a file; returns an unsubscribe. */
-  watch?(listener: (link: RemoteLink | null) => void): () => void;
 }

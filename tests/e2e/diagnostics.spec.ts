@@ -4,11 +4,14 @@ import { test, expect, canvas } from './support';
 const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
 
 test('keeps an unreadable saved board aside and offers it for download', async ({ page }) => {
-  await page.evaluate(() => localStorage.setItem('stormlet.board', '{broken'));
+  const key = await page.evaluate(() => `stormlet.board.${sessionStorage.getItem('stormlet.tab')}`);
+  await page.evaluate((board) => localStorage.setItem(board, '{broken'), key);
   await page.reload();
   const dialog = page.getByRole('dialog', { name: '저장된 보드를 읽을 수 없습니다' });
   await expect(dialog).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('stormlet.board.damaged'))).toBe('{broken');
+  expect(await page.evaluate((board) => localStorage.getItem(`${board}.damaged`), key)).toBe(
+    '{broken',
+  );
   const download = page.waitForEvent('download');
   await dialog.getByRole('button', { name: '저장된 데이터 내려받기' }).click();
   expect((await download).suggestedFilename()).toBe('stormlet-damaged-board.txt');

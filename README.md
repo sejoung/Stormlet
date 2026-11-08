@@ -46,10 +46,10 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 - Minimap of the whole board: click or drag the outline to move the view, or use the arrow keys; it stays open across reloads
 - Context menus on notes, frames, lines and the empty canvas (also Shift+F10)
 - Undo and redo for every change, including deletions that remove attached lines
-- Autosave in the browser, synced across tabs of the same browser
+- Autosave in the browser, a board for each tab: a new board opens in a new tab, coming back resumes the last board, and boards of closed tabs stay under File → Recent boards ([ADR 0011](docs/adr/0011-board-per-tab.md))
 - Optional Google Drive sync: save the board to a Drive folder or open one from Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Rename the board by double-clicking its title; the title becomes the download filename
-- A menu bar under the title, listing each command with its shortcut: File (new board, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap) and Settings (language, keyboard help, troubleshooting)
+- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap) and Settings (language, keyboard help, troubleshooting)
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 - Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports

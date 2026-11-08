@@ -30,6 +30,22 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'files.newBoard': '새 보드를 만들었습니다. 실행 취소하면 이전 보드로 돌아갑니다.',
   'drive.newBlocked':
     'Drive에 아직 저장하지 못한 변경이 있어 새 보드를 만들지 않았습니다. 다시 연결하거나 충돌을 해결한 뒤 시도하세요.',
+  'menu.recentBoards': '최근 보드…',
+  'newBoard.inNewTab': '새 보드는 새 탭에서 열리고, 지금 보드는 이 탭에 그대로 남습니다.',
+  'recent.title': '최근 보드',
+  'recent.descriptionHere':
+    '닫은 탭의 보드로, 이 브라우저에 남아 있습니다. 고르면 이 탭에서 엽니다.',
+  'recent.descriptionTab':
+    '닫은 탭의 보드로, 이 브라우저에 남아 있습니다. 새 탭에서 열리므로 지금 보드는 그대로 남습니다.',
+  'recent.loading': '보드를 찾는 중…',
+  'recent.empty': '닫은 탭의 보드가 없습니다.',
+  'recent.unreadable': '읽을 수 없는 보드',
+  'recent.notes': '포스트잇 {count}개',
+  'recent.drive': 'Drive: {name}',
+  'recent.openHere': '열기',
+  'recent.openTab': '새 탭에서 열기',
+  'recent.remove': '삭제',
+  'recent.confirmRemove': '영구 삭제',
   'menu.file': '파일',
   'menu.edit': '편집',
   'menu.view': '보기',

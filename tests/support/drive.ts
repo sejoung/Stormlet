@@ -78,9 +78,7 @@ export function fakeDrive() {
   return { remote, files, calls, failures, elsewhere, unseen };
 }
 
-/** Links in memory; `elsewhere` stands in for another tab writing them. */
 export function memoryLinks(link: RemoteLink | null = null) {
-  const watchers = new Set<(link: RemoteLink | null) => void>();
   return {
     link,
     read() {
@@ -88,14 +86,6 @@ export function memoryLinks(link: RemoteLink | null = null) {
     },
     write(next: RemoteLink | null) {
       this.link = next;
-    },
-    watch(listener: (link: RemoteLink | null) => void) {
-      watchers.add(listener);
-      return () => watchers.delete(listener);
-    },
-    elsewhere(next: RemoteLink | null) {
-      this.link = next;
-      for (const watcher of watchers) watcher(structuredClone(next));
     },
   };
 }

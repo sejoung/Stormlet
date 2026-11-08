@@ -39,8 +39,15 @@ export function memoryCreations(): CreationRecord {
  * still find the file it made after a reload. It holds IDs only, never a token.
  */
 export class LocalCreations implements CreationRecord {
+  private readonly key: string;
+
+  /** One record per board slot (ADR 0011); without a slot, the single shared record. */
+  constructor(slot?: string) {
+    this.key = slot ? `${DRIVE_CREATING_KEY}.${slot}` : DRIVE_CREATING_KEY;
+  }
+
   read(): PendingCreation | null {
-    const stored = readItem(DRIVE_CREATING_KEY);
+    const stored = readItem(this.key);
     if (stored === null) return null;
     try {
       const parsed: unknown = JSON.parse(stored);
@@ -53,7 +60,7 @@ export class LocalCreations implements CreationRecord {
   }
 
   write(creation: PendingCreation | null): void {
-    if (creation) writeItem(DRIVE_CREATING_KEY, JSON.stringify(creation));
-    else removeItem(DRIVE_CREATING_KEY);
+    if (creation) writeItem(this.key, JSON.stringify(creation));
+    else removeItem(this.key);
   }
 }

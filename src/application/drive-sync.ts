@@ -41,8 +41,7 @@ type Opened = Awaited<ReturnType<RemoteBoards['open']>>;
  * patches, like another tab's. Real conflicts wait for the user's choice.
  *
  * Saves run one at a time, and linking another file bumps a generation so results of the
- * previous file's requests are dropped. Tabs share the link: when another tab changes it,
- * this one follows (`follow`).
+ * previous file's requests are dropped. Each tab's board has its own link (ADR 0011).
  */
 export class DriveSync implements BoardStore {
   private link: RemoteLink | null;
@@ -72,7 +71,6 @@ export class DriveSync implements BoardStore {
     if (restore && this.link) local.apply(diffBoards(local.load(), this.link.base));
     // Access lives in memory only, so a remembered file waits until the user reconnects.
     this.state = this.link ? { status: 'paused', file: this.link.file } : { status: 'unlinked' };
-    links.watch?.((link) => this.follow(link));
   }
 
   // --- BoardStore ---
@@ -204,24 +202,6 @@ export class DriveSync implements BoardStore {
   }
 
   // --- Internals ---
-
-  /**
-   * Another tab linked a file, saved the linked one or unlinked it. Tabs share the local
-   * board, so this tab takes the same link; it saves nothing back, and any request still
-   * out for the previous link is dropped. Edits not yet in the new base go out as usual.
-   */
-  private follow(link: RemoteLink | null): void {
-    if (same(link, this.link)) return;
-    const paused = this.state.status === 'paused';
-    this.detach();
-    this.link = link;
-    if (!link) return this.set('unlinked');
-    // Access is per tab: one waiting for a reconnect still waits, now for the new file.
-    this.set(paused ? 'paused' : 'synced');
-    // The other tab's board usually arrives just after its link and matches the base; check
-    // after the usual delay instead of showing a save that will not happen.
-    if (!paused && !same(this.load(), link.base)) this.wait(SYNC_DELAY);
-  }
 
   private changed(): void {
     if (!this.link) return;

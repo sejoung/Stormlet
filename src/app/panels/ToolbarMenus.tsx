@@ -16,6 +16,7 @@ import type { DialogName } from './WorkspaceDialogs';
 export function ToolbarMenus({
   fileInput,
   onNew,
+  onRecent,
   onOpenFile,
   onDownload,
   keys,
@@ -28,6 +29,8 @@ export function ToolbarMenus({
 }: {
   fileInput: RefObject<HTMLInputElement | null>;
   onNew(): void;
+  /** Boards of closed tabs; absent where the browser keeps only one board. */
+  onRecent?(): void;
   onOpenFile(file: File): void;
   onDownload(): void;
   /** The commands behind the shortcuts, which the Edit and View menus run too. */
@@ -46,6 +49,7 @@ export function ToolbarMenus({
       <FileMenu
         fileInput={fileInput}
         onNew={onNew}
+        onRecent={onRecent}
         onOpenFile={onOpenFile}
         onDownload={onDownload}
         drive={

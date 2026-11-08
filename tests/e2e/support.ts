@@ -53,7 +53,11 @@ export interface SavedBoard {
   connections?: Connection[];
 }
 export const saved = (page: Page): Promise<SavedBoard> =>
-  page.evaluate(() => JSON.parse(localStorage.getItem('stormlet.board') ?? '{"stickies":[]}'));
+  page.evaluate(() => {
+    // Each tab keeps its board under its own slot (ADR 0011).
+    const slot = sessionStorage.getItem('stormlet.tab');
+    return JSON.parse(localStorage.getItem(`stormlet.board.${slot}`) ?? '{"stickies":[]}');
+  });
 export const note = (id: string, x: number, y: number, text = id): Sticky => ({
   id,
   x,

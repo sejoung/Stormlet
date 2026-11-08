@@ -293,3 +293,65 @@
   color: var(--text);
   font-size: 12px;
 }
+.recent-boards {
+  display: grid;
+  gap: 8px;
+  max-height: min(420px, 60dvh);
+  margin: 16px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.recent-boards li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.recent-boards li > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.recent-boards strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.recent-boards span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.recent-boards .recent-preview {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-boards button {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.recent-boards button:hover {
+  background: var(--selected);
+}
+.recent-boards button.danger {
+  border-color: #c33d4b;
+  color: #c33d4b;
+}
+.recent-empty {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}

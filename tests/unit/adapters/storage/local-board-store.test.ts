@@ -4,10 +4,10 @@ import {
   BOARD_KEY,
   DAMAGED_SUFFIX,
   LocalBoardStore,
-} from '../../../src/adapters/storage/local-board-store';
-import { clearLog, recentLog } from '../../../src/adapters/diagnostics/log';
-import { serializeBoard } from '../../../src/adapters/files/stormlet-format';
-import { boardOf, sticky } from '../../support/boards';
+} from '../../../../src/adapters/storage/local-board-store';
+import { clearLog, recentLog } from '../../../../src/adapters/diagnostics/log';
+import { serializeBoard } from '../../../../src/adapters/files/stormlet-format';
+import { boardOf, sticky } from '../../../support/boards';
 
 afterEach(() => {
   localStorage.clear();
@@ -45,6 +45,17 @@ describe('LocalBoardStore', () => {
     const reopened = new LocalBoardStore();
     expect(reopened.load()).toEqual(boardOf(sticky('a')));
     reopened.dispose();
+  });
+
+  it('keeps a board under its own key and reports each save that lands', () => {
+    const written = vi.fn();
+    const store = new LocalBoardStore('stormlet.board.tab', 0, written);
+    store.apply([{ op: 'add', sticky: sticky('a') }]);
+    store.flush();
+    expect(written).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('stormlet.board.tab')).toContain('"a"');
+    expect(localStorage.getItem('stormlet.board')).toBeNull();
+    store.dispose();
   });
 
   it('saves once edits pause, or at once when the page is hidden', () => {

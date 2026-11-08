@@ -4,41 +4,57 @@ import { HelpDialog } from '../../components/dialogs/HelpDialog';
 import { DiagnosticsDialog } from '../../components/dialogs/DiagnosticsDialog';
 import { NewBoardDialog } from '../../components/dialogs/NewBoardDialog';
 import { isEmptyBoard } from '../../domain/model';
+import type { BoardLibrary } from '../../domain/store';
+import { RecentBoardsDialog } from '../../components/dialogs/RecentBoardsDialog';
 import { DriveDialog } from '../../components/drive/DriveDialog';
 import { DriveConflictDialog } from '../../components/drive/DriveConflictDialog';
 import type { Diagnostics } from '../diagnostics/diagnostics';
 import type { Drive } from '../drive/useDrive';
 
-export type DialogName = 'new' | 'bulk' | 'help' | 'diagnostics' | 'drive' | 'conflict';
+export type DialogName = 'new' | 'recent' | 'bulk' | 'help' | 'diagnostics' | 'drive' | 'conflict';
 
 interface Props {
   dialog: DialogName | null;
   onDialog(dialog: DialogName | null): void;
   board: Board;
   onBulkAdd(texts: string[]): void;
-  onNewBoard(title: string): void;
-  onDownload(): void;
+  /** Other boards in this browser, and starting or downloading this tab's board. */
+  boards: { library?: BoardLibrary; create(title: string): void; download(): void };
   diagnostics: Diagnostics;
   drive: Drive;
 }
 
 /** The workspace's modal dialogs; at most one is open. */
-export function WorkspaceDialogs({ dialog, onDialog, drive, ...props }: Props) {
+export function WorkspaceDialogs({ dialog, onDialog, drive, boards, ...props }: Props) {
   const close = () => onDialog(null);
+  const { library } = boards;
+  const empty = isEmptyBoard(props.board);
   switch (dialog) {
     case 'new':
       return (
         <NewBoardDialog
-          hasWork={!isEmptyBoard(props.board)}
+          hasWork={!empty}
+          inNewTab={!empty && library !== undefined}
           driveFile={'file' in drive.state ? drive.state.file.name : null}
-          onDownload={props.onDownload}
+          onDownload={boards.download}
           onCreate={(title) => {
             close();
-            void drive.release().then((released) => released && props.onNewBoard(title));
+            if (!empty && library) return library.startInTab(title);
+            void drive.release().then((released) => released && boards.create(title));
           }}
           onClose={close}
         />
       );
+    case 'recent':
+      return library ? (
+        <RecentBoardsDialog
+          load={library.closed.bind(library)}
+          here={empty && !('file' in drive.state)}
+          onOpen={(id) => library.open(id, empty && !('file' in drive.state) ? 'here' : 'tab')}
+          onRemove={library.remove.bind(library)}
+          onClose={close}
+        />
+      ) : null;
     case 'bulk':
       return <BulkDialog onClose={close} onAdd={props.onBulkAdd} />;
     case 'help':
