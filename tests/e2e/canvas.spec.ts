@@ -9,6 +9,8 @@ import {
   note,
   frame,
   rightClick,
+  screenshot,
+  drag,
 } from './support';
 
 test('creates and pastes at the context-menu cursor, with undo and redo', async ({
@@ -87,3 +89,38 @@ test('opens a keyboard context menu and keeps native text editing separate', asy
   await input.click({ button: 'right' });
   await expect(page.getByRole('menu')).toHaveCount(0);
 });
+
+test('moves the view from the minimap and remembers it is open', async ({ page }, info) => {
+  await openBoard(page, {
+    stickies: { a: note('a', 100, 100, '가까운 메모'), b: note('b', 4000, 2600, '먼 메모') },
+  });
+  await page.getByRole('button', { name: '미니맵' }).click();
+  const map = page.getByRole('application', { name: /미니맵/ });
+  await expect(map).toBeVisible();
+  const far = page.locator('[data-sticky-id="b"]');
+
+  // Clicking a note on the map brings that note to the middle of the canvas.
+  await page.mouse.click(...xy(await center(map.locator('rect[fill]').nth(1))));
+  const middle = await center(canvas(page));
+  await expect.poll(async () => distance(await center(far), middle)).toBeLessThan(4);
+
+  // Dragging the outline pans by the dragged distance at map scale, without jumping.
+  const outline = await center(map.locator('.minimap-viewport'));
+  const before = await center(far);
+  await drag(page, outline, { x: outline.x + 20, y: outline.y });
+  const after = await center(far);
+  expect(after.x).toBeLessThan(before.x - 20);
+  expect(Math.abs(after.y - before.y)).toBeLessThan(1);
+  await screenshot(page, info, 'minimap');
+
+  await page.reload();
+  await expect(page.getByRole('application', { name: /미니맵/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: '미니맵' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});
+
+const xy = (at: { x: number; y: number }) => [at.x, at.y] as const;
+const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+  Math.hypot(a.x - b.x, a.y - b.y);

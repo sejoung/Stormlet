@@ -13,25 +13,26 @@ export interface FitSelection {
   frame: string | null;
 }
 
+/** Areas of the board's frames, notes and lines, or only of the `selected` ones. */
+export function contentRects(board: Board, selected?: FitSelection): Rect[] {
+  const notes = selected && new Set(selected.notes);
+  return [
+    ...Object.values(board.frames ?? {}).filter(
+      (frame) => !selected || frame.id === selected.frame,
+    ),
+    ...Object.values(board.stickies).filter((note) => !notes || notes.has(note.id)),
+    ...Object.values(board.connections ?? {})
+      .filter((line) => !selected || line.id === selected.connection)
+      .flatMap((line) => connectionGeometry(board, line)?.bounds ?? []),
+  ];
+}
+
 export function fitBoard(
   board: Board,
   viewport: { width: number; height: number },
   selected?: FitSelection,
 ): View | null {
-  const notes = selected && new Set(selected.notes);
-  return fitView(
-    [
-      ...Object.values(board.frames ?? {}).filter(
-        (frame) => !selected || frame.id === selected.frame,
-      ),
-      ...Object.values(board.stickies).filter((note) => !notes || notes.has(note.id)),
-      ...Object.values(board.connections ?? {})
-        .filter((line) => !selected || line.id === selected.connection)
-        .flatMap((line) => connectionGeometry(board, line)?.bounds ?? []),
-    ],
-    viewport.width,
-    viewport.height,
-  );
+  return fitView(contentRects(board, selected), viewport.width, viewport.height);
 }
 
 export function fitView(rects: readonly Rect[], width: number, height: number): View | null {

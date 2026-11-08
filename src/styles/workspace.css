@@ -204,3 +204,46 @@
 .guide-horizontal {
   height: 1px;
 }
+.zoom-controls button[aria-pressed='true'] {
+  background: var(--selected);
+  color: var(--accent);
+}
+.minimap {
+  position: absolute;
+  right: 20px;
+  bottom: 72px;
+  border-radius: 9px;
+  background: var(--surface);
+  /* A ring instead of a border, so the drawn map fills the whole box pointers are mapped on. */
+  box-shadow:
+    0 0 0 1px var(--border),
+    var(--shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+.minimap:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.minimap-frame {
+  stroke: var(--muted);
+  stroke-width: 1;
+  fill-opacity: 0.45;
+}
+/* Pale notes stay visible on the map at any scale. */
+.minimap-note {
+  stroke: color-mix(in srgb, var(--text) 25%, transparent);
+  stroke-width: 0.5;
+}
+.minimap-viewport {
+  fill: color-mix(in srgb, var(--focus) 10%, transparent);
+  stroke: var(--focus);
+  stroke-width: 1.5;
+  cursor: grab;
+}
+@media (max-width: 600px) {
+  .minimap {
+    right: 12px;
+    bottom: 64px;
+  }
+}

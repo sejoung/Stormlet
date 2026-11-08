@@ -32,6 +32,8 @@ import { useBoardSearch } from './panels/useBoardSearch';
 import { useStatus } from './panels/useStatus';
 import { useBoardView } from './view/useBoardView';
 import { useNoteEditing } from './notes/useNoteEditing';
+import { useMinimap } from './view/useMinimap';
+import { Minimap } from '../components/minimap/Minimap';
 
 export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   // --- Board, history and view ---
@@ -40,6 +42,7 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
   const defaults = useCreationDefaults();
   const canvas = useBoardView();
   const { view, viewport } = canvas;
+  const minimap = useMinimap();
   const [tool, setTool] = useState<BoardTool>('interact');
   const finishTool = () => setTool('interact');
   const [reactor] = useState(reactionIdentity);
@@ -280,12 +283,22 @@ export function App({ store, newId }: { store: BoardStore; newId(): string }) {
                   onClose={search.close}
                 />
               )}
+              {minimap.open && (
+                <Minimap
+                  board={board}
+                  view={view}
+                  viewport={viewport}
+                  onViewChange={canvas.setView}
+                />
+              )}
               <BoardChrome
                 empty={isEmptyBoard(board)}
                 tool={tool}
                 zoom={view.zoom}
+                minimap={minimap.open}
                 onZoom={canvas.zoomTo}
                 onFit={() => fit()}
+                onMinimap={minimap.toggle}
                 onHelp={() => setDialog('help')}
               />
             </div>

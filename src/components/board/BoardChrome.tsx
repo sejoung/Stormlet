@@ -14,15 +14,19 @@ export function BoardChrome({
   empty,
   tool,
   zoom,
+  minimap,
   onZoom,
   onFit,
+  onMinimap,
   onHelp,
 }: {
   empty: boolean;
   tool: BoardTool;
   zoom: number;
+  minimap: boolean;
   onZoom(zoom: number): void;
   onFit(): void;
+  onMinimap(): void;
   onHelp(): void;
 }) {
   return (
@@ -53,6 +57,15 @@ export function BoardChrome({
           </button>
           <button type="button" aria-label="확대" onClick={() => onZoom(zoom * ZOOM_STEP)}>
             +
+          </button>
+          <button
+            type="button"
+            aria-label="미니맵"
+            title={minimap ? '미니맵 닫기' : '미니맵 열기'}
+            aria-pressed={minimap}
+            onClick={onMinimap}
+          >
+            <Icon name="map" />
           </button>
           <button type="button" aria-label="단축키 도움말" onClick={onHelp}>
             <Icon name="help" />

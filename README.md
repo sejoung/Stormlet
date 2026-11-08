@@ -43,6 +43,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 
 - Pan with Space+drag, the middle mouse button or the hand tool; zoom with the wheel or on-screen controls
 - Fit all notes or the selected ones (`Alt/Option+1/2`)
+- Minimap of the whole board: click or drag the outline to move the view, or use the arrow keys; it stays open across reloads
 - Context menus on notes, frames, lines and the empty canvas (also Shift+F10)
 - Undo and redo for every change, including deletions that remove attached lines
 - Autosave in the browser, synced across tabs of the same browser
@@ -129,7 +130,6 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 
 ## Roadmap
 
-- Minimap
 - Google Drive storage
 - Real-time collaboration: a Yjs implementation of `BoardStore` and a relay server ([ADR 0002](docs/adr/0002-collaboration-ready-model.md))
 
