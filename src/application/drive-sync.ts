@@ -142,6 +142,13 @@ export class DriveSync implements BoardStore {
     this.set('unlinked');
   }
 
+  /** Access ended: keep edits local until `resume`. */
+  pause(): void {
+    if (!this.link) return;
+    this.cancelWait();
+    this.set('paused');
+  }
+
   /** Save now, without waiting, and retry after a failure. */
   saveNow(): Promise<void> {
     return this.link ? this.run() : Promise.resolve();

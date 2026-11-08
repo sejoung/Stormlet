@@ -3,7 +3,8 @@ import type { Board } from '../../domain/model';
 import { RemoteError } from '../../domain/sync/remote';
 import type { Side } from '../../domain/sync/merge';
 import type { DriveSync, SyncState } from '../../application/drive-sync';
-import { DriveAuthError, type DriveAuth } from '../../adapters/drive/types';
+import { DriveAuthError, type AuthEvent, type DriveAuth } from '../../adapters/drive/types';
+import { useAuthRenewal } from './useAuthRenewal';
 import { errorDetails, log } from '../../adapters/diagnostics/log';
 import { useLocale, useT } from '../../components/common/i18n';
 import type { MessageKey } from '../../i18n/messages';
@@ -51,7 +52,22 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
   const [busy, setBusy] = useState(false);
 
   useEffect(() => services?.sync.watch(setState), [services]);
-  useEffect(() => services?.auth.subscribe(setConnected), [services]);
+  // Connections, expiries and disconnects come from this tab or from another one.
+  useEffect(() => {
+    if (!services) return;
+    const { auth, sync } = services;
+    const follow = (event: AuthEvent) => {
+      setConnected(auth.getToken() !== null);
+      if (event === 'connected' && sync.current.status === 'paused') void sync.resume();
+      else if (event === 'expired') sync.pause();
+      else if (event === 'disconnected') sync.unlink();
+    };
+    const unsubscribe = auth.subscribe(follow);
+    // Another tab may have handed over its token before this subscribed.
+    if (auth.getToken()) follow('connected');
+    return unsubscribe;
+  }, [services]);
+  const renewal = useAuthRenewal(services?.auth, connected && 'file' in state, onStatus);
   useEffect(() => {
     if (state.status === 'failed')
       log.warn('drive.sync-failed', { reason: state.reason, message: state.detail });
@@ -98,14 +114,14 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
     available: Boolean(services),
     state,
     connected,
+    expiring: renewal.expiring,
+    renew: renewal.renew,
     ready,
     busy,
     prepare,
     connect: () =>
-      run('drive.connect-failed', async ({ auth, sync }) => {
-        await auth.connect();
-        await sync.resume();
-      }),
+      // Saving resumes when the token arrives, as it does when another tab connects.
+      run('drive.connect-failed', ({ auth }) => auth.connect()),
     saveToFolder: () =>
       run('drive.create-failed', async (drive) => {
         flushEditor();

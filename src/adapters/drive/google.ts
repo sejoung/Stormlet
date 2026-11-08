@@ -1,8 +1,10 @@
 import type { GoogleConfig } from './config';
+import type { AuthChannel, AuthMessage } from './auth-channel';
 import { loadScript } from './script-loader';
 import { showPicker } from './picker';
 import {
   DriveAuthError,
+  type AuthEvent,
   type DriveAuth,
   type DriveItem,
   type PickKind,
@@ -13,30 +15,46 @@ export const IDENTITY_SCRIPT = 'https://accounts.google.com/gsi/client';
 export const PICKER_SCRIPT = 'https://apis.google.com/js/api.js';
 /** Access to files Stormlet creates or the user opens with it, and nothing else. */
 export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+/** Google's popup needs a user gesture, so renewal is offered this long before expiry. */
+export const RENEW_BEFORE = 10 * 60_000;
 const PICKER_TIMEOUT_MS = 15_000;
 const REVOKE_TIMEOUT_MS = 10_000;
 /** Google reports the lifetime in seconds; stop using a token a little before it lapses. */
 const EXPIRY_MARGIN_S = 30;
 
 /**
- * Google sign-in with a memory-only access token (ADR 0010): it is never written to any
- * browser storage, so a reload needs the user to reconnect. Google's token model has no
- * refresh token, and its popup needs a user gesture, so nothing reconnects on its own.
- * `getToken` is an arrow property because the Drive client receives it as a callback.
+ * Google sign-in with a memory-only access token (ADR 0010). The token is never written to
+ * browser storage; open tabs hand it to each other through `channel`, so a new tab connects
+ * without a popup while another tab is connected. Google's token model has no refresh
+ * token, so the connection announces its renewal window (`expiring`) for the app to renew
+ * on a user gesture, and its end (`expired`). `getToken` is an arrow property because the
+ * Drive client receives it as a callback.
  */
 export class GoogleConnection implements DriveAuth {
   private token: string | null = null;
-  private expiry: ReturnType<typeof setTimeout> | null = null;
+  private expiresAt = 0;
+  private timers: ReturnType<typeof setTimeout>[] = [];
   private loaded = false;
-  /** Bumped by `disconnect`, so a popup answered afterwards is ignored. */
+  /** Bumped when access is withdrawn, so a popup answered afterwards is ignored. */
   private generation = 0;
-  private readonly listeners = new Set<(connected: boolean) => void>();
+  private readonly listeners = new Set<(event: AuthEvent) => void>();
 
-  constructor(private readonly config: GoogleConfig) {}
+  constructor(
+    private readonly config: GoogleConfig,
+    private readonly channel: AuthChannel | null = null,
+  ) {
+    channel?.listen(this.receive);
+    // A tab that is already connected answers with its token.
+    channel?.post({ type: 'request' });
+  }
 
-  getToken = (): string | null => this.token;
+  getToken = (): string | null => (Date.now() < this.expiresAt ? this.token : null);
 
-  subscribe(listener: (connected: boolean) => void): () => void {
+  expiring(): boolean {
+    return this.getToken() !== null && this.expiresAt - Date.now() <= RENEW_BEFORE;
+  }
+
+  subscribe(listener: (event: AuthEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -75,19 +93,30 @@ export class GoogleConnection implements DriveAuth {
             return;
           }
           const lifetime = Math.max(0, (result.expires_in ?? 3600) - EXPIRY_MARGIN_S) * 1000;
-          this.keep(result.access_token, lifetime);
+          this.keep(result.access_token, Date.now() + lifetime);
+          this.share();
+          this.emit('connected');
           resolve();
         },
         error_callback: () =>
           reject(new DriveAuthError('cancelled', 'The sign-in window was closed or blocked.')),
       });
-      // An empty prompt skips the consent screen when the user already agreed.
+      // An empty prompt skips the consent screen when the user already agreed, so a renewal
+      // popup closes on its own.
       client.requestAccessToken({ prompt: '' });
     });
   }
 
+  clearToken(token: string): void {
+    // A renewal may have replaced the refused token while the request was under way.
+    if (token !== this.token) return;
+    this.keep(null, 0);
+    this.channel?.post({ type: 'expired', token });
+    this.emit('expired');
+  }
+
   async pick(kind: PickKind, options: PickOptions): Promise<DriveItem | null> {
-    const token = this.token;
+    const token = this.getToken();
     const api = window.google?.picker;
     if (!token || !api) throw new DriveAuthError('unavailable', 'Connect Google Drive first.');
     return showPicker(kind, {
@@ -100,19 +129,63 @@ export class GoogleConnection implements DriveAuth {
   }
 
   async disconnect(): Promise<void> {
-    const token = this.token;
-    this.generation++;
-    this.keep(null, 0);
+    const token = this.getToken();
+    this.withdraw();
+    this.channel?.post({ type: 'disconnected' });
+    this.emit('disconnected');
+    // Consent is withdrawn once, by the tab where the user disconnected.
     if (token) await revoke(token);
   }
 
-  /** Hold `token` for `lifetime` ms and announce both ends of it. */
-  private keep(token: string | null, lifetime: number): void {
-    const was = this.token !== null;
+  private withdraw(): void {
+    this.generation++;
+    this.keep(null, 0);
+  }
+
+  /** Hold `token` until `expiresAt`, announcing the renewal window and the end. */
+  private keep(token: string | null, expiresAt: number): void {
     this.token = token;
-    if (this.expiry !== null) clearTimeout(this.expiry);
-    this.expiry = token ? setTimeout(() => this.keep(null, 0), lifetime) : null;
-    if (was !== (token !== null)) for (const listener of this.listeners) listener(token !== null);
+    this.expiresAt = token ? expiresAt : 0;
+    this.timers.forEach((timer) => clearTimeout(timer));
+    const left = expiresAt - Date.now();
+    this.timers = token
+      ? [
+          setTimeout(() => this.emit('expiring'), Math.max(0, left - RENEW_BEFORE)),
+          setTimeout(() => {
+            // A renewal popup may still be open, so its answer stays welcome.
+            this.keep(null, 0);
+            this.emit('expired');
+          }, left),
+        ]
+      : [];
+  }
+
+  private share(): void {
+    const token = this.getToken();
+    if (token) this.channel?.post({ type: 'token', token, expiresIn: this.expiresAt - Date.now() });
+  }
+
+  private readonly receive = (message: AuthMessage): void => {
+    if (message.type === 'request') return this.share();
+    if (message.type === 'token') {
+      // A remaining lifetime, not a time, so tabs never extend Google's expiry.
+      const expiresAt = Date.now() + message.expiresIn;
+      if (this.getToken() && expiresAt <= this.expiresAt) return;
+      this.keep(message.token, expiresAt);
+      return this.emit('connected');
+    }
+    if (message.type === 'expired') {
+      // Only the refused token ends; a newer one this tab holds stays.
+      if (message.token !== this.token) return;
+      this.keep(null, 0);
+      return this.emit('expired');
+    }
+    this.withdraw();
+    this.emit('disconnected');
+  };
+
+  private emit(event: AuthEvent): void {
+    for (const listener of this.listeners) listener(event);
   }
 }
 

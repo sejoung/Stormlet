@@ -52,6 +52,8 @@ export class DriveClient implements RemoteBoards {
   constructor(
     private readonly token: () => string | null,
     private readonly fetcher: typeof fetch = (...args) => globalThis.fetch(...args),
+    /** Called with a token Drive refused (revoked or expired), so it can be dropped. */
+    private readonly onRefused: (token: string) => void = () => {},
   ) {}
 
   async open(id: string): Promise<{ file: RemoteFile; board: Board }> {
@@ -138,6 +140,7 @@ export class DriveClient implements RemoteBoards {
         signal: controller.signal,
         headers: { ...init.headers, Authorization: `Bearer ${token}` },
       });
+      if (response.status === 401) this.onRefused(token);
       if (!response.ok) {
         const reason = STATUS_FAILURES[response.status] ?? 'network';
         throw new RemoteError(reason, `Drive answered ${response.status}.`);

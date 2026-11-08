@@ -465,4 +465,7 @@ export const en = {
   'drive.field.position': 'position',
   'drive.field.size': 'size',
   'drive.field.other': 'other settings',
+  'drive.short.expiring': 'Renew',
+  'drive.status.expiring': 'Access to Drive ends soon. Click to renew it.',
+  'drive.renewFailed': 'Could not renew access to Drive. Try Renew again before it ends.',
 };

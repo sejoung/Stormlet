@@ -9,6 +9,7 @@ import { logUncaughtErrors } from './adapters/diagnostics/global-errors';
 import { APP_VERSION } from './adapters/diagnostics/build-info';
 import { driveConfig } from './adapters/drive/config';
 import { GoogleConnection } from './adapters/drive/google';
+import { openAuthChannel } from './adapters/drive/auth-channel';
 import { DriveClient } from './adapters/drive/client';
 import { LocalDriveLinks } from './adapters/drive/links';
 import { DriveSync } from './application/drive-sync';
@@ -25,12 +26,12 @@ else {
   log.info('app.started', { version: APP_VERSION, drive: google !== null });
   const local = new LocalBoardStore();
   // With Drive configured, the board store also keeps the linked Drive file in sync.
-  const auth = google && new GoogleConnection(google);
+  const auth = google && new GoogleConnection(google, openAuthChannel(google.clientId));
   const drive = auth && {
     auth,
     sync: new DriveSync(
       local,
-      new DriveClient(auth.getToken),
+      new DriveClient(auth.getToken, undefined, (token) => auth.clearToken(token)),
       new LocalDriveLinks(),
       Date.now,
       local.damaged !== null,

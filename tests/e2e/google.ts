@@ -1,4 +1,7 @@
-import type { Page, Request, Route } from '@playwright/test';
+import type { BrowserContext, Page, Request, Route } from '@playwright/test';
+
+/** A page, or every page of a browser context (tabs share one fake Google). */
+type Target = Page | BrowserContext;
 
 /** A board file in the fake Drive. */
 export interface FakeFile {
@@ -14,7 +17,7 @@ export const TOKEN = 'e2e-token';
  * Google's sign-in and Picker scripts, simulated in the page. Sign-in grants a token at
  * once; the Picker shows a dialog whose button picks `window.__pick[kind]`.
  */
-export async function mockGoogleScripts(page: Page) {
+export async function mockGoogleScripts(page: Target) {
   await page.route('https://accounts.google.com/gsi/client', (route) =>
     route.fulfill({
       contentType: 'application/javascript',
@@ -79,7 +82,7 @@ function multipart(request: Request): [Record<string, unknown>, string] {
 }
 
 /** The Drive v3 REST API over an in-memory file map, checking the access token. */
-export async function mockDrive(page: Page) {
+export async function mockDrive(page: Target) {
   const files = new Map<string, FakeFile>();
   const requests: string[] = [];
   let created = 0;

@@ -142,6 +142,10 @@ describe('Drive client', () => {
       'network',
       'network',
     ]);
+    const refused = vi.fn();
+    const revoked = fakeFetch(json({}, {}, 401));
+    await reason(new DriveClient(() => 'stale', revoked.fetcher, refused).version('f1'));
+    expect(refused).toHaveBeenCalledExactlyOnceWith('stale');
     const offline = fakeFetch(new TypeError('Failed to fetch'));
     expect(await reason(new DriveClient(() => 't', offline.fetcher).version('f1'))).toBe('network');
     const signedOut = fakeFetch();

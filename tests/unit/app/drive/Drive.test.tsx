@@ -5,6 +5,7 @@ import { App } from '../../../../src/app/App';
 import { DriveSync } from '../../../../src/application/drive-sync';
 import {
   DriveAuthError,
+  type AuthEvent,
   type DriveAuth,
   type DriveItem,
 } from '../../../../src/adapters/drive/types';
@@ -20,29 +21,42 @@ import { fakeDrive, memoryLinks } from '../../../support/drive';
 function fakeAuth() {
   let token: string | null = null;
   let loaded = false;
-  const listeners = new Set<(connected: boolean) => void>();
-  const announce = () => listeners.forEach((listener) => listener(token !== null));
+  let expiring = false;
+  const listeners = new Set<(event: AuthEvent) => void>();
+  const emit = (event: AuthEvent) => listeners.forEach((listener) => listener(event));
   const auth = {
     getToken: () => token,
-    subscribe: (listener: (connected: boolean) => void) => {
+    expiring: () => token !== null && expiring,
+    subscribe: (listener: (event: AuthEvent) => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    clearToken: vi.fn(() => {}),
     prepare: vi.fn(async () => {
       loaded = true;
     }),
     ready: () => loaded,
     connect: vi.fn(async () => {
       token = 'token';
-      announce();
+      expiring = false;
+      emit('connected');
     }),
     pick: vi.fn(async (): Promise<DriveItem | null> => null),
     disconnect: vi.fn(async () => {
       token = null;
-      announce();
+      emit('disconnected');
     }),
   } satisfies DriveAuth;
-  return auth;
+  return {
+    ...auth,
+    /** What another tab or the clock does to this connection. */
+    elsewhere: {
+      token: () => ((token = 'shared'), emit('connected')),
+      expiring: () => ((expiring = true), emit('expiring')),
+      expired: () => ((token = null), emit('expired')),
+      disconnected: () => ((token = null), emit('disconnected')),
+    },
+  };
 }
 
 function renderWithDrive(board: Board = boardOf(sticky('a')), link: RemoteLink | null = null) {
@@ -222,5 +236,70 @@ describe('Google Drive', () => {
       await screen.findByText('Google 로그인이 취소되었거나 차단되었습니다.'),
     ).toBeInTheDocument();
     expect(recentLog().map((entry) => entry.event)).toContain('drive.connect-failed');
+  });
+
+  it('follows a token, an expiry and a disconnect from another tab', async () => {
+    const link = {
+      file: { id: 'file1', name: 'board.stormlet', version: '1' },
+      base: boardOf(sticky('a')),
+    };
+    const { auth, drive, sync } = renderWithDrive(boardOf(sticky('a', { text: 'offline' })), link);
+    drive.files.set('file1', { name: 'board.stormlet', version: 1, board: boardOf(sticky('a')) });
+    expect(driveButton()).toHaveTextContent('다시 연결');
+    act(() => auth.elsewhere.token());
+    // No popup here: the other tab's token resumes saving.
+    await waitFor(() => expect(driveButton()).toHaveTextContent('저장됨'));
+    expect(auth.connect).not.toHaveBeenCalled();
+    expect(drive.files.get('file1')!.board.stickies.a.text).toBe('offline');
+
+    act(() => auth.elsewhere.expired());
+    expect(driveButton()).toHaveTextContent('다시 연결');
+    act(() => auth.elsewhere.token());
+    await waitFor(() => expect(driveButton()).toHaveTextContent('저장됨'));
+    act(() => auth.elsewhere.disconnected());
+    expect(sync.current.status).toBe('unlinked');
+    expect(driveButton()).toHaveTextContent('Drive');
+  });
+
+  it('renews expiring access on the next click, and from the button after a failure', async () => {
+    const { auth, sync } = renderWithDrive();
+    const dialog = await connect();
+    auth.pick.mockResolvedValueOnce({ id: 'folder', name: 'Boards' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Drive 폴더에 저장…' }));
+    await waitFor(() => expect(sync.current.status).toBe('synced'));
+    expect(auth.connect).toHaveBeenCalledTimes(1);
+
+    act(() => auth.elsewhere.expiring());
+    expect(driveButton()).toHaveAccessibleName(
+      'Google Drive: Drive 접근 권한이 곧 끝납니다. 눌러서 연장하세요.',
+    );
+    expect(driveButton()).toHaveTextContent('연장');
+    // Keys never renew: the popup would take focus mid-typing.
+    fireEvent.keyDown(window, { key: 'a' });
+    expect(auth.connect).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('application', { name: '포스트잇 보드' }));
+    await waitFor(() => expect(driveButton()).toHaveTextContent('저장됨'));
+    expect(auth.connect).toHaveBeenCalledTimes(2);
+
+    // A closed popup stops renewing on clicks; the button still renews and says why not.
+    act(() => auth.elsewhere.expiring());
+    auth.connect.mockRejectedValueOnce(new DriveAuthError('cancelled'));
+    fireEvent.click(screen.getByRole('application', { name: '포스트잇 보드' }));
+    await waitFor(() => expect(auth.connect).toHaveBeenCalledTimes(3));
+    fireEvent.click(screen.getByRole('application', { name: '포스트잇 보드' }));
+    expect(auth.connect).toHaveBeenCalledTimes(3);
+    auth.connect.mockRejectedValueOnce(new DriveAuthError('cancelled'));
+    fireEvent.click(driveButton());
+    expect(
+      await screen.findByText(
+        'Drive 접근 권한을 연장하지 못했습니다. 끝나기 전에 연장을 다시 눌러 주세요.',
+      ),
+    ).toBeInTheDocument();
+    expect(auth.connect).toHaveBeenCalledTimes(4);
+    fireEvent.click(driveButton());
+    await waitFor(() => expect(driveButton()).toHaveTextContent('저장됨'));
+    expect(recentLog().map((entry) => entry.event)).toEqual(
+      expect.arrayContaining(['drive.renewed', 'drive.renew-failed']),
+    );
   });
 });

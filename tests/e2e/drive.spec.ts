@@ -96,3 +96,63 @@ test('opens a board from Drive', async ({ page }) => {
   await expect(driveButton(page)).toHaveText('저장됨');
   expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
 });
+
+test('a new tab takes over an open tab’s connection, and a disconnect ends both', async ({
+  page,
+  context,
+}) => {
+  await mockGoogleScripts(context);
+  const drive = await mockDrive(context);
+  const dialog = await connect(page);
+  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
+  await page
+    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
+    .getByRole('button')
+    .click();
+  await expect(driveButton(page)).toHaveText('저장됨');
+
+  const second = await context.newPage();
+  await second.goto('/');
+  // The open tab hands over its token: no sign-in popup and nothing stored.
+  await expect(driveButton(second)).toHaveText('저장됨');
+  expect(await second.evaluate(() => document.documentElement.dataset.signIns)).toBeUndefined();
+  expect(
+    await second.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage })),
+  ).not.toContain('e2e-token');
+  expect(drive.requests.filter((request) => request.startsWith('PATCH'))).toEqual([]);
+
+  await driveButton(second).click();
+  await second
+    .getByRole('dialog', { name: 'Google Drive' })
+    .getByRole('button', { name: 'Google Drive 연결 해제' })
+    .click();
+  await expect(driveButton(second)).toHaveText('Drive');
+  await expect(driveButton(page)).toHaveText('Drive');
+});
+
+test('renews access on a click before it runs out', async ({ page }) => {
+  await page.clock.install();
+  await page.reload();
+  await mockGoogleScripts(page);
+  await mockDrive(page);
+  const dialog = await connect(page);
+  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
+  await page
+    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
+    .getByRole('button')
+    .click();
+  await expect(driveButton(page)).toHaveText('저장됨');
+  const signIns = () => page.evaluate(() => document.documentElement.dataset.signIns);
+  expect(await signIns()).toBe('1');
+
+  // Fifty minutes later the token is in its renewal window.
+  await page.clock.fastForward('50:00');
+  await expect(driveButton(page)).toHaveText('연장');
+  await canvas(page).click({ position: { x: 600, y: 400 } });
+  await expect(driveButton(page)).toHaveText('저장됨');
+  expect(await signIns()).toBe('2');
+
+  // Without a click, access ends and saving waits for a reconnect.
+  await page.clock.fastForward(60 * 60_000);
+  await expect(driveButton(page)).toHaveText('다시 연결');
+});

@@ -39,6 +39,7 @@ import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
 import { WorkspaceDialogs, type DialogName } from './panels/WorkspaceDialogs';
 import { DriveButton } from '../components/drive/DriveButton';
+import { needsAttention } from '../components/drive/drive-status';
 
 export interface WorkspaceProps {
   store: BoardStore;
@@ -239,7 +240,9 @@ export function Workspace({
               drive.available && (
                 <DriveButton
                   state={drive.state}
+                  expiring={drive.expiring}
                   onClick={() => {
+                    if (drive.expiring && !needsAttention(drive.state)) return drive.renew();
                     // Reconnecting straight from the click keeps Google's popup allowed.
                     if (drive.state.status === 'paused' && drive.ready) drive.connect();
                     else setDialog(drive.state.status === 'conflict' ? 'conflict' : 'drive');

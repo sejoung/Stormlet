@@ -13,17 +13,27 @@ export interface PickOptions {
   title: string;
 }
 
+/**
+ * What happened to the connection: a token arrived (here or from another tab, also when
+ * renewed), it entered its renewal window, it ran out, or the user disconnected.
+ */
+export type AuthEvent = 'connected' | 'expiring' | 'expired' | 'disconnected';
+
 /** Google sign-in and the Drive Picker; `GoogleConnection` implements them. */
 export interface DriveAuth {
   /** A usable access token, or null when not connected or expired. */
   getToken(): string | null;
-  /** Called when the connection starts or ends (including expiry); returns an unsubscribe. */
-  subscribe(listener: (connected: boolean) => void): () => void;
+  /** Whether the token is in its renewal window, close to running out. */
+  expiring(): boolean;
+  /** Called with every connection event; returns an unsubscribe. */
+  subscribe(listener: (event: AuthEvent) => void): () => void;
+  /** Forget `token` after Drive refused it, here and in other tabs; a newer one stays. */
+  clearToken(token: string): void;
   /** Load Google's scripts; done ahead, because the sign-in popup needs a fresh user gesture. */
   prepare(): Promise<void>;
   /** Whether `prepare` has finished, so `connect` can open its popup at once. */
   ready(): boolean;
-  /** Ask for access in Google's popup; call it straight from a click. */
+  /** Ask for access, or renew it, in Google's popup; call it straight from a click. */
   connect(): Promise<void>;
   /** Show the Picker; resolves with the chosen item, or null when cancelled. */
   pick(kind: PickKind, options: PickOptions): Promise<DriveItem | null>;

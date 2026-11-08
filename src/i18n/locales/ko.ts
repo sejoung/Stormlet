@@ -462,4 +462,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'drive.field.position': '위치',
   'drive.field.size': '크기',
   'drive.field.other': '기타 설정',
+  'drive.short.expiring': '연장',
+  'drive.status.expiring': 'Drive 접근 권한이 곧 끝납니다. 눌러서 연장하세요.',
+  'drive.renewFailed':
+    'Drive 접근 권한을 연장하지 못했습니다. 끝나기 전에 연장을 다시 눌러 주세요.',
 };

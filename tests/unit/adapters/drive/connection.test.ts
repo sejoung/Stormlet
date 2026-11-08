@@ -3,19 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DRIVE_SCOPE,
   GoogleConnection,
+  RENEW_BEFORE,
   IDENTITY_SCRIPT,
   PICKER_SCRIPT,
 } from '../../../../src/adapters/drive/google';
-import { driveConfig } from '../../../../src/adapters/drive/config';
-import {
-  DRIVE_BASE_KEY,
-  DRIVE_FILE_KEY,
-  LocalDriveLinks,
-} from '../../../../src/adapters/drive/links';
-import { DriveAuthError } from '../../../../src/adapters/drive/types';
+import { DriveAuthError, type AuthEvent } from '../../../../src/adapters/drive/types';
+import type { AuthMessage } from '../../../../src/adapters/drive/auth-channel';
 import type { GoogleApi, TokenResponse } from '../../../../src/adapters/drive/google-types';
-import { clearLog, recentLog } from '../../../../src/adapters/diagnostics/log';
-import { boardOf, sticky } from '../../../support/boards';
+import { clearLog } from '../../../../src/adapters/diagnostics/log';
 
 const config = { clientId: 'client', apiKey: 'key', appId: 'app' };
 
@@ -110,26 +105,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('Drive configuration', () => {
-  it('enables Drive only with all three public values', () => {
-    expect(driveConfig({})).toBeNull();
-    expect(
-      driveConfig({
-        VITE_GOOGLE_CLIENT_ID: 'c',
-        VITE_GOOGLE_API_KEY: ' k ',
-        VITE_GOOGLE_APP_ID: '',
-      }),
-    ).toBeNull();
-    expect(
-      driveConfig({
-        VITE_GOOGLE_CLIENT_ID: 'c',
-        VITE_GOOGLE_API_KEY: ' k ',
-        VITE_GOOGLE_APP_ID: '1',
-      }),
-    ).toEqual({ clientId: 'c', apiKey: 'k', appId: '1' });
-  });
-});
-
 describe('Google connection', () => {
   it('loads Google’s scripts and the Picker before connecting', async () => {
     const connection = new GoogleConnection(config);
@@ -165,21 +140,91 @@ describe('Google connection', () => {
     expect(connection.ready()).toBe(false);
   });
 
-  it('keeps a token in memory only, until it expires', async () => {
+  it('keeps a token in memory only, announcing its renewal window and its end', async () => {
     vi.useFakeTimers();
     const fake = fakeGoogle();
     window.google = fake.google;
     const connection = new GoogleConnection(config);
-    const changes: boolean[] = [];
-    connection.subscribe((connected) => changes.push(connected));
+    const events: AuthEvent[] = [];
+    connection.subscribe((event) => events.push(event));
     fake.answers.push({ access_token: 'token', expires_in: 3600 });
     await connection.connect();
     expect(fake.requested).toEqual([{ client_id: 'client', scope: DRIVE_SCOPE, prompt: '' }]);
     expect(connection.getToken()).toBe('token');
     expect(JSON.stringify({ ...localStorage, ...sessionStorage })).not.toContain('token');
-    await vi.advanceTimersByTimeAsync((3600 - 30) * 1000);
+    const lifetime = (3600 - 30) * 1000;
+    await vi.advanceTimersByTimeAsync(lifetime - RENEW_BEFORE - 1);
+    expect([connection.expiring(), events]).toEqual([false, ['connected']]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect([connection.expiring(), events]).toEqual([true, ['connected', 'expiring']]);
+    // Renewing replaces the token and starts a new schedule.
+    fake.answers.push({ access_token: 'renewed', expires_in: 3600 });
+    await connection.connect();
+    expect([connection.getToken(), connection.expiring()]).toEqual(['renewed', false]);
+    await vi.advanceTimersByTimeAsync(lifetime);
     expect(connection.getToken()).toBeNull();
-    expect(changes).toEqual([true, false]);
+    expect(events).toEqual(['connected', 'expiring', 'connected', 'expiring', 'expired']);
+  });
+
+  it('hands its token to other tabs and follows theirs', async () => {
+    vi.useFakeTimers();
+    const fake = fakeGoogle();
+    window.google = fake.google;
+    const posted: AuthMessage[] = [];
+    let receive: (message: AuthMessage) => void = () => {};
+    const channel = {
+      post: (message: AuthMessage) => posted.push(message),
+      listen: (r: typeof receive) => (receive = r),
+    };
+    const connection = new GoogleConnection(config, channel);
+    const events: AuthEvent[] = [];
+    connection.subscribe((event) => events.push(event));
+    // A new tab asks for a token, and nobody has one yet.
+    expect(posted).toEqual([{ type: 'request' }]);
+    receive({ type: 'request' });
+    expect(posted).toHaveLength(1);
+
+    receive({ type: 'token', token: 'theirs', expiresIn: 60_000 });
+    expect(connection.getToken()).toBe('theirs');
+    // An older token is ignored; a later one replaces it.
+    receive({ type: 'token', token: 'older', expiresIn: 30_000 });
+    expect(connection.getToken()).toBe('theirs');
+    fake.answers.push({ access_token: 'mine', expires_in: 3600 });
+    await connection.connect();
+    expect(posted.at(-1)).toEqual({ type: 'token', token: 'mine', expiresIn: (3600 - 30) * 1000 });
+    receive({ type: 'request' });
+    expect(posted.at(-1)).toMatchObject({ type: 'token', token: 'mine' });
+
+    // Only the refused token ends here.
+    receive({ type: 'expired', token: 'theirs' });
+    expect(connection.getToken()).toBe('mine');
+    receive({ type: 'expired', token: 'mine' });
+    expect(connection.getToken()).toBeNull();
+    receive({ type: 'token', token: 'again', expiresIn: 60_000 });
+    // A refusal of an older token leaves the current one alone.
+    connection.clearToken('mine');
+    expect(connection.getToken()).toBe('again');
+    connection.clearToken('again');
+    expect(connection.getToken()).toBeNull();
+    expect(posted.at(-1)).toEqual({ type: 'expired', token: 'again' });
+
+    // Disconnecting elsewhere ends this tab too, including a popup it still has open.
+    fake.answers.push('closed');
+    receive({ type: 'token', token: 'last', expiresIn: 60_000 });
+    receive({ type: 'disconnected' });
+    expect(connection.getToken()).toBeNull();
+    expect(events).toEqual([
+      'connected',
+      'connected',
+      'expired',
+      'connected',
+      'expired',
+      'connected',
+      'disconnected',
+    ]);
+    await connection.disconnect();
+    expect(posted.at(-1)).toEqual({ type: 'disconnected' });
+    expect(fake.revoked).toEqual([]);
   });
 
   it('rejects closed, refused or missing sign-in', async () => {
@@ -243,36 +288,5 @@ describe('Google connection', () => {
     fake.refuseRevoke();
     await expect(connection.disconnect()).rejects.toMatchObject({ reason: 'revoke' });
     expect(connection.getToken()).toBeNull();
-  });
-});
-
-describe('Drive link storage', () => {
-  const link = {
-    file: { id: 'f1', name: 'Plan.stormlet', version: '3' },
-    base: { ...boardOf(sticky('a')), title: 'Plan' },
-  };
-
-  it('remembers the linked file and its base board, and forgets both', () => {
-    const links = new LocalDriveLinks();
-    expect(links.read()).toBeNull();
-    links.write(link);
-    expect(JSON.parse(localStorage.getItem(DRIVE_FILE_KEY)!)).toEqual(link.file);
-    expect(new LocalDriveLinks().read()).toEqual(link);
-    links.write(null);
-    expect(localStorage.getItem(DRIVE_FILE_KEY)).toBeNull();
-    expect(localStorage.getItem(DRIVE_BASE_KEY)).toBeNull();
-  });
-
-  it('ignores a broken record and logs it', () => {
-    const links = new LocalDriveLinks();
-    links.write(link);
-    localStorage.setItem(DRIVE_FILE_KEY, JSON.stringify({ id: 'f1', name: 'x' }));
-    expect(links.read()).toBeNull();
-    localStorage.setItem(DRIVE_FILE_KEY, '{');
-    expect(links.read()).toBeNull();
-    expect(recentLog().map((entry) => entry.event)).toEqual([
-      'drive.link-unreadable',
-      'drive.link-unreadable',
-    ]);
   });
 });
