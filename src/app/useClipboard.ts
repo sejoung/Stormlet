@@ -5,6 +5,7 @@ import { internalConnections } from '../domain/connections/commands';
 import { frameContents, type BoardSlice } from '../domain/frames/commands';
 import { MAX_NOTE_LENGTH } from '../domain/note-details';
 import { serializeBoard, parseBoard } from '../adapters/files/stormlet-format';
+import { errorDetails, log } from '../adapters/diagnostics/log';
 import {
   readClipboard,
   writeClipboard,
@@ -101,7 +102,8 @@ function accept(
           length: MAX_NOTE_LENGTH.toLocaleString(),
         }),
       );
-  } catch {
+  } catch (error) {
+    log.warn('clipboard.paste-unreadable', errorDetails(error));
     options.onStatus(t('clipboard.pasteFailed'));
   }
 }
@@ -158,14 +160,16 @@ export function useClipboard(options: Options): Clipboard {
         cached.current = content;
         if (cut) options.onCut();
         announce(options, cut, t);
-      } catch {
+      } catch (error) {
+        log.warn('clipboard.copy-failed', errorDetails(error, false));
         options.onStatus(t('clipboard.copyUnavailable'));
       }
     },
     paste: async (at) => {
       try {
         accept(options, await readClipboard(), cached.current, t, at);
-      } catch {
+      } catch (error) {
+        log.warn('clipboard.paste-failed', errorDetails(error, false));
         options.onStatus(t('clipboard.pasteUnavailable'));
       }
     },

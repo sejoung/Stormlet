@@ -7,6 +7,7 @@ import {
 } from '../../domain/connections/model';
 import type { CreationDefaults } from '../../domain/creation-defaults';
 import { readItem, writeItem } from './web-storage';
+import { errorDetails, log } from '../diagnostics/log';
 
 export const CREATION_DEFAULTS_KEY = 'stormlet.creation-defaults';
 
@@ -29,11 +30,15 @@ export function readCreationDefaults(): CreationDefaults {
     if (isConnectionWidth(style.width)) defaults.connection.width = style.width;
     for (const key of ['startArrow', 'endArrow', 'dashed'] as const)
       if (typeof style[key] === 'boolean') defaults.connection[key] = style[key];
-  } catch {
-    /* Ignore invalid saved preferences while keeping creation available. */
+  } catch (error) {
+    // Invalid saved preferences fall back to the defaults, keeping creation available.
+    log.warn('preferences.unreadable', {
+      key: CREATION_DEFAULTS_KEY,
+      ...errorDetails(error, false),
+    });
   }
   return defaults;
 }
 
-export const writeCreationDefaults = (defaults: CreationDefaults): void =>
+export const writeCreationDefaults = (defaults: CreationDefaults): boolean =>
   writeItem(CREATION_DEFAULTS_KEY, JSON.stringify(defaults));

@@ -5,6 +5,8 @@ import { useT } from '../common/i18n';
 
 interface Props {
   title: string;
+  /** False while the browser refuses to save changes. */
+  saved: boolean;
   onRename(title: string): void;
   canUndo: boolean;
   canRedo: boolean;
@@ -30,7 +32,12 @@ export function Toolbar(props: Props) {
           </span>
           <strong>Stormlet</strong>
         </div>
-        <BoardTitle title={props.title} onRename={props.onRename} onSave={props.onSave} />
+        <BoardTitle
+          title={props.title}
+          saved={props.saved}
+          onRename={props.onRename}
+          onSave={props.onSave}
+        />
       </div>
       <div className="actions" role="group" aria-label={t('toolbar.boardActions')}>
         <div className="action-group" role="group" aria-label={t('toolbar.history')}>

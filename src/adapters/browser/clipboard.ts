@@ -1,3 +1,4 @@
+import { errorDetails, log } from '../diagnostics/log';
 export interface ClipboardContent {
   structured: string;
   plain: string;
@@ -18,8 +19,9 @@ export async function writeClipboard(content: ClipboardContent): Promise<void> {
         }),
       ]);
       return;
-    } catch {
-      /* Plain text remains available in browsers without custom clipboard formats. */
+    } catch (error) {
+      // Plain text remains available in browsers without custom clipboard formats.
+      log.debug('clipboard.custom-format-failed', errorDetails(error, false));
     }
   }
   await navigator.clipboard.writeText(content.plain);
@@ -38,4 +40,10 @@ export async function readClipboard(): Promise<ClipboardContent> {
     return { structured, plain };
   }
   return { structured: '', plain: await navigator.clipboard.readText() };
+}
+
+/** Plain text for the system clipboard; rejects where the browser does not allow it. */
+export async function writeClipboardText(text: string): Promise<void> {
+  if (!navigator.clipboard?.writeText) throw new Error('The clipboard API is unavailable.');
+  await navigator.clipboard.writeText(text);
 }

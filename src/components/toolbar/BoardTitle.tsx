@@ -5,10 +5,13 @@ import { useT } from '../common/i18n';
 
 export function BoardTitle({
   title,
+  saved,
   onRename,
   onSave,
 }: {
   title: string;
+  /** False while the browser refuses to save changes; the badge then warns instead. */
+  saved: boolean;
   onRename(title: string): void;
   onSave(): void;
 }) {
@@ -66,7 +69,13 @@ export function BoardTitle({
           {title}
         </button>
       )}
-      <span className="local-badge">{t('board.autosaved')}</span>
+      {saved ? (
+        <span className="local-badge">{t('board.autosaved')}</span>
+      ) : (
+        <span className="local-badge unsaved" role="alert" title={t('board.notSavedHint')}>
+          {t('board.notSaved')}
+        </span>
+      )}
     </div>
   );
 }

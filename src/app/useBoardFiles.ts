@@ -1,10 +1,17 @@
+import type { Board } from '../domain/model';
 import type { BoardStore } from '../domain/store';
 import { diffBoards } from '../domain/patch';
 import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
 import { downloadText, readFileText } from '../adapters/files/download';
 import { FILE_EXTENSION, parseBoard, serializeBoard } from '../adapters/files/stormlet-format';
+import { errorDetails, log } from '../adapters/diagnostics/log';
 import type { Edit } from './useBoardSession';
 import { useT } from '../components/common/i18n';
+
+/** Download `board` as a `.stormlet` file named after its title. */
+export function downloadBoard(board: Board): void {
+  downloadText(`${boardFileStem(boardTitle(board))}${FILE_EXTENSION}`, serializeBoard(board));
+}
 
 /** A file's name without the board extension, as a title for boards saved without one. */
 const titleFromFileName = (name: string) =>
@@ -29,11 +36,7 @@ export function useBoardFiles({
   return {
     save: () => {
       flushEditor();
-      const current = store.load();
-      downloadText(
-        `${boardFileStem(boardTitle(current))}${FILE_EXTENSION}`,
-        serializeBoard(current),
-      );
+      downloadBoard(store.load());
     },
     onOpen: async (file: File) => {
       try {
@@ -43,6 +46,7 @@ export function useBoardFiles({
         reset();
         onStatus(t('files.opened', { name: file.name }));
       } catch (error) {
+        log.warn('files.open-failed', { size: file.size, ...errorDetails(error) });
         onStatus(t('files.openFailed', { reason: (error as Error).message }));
       }
     },

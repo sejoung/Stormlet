@@ -29,10 +29,16 @@ export const en = {
   'board.titleLabel': 'Board name: {title}',
   'board.titleHint': 'Double-click or press Enter to rename the board',
   'board.autosaved': 'Autosaved in this browser',
+  'board.notSaved': 'Not saved',
+  'board.notSavedHint':
+    'This browser is not saving your changes, possibly because its storage is full. Use Save to keep a copy.',
 
   'settings.title': 'Settings',
   'settings.language': 'Language',
   'settings.languageAuto': 'Browser language',
+  'settings.diagnostics': 'Troubleshooting',
+  'settings.diagnosticsHint':
+    'If something goes wrong, copy the diagnostics and paste them into a GitHub issue. They hold the app version, your browser and recent errors, never the text of your notes.',
 
   'files.opened': 'Opened {name}.',
   'files.openFailed': 'This file cannot be opened: {reason}',
@@ -368,4 +374,22 @@ export const en = {
   'contextMenu.fitAll': 'Zoom to fit',
 
   'connectionSession.invalid': 'Connect two different notes or two separate points.',
+
+  'diagnostics.copy': 'Copy diagnostics',
+  'diagnostics.copied': 'Diagnostics copied.',
+  'diagnostics.copyFailed': 'Could not copy. Select the text below and copy it.',
+  'diagnostics.text': 'Diagnostics',
+
+  'recovery.title': 'Something went wrong',
+  'recovery.description':
+    'Stormlet ran into an unexpected error. Edits made before it are kept; download a copy of the board to be safe, then try again.',
+  'recovery.retry': 'Try again',
+  'recovery.download': 'Download board',
+  'recovery.report': 'If this keeps happening, copy the diagnostics and report it on GitHub.',
+
+  'damaged.title': 'The saved board could not be read',
+  'damaged.description':
+    'The board saved in this browser is damaged or was saved by a newer Stormlet, so an empty board was opened. The original data is kept: download it to recover your notes or to attach to a bug report.',
+  'damaged.download': 'Download saved data',
+  'damaged.dismiss': 'Continue with an empty board',
 };

@@ -23,4 +23,4 @@ Stormlet은 정적 호스팅에서 서버 없이 동작하고, 보드는 사용�
 
 ## 결과
 
-`tests/architecture`가 계층, 패키지, 순환, 고아 모듈, 순수 계층의 브라우저 전역 사용, 어댑터 생성 위치를 검사한다. 규칙을 바꾸려면 이 ADR과 `scripts/architecture.cjs`를 함께 고친다.
+`tests/architecture`가 계층, 패키지, 순환, 고아 모듈, 순수 계층의 브라우저 전역 사용, 어댑터 생성 위치, 진단 로그 밖의 콘솔 사용([ADR 0009](0009-diagnostics.md))을 검사한다. 규칙을 바꾸려면 이 ADR과 `scripts/architecture.cjs`를 함께 고친다.

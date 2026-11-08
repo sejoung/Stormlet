@@ -34,7 +34,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 
 **Frames**
 
-- Draw a frame with `F`, or wrap selected notes with “프레임 만들기”; horizontal and vertical lane presets
+- Draw a frame with `F`, or wrap selected notes with “Create frame”; horizontal and vertical lane presets
 - Transparent or colored, borders from 1 to 8px, titles renamed with a double-click
 - Moving, duplicating or copying a frame takes the notes, nested frames and lines inside it along
 - Deleting a frame keeps its contents; locking a frame leaves the notes inside it editable
@@ -50,6 +50,7 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 - Rename the board by double-clicking its title; the title becomes the download filename
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
+- Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports
 
 Reactions use a stable local identifier, so no profile is shown.
 
@@ -112,15 +113,15 @@ The test server starts on port 4173 and stops when the tests finish. The HTML re
 
 ## Architecture
 
-| Layer             | Responsibility                                                              |
-| ----------------- | --------------------------------------------------------------------------- |
-| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface |
-| `src/application` | Editing session and undo/redo built on inverse patches                      |
-| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view |
-| `src/adapters`    | `.stormlet` file format, localStorage store, clipboard, file download       |
-| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                |
-| `src/app`         | Composition, session hooks, shortcuts                                       |
-| `src/i18n`        | Message catalogs per language and the translate function                    |
+| Layer             | Responsibility                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface            |
+| `src/application` | Editing session and undo/redo built on inverse patches                                 |
+| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view            |
+| `src/adapters`    | `.stormlet` file format, localStorage store, clipboard, file download, diagnostics log |
+| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                           |
+| `src/app`         | Composition, session hooks, shortcuts                                                  |
+| `src/i18n`        | Message catalogs per language and the translate function                               |
 
 Dependencies point inward, from `app` towards `domain`. The rules are enforced by tests in `tests/architecture`, and lint keeps every file under 400 lines and every folder at 10 files or fewer.
 
@@ -138,6 +139,10 @@ UI text lives in one file per language under [`src/i18n/locales`](src/i18n/local
 
 - Google Drive storage
 - Real-time collaboration: a Yjs implementation of `BoardStore` and a relay server ([ADR 0002](docs/adr/0002-collaboration-ready-model.md))
+
+## Reporting a bug
+
+Open **Settings → Troubleshooting → Copy diagnostics** and paste the result into a [GitHub issue](../../issues/new?template=bug_report.md). The report holds the app version, browser, board size, storage use and recent log entries (errors, failed saves, and so on), never the text of your notes. The same entries are also written to the browser console with a `[stormlet]` prefix ([ADR 0009](docs/adr/0009-diagnostics.md)).
 
 ## Contributing
 

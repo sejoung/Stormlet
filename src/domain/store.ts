@@ -12,4 +12,9 @@ export interface BoardStore {
   apply(patches: readonly Patch[]): void;
   /** Called with patches that came from outside this editor; returns an unsubscribe. */
   subscribe(listener: (patches: Patch[]) => void): () => void;
+  /**
+   * Called with false when local changes stop reaching storage and with true once they do
+   * again; returns an unsubscribe. Stores that cannot fail to save leave it out.
+   */
+  watchSaved?(listener: (saved: boolean) => void): () => void;
 }

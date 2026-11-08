@@ -1,8 +1,13 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
+
+const { version } = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
 
 export default defineConfig({
   plugins: [react()],
+  // Diagnostics reports name the version they came from (src/adapters/diagnostics).
+  define: { __APP_VERSION__: JSON.stringify(version) },
   base: './',
   server: { strictPort: true },
   test: {

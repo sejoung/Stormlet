@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { readClipboard, writeClipboard } from '../../../../src/adapters/browser/clipboard';
+import {
+  readClipboard,
+  writeClipboard,
+  writeClipboardText,
+} from '../../../../src/adapters/browser/clipboard';
 
 afterEach(() => vi.unstubAllGlobals());
 describe('menu clipboard adapter', () => {
@@ -42,5 +46,13 @@ describe('menu clipboard adapter', () => {
     write.mockRejectedValue(new Error('unsupported'));
     await writeClipboard({ structured: '{}', plain: '대체 텍스트' });
     expect(writeText).toHaveBeenCalledWith('대체 텍스트');
+  });
+  it('writes plain text and rejects where the clipboard API is missing', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    await writeClipboardText('report');
+    expect(writeText).toHaveBeenCalledWith('report');
+    vi.stubGlobal('navigator', {});
+    await expect(writeClipboardText('report')).rejects.toThrow('unavailable');
   });
 });

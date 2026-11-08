@@ -1,16 +1,19 @@
 import { LOCALES, translate, type LocalePreference } from '../../i18n/messages';
 import { useT } from '../common/i18n';
 import { Modal } from './Modal';
+import { DiagnosticsCopy } from '../recovery/DiagnosticsCopy';
 
 const CHOICES: readonly LocalePreference[] = ['auto', ...LOCALES];
 
 export function SettingsDialog({
   language,
   onLanguage,
+  diagnostics,
   onClose,
 }: {
   language: LocalePreference;
   onLanguage(language: LocalePreference): void;
+  diagnostics: { report(): string; copy(text: string): Promise<void> };
   onClose(): void;
 }) {
   const t = useT();
@@ -32,6 +35,11 @@ export function SettingsDialog({
           </label>
         ))}
       </fieldset>
+      <section className="settings-group" aria-labelledby="settings-diagnostics">
+        <h3 id="settings-diagnostics">{t('settings.diagnostics')}</h3>
+        <p className="settings-hint">{t('settings.diagnosticsHint')}</p>
+        <DiagnosticsCopy {...diagnostics} />
+      </section>
     </Modal>
   );
 }

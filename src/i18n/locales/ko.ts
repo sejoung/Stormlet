@@ -26,10 +26,16 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'board.titleLabel': '보드 이름: {title}',
   'board.titleHint': '더블클릭 또는 Enter로 보드 이름 수정',
   'board.autosaved': '브라우저에 자동 저장',
+  'board.notSaved': '저장되지 않음',
+  'board.notSavedHint':
+    '브라우저가 변경 내용을 저장하지 못하고 있습니다. 저장 공간이 가득 찼을 수 있습니다. 저장 버튼으로 사본을 내려받으세요.',
 
   'settings.title': '설정',
   'settings.language': '언어',
   'settings.languageAuto': '브라우저 언어',
+  'settings.diagnostics': '문제 해결',
+  'settings.diagnosticsHint':
+    '문제가 생기면 진단 정보를 복사해 GitHub 이슈에 붙여 넣어 주세요. 앱 버전, 브라우저, 최근 오류가 들어 있고 포스트잇 내용은 들어 있지 않습니다.',
 
   'files.opened': '{name}을(를) 열었습니다.',
   'files.openFailed': '열 수 없는 파일입니다: {reason}',
@@ -365,4 +371,22 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'contextMenu.fitAll': '전체 보기',
 
   'connectionSession.invalid': '서로 다른 메모나 떨어진 두 지점을 연결해 주세요.',
+
+  'diagnostics.copy': '진단 정보 복사',
+  'diagnostics.copied': '진단 정보를 복사했습니다.',
+  'diagnostics.copyFailed': '복사하지 못했습니다. 아래 내용을 선택해 복사하세요.',
+  'diagnostics.text': '진단 정보',
+
+  'recovery.title': '문제가 발생했습니다',
+  'recovery.description':
+    'Stormlet에서 예상하지 못한 오류가 났습니다. 오류 전까지의 편집은 남아 있습니다. 만일을 위해 보드를 내려받은 뒤 다시 시도하세요.',
+  'recovery.retry': '다시 시도',
+  'recovery.download': '보드 내려받기',
+  'recovery.report': '같은 문제가 반복되면 진단 정보를 복사해 GitHub에 알려 주세요.',
+
+  'damaged.title': '저장된 보드를 읽을 수 없습니다',
+  'damaged.description':
+    '이 브라우저에 저장된 보드가 손상되었거나 더 새로운 버전의 Stormlet에서 저장되어 빈 보드를 열었습니다. 원본 데이터는 따로 보관해 두었습니다. 내려받아 내용을 복구하거나 버그 리포트에 첨부하세요.',
+  'damaged.download': '저장된 데이터 내려받기',
+  'damaged.dismiss': '빈 보드로 계속',
 };

@@ -28,6 +28,8 @@ export const COMPOSITION_ROOTS = ['main.tsx'];
 const CATALOG_FOLDER = 'i18n/locales/';
 /** A letter from a script other than Latin, which can only be untranslated UI text. */
 const FOREIGN_LETTER = /[^\P{L}\p{Script=Latin}]/u;
+/** The diagnostics log is the one place that writes to the console (ADR 0009). */
+const CONSOLE_FILES = ['adapters/diagnostics/log.ts'];
 /** React hooks belong to the UI and composition layers. */
 const HOOK_LAYERS = ['components', 'app'];
 const HOOK_FILES: string[] = [];
@@ -42,7 +44,8 @@ const layerOf = (name: string) => name.split('/')[0];
  *   port does not count) are constructed only in a composition root, so everything else
  *   depends on what it is handed;
  * - `use…` hooks are declared only where React runs;
- * - strings and JSX text in non-Latin scripts appear only in the message catalogs.
+ * - strings and JSX text in non-Latin scripts appear only in the message catalogs;
+ * - only the diagnostics log writes to the console, so every message reaches bug reports.
  */
 export function codeViolations(files: SourceFile[]): string[] {
   const parsed = files.map(({ name, source }) => ({
@@ -123,6 +126,8 @@ export function codeViolations(files: SourceFile[]): string[] {
         !name.startsWith(CATALOG_FOLDER)
       )
         violations.push(`Text outside the message catalogs: ${name} → ${node.text.trim()}`);
+      if (ts.isIdentifier(node) && node.text === 'console' && !CONSOLE_FILES.includes(name))
+        violations.push(`Console outside the diagnostics log: ${name}`);
       ts.forEachChild(node, visit);
     };
     visit(ast);

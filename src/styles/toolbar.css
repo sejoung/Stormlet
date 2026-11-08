@@ -209,3 +209,11 @@
   margin: 7px 4px;
   background: var(--border);
 }
+.local-badge.unsaved {
+  color: var(--text);
+  font-weight: 600;
+  cursor: help;
+}
+.local-badge.unsaved::before {
+  background: #e07b24;
+}

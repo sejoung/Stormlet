@@ -7,7 +7,7 @@ export const LOCALE_KEY = 'stormlet.locale';
 /** Whether the minimap was left open; it starts closed. */
 export const readMinimapOpen = (): boolean => readItem(MINIMAP_KEY) === 'open';
 
-export const writeMinimapOpen = (open: boolean): void =>
+export const writeMinimapOpen = (open: boolean): boolean =>
   writeItem(MINIMAP_KEY, open ? 'open' : 'closed');
 
 /** The chosen language; following the browser until one is chosen. */
@@ -16,5 +16,5 @@ export function readLocalePreference(): LocalePreference {
   return isLocalePreference(stored) ? stored : 'auto';
 }
 
-export const writeLocalePreference = (preference: LocalePreference): void =>
+export const writeLocalePreference = (preference: LocalePreference): boolean =>
   writeItem(LOCALE_KEY, preference);

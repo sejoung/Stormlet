@@ -40,7 +40,7 @@ describe('code rules (syntax tree)', () => {
     expect(codeViolations(sourceFiles(resolve('src')))).toEqual([]);
   });
 
-  it('fails for browser globals, storage outside adapters, dynamic imports, stray adapters, misplaced hooks and untranslated text', () => {
+  it('fails for browser globals, storage outside adapters, dynamic imports, stray adapters, misplaced hooks, untranslated text and stray console output', () => {
     const violations = codeViolations([
       { name: 'domain/a.ts', source: 'export const a = () => localStorage.getItem("x");' },
       { name: 'engine/b.ts', source: 'export const b = (p: string) => import(p);' },
@@ -67,6 +67,8 @@ describe('code rules (syntax tree)', () => {
       { name: 'app/status.ts', source: 'export const s = (n: number) => `${n}개 복사`;' },
       { name: 'i18n/locales/ko.ts', source: 'export const ko = { save: "저장" };' },
       { name: 'domain/ascii.ts', source: 'export const a = "Save ⌘S 👍 × 3";' },
+      { name: 'app/debug.ts', source: 'export const d = () => console.log("x");' },
+      { name: 'adapters/diagnostics/log.ts', source: 'export const w = () => console.warn("x");' },
     ]);
     expect(violations).toEqual([
       'Pure layer uses a browser global: domain/a.ts → localStorage',
@@ -80,6 +82,7 @@ describe('code rules (syntax tree)', () => {
       'Text outside the message catalogs: components/Label.tsx → 저장',
       'Text outside the message catalogs: components/Label.tsx → 열기',
       'Text outside the message catalogs: app/status.ts → 개 복사',
+      'Console outside the diagnostics log: app/debug.ts',
     ]);
   });
 });
