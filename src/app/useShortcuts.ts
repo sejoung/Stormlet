@@ -6,7 +6,7 @@ import { DRAFT_FIELD, draftKind } from '../components/common/drafts';
 import { useLatest } from '../components/common/useStableCallback';
 import type { FormatToggle } from './useNoteActions';
 
-interface Handlers {
+export interface ShortcutHandlers {
   onUndo(): void;
   onRedo(): void;
   onDelete(): void;
@@ -55,7 +55,7 @@ interface Binding {
   mod?: boolean;
   shift?: boolean;
   alt?: boolean;
-  run(handlers: Handlers, event: KeyboardEvent, key: string): void;
+  run(handlers: ShortcutHandlers, event: KeyboardEvent, key: string): void;
 }
 
 const BINDINGS: readonly Binding[] = [
@@ -97,7 +97,7 @@ const matches = (binding: Binding, event: KeyboardEvent, key: string, mod: boole
  * While typing, only Cmd/Ctrl shortcuts that act on the open field reach the board:
  * saving from any draft field, and formatting from a note's editor.
  */
-function typingShortcut(handlers: Handlers, event: KeyboardEvent, key: string): boolean {
+function typingShortcut(handlers: ShortcutHandlers, event: KeyboardEvent, key: string): boolean {
   const field = draftKind(event.target);
   if (!field || !(event.metaKey || event.ctrlKey)) return false;
   if (key === 's') handlers.onSave();
@@ -107,7 +107,7 @@ function typingShortcut(handlers: Handlers, event: KeyboardEvent, key: string): 
 }
 
 /** Board-wide keys; ignored while editing text or using the preset selector. */
-export function useShortcuts(handlers: Handlers) {
+export function useShortcuts(handlers: ShortcutHandlers) {
   // Registered once: the listener reads the latest handlers instead of re-subscribing.
   const latest = useLatest(handlers);
   useEffect(() => {

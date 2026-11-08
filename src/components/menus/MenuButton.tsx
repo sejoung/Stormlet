@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { moveFocus, VERTICAL_KEYS } from '../common/keyboard';
 import { cx } from '../common/cx';
 
@@ -33,6 +33,14 @@ export function MenuButton({
     setOpen(false);
     if (refocus) trigger.current?.focus();
   };
+  // A menu near the right edge of a narrow screen moves left to stay in view.
+  useLayoutEffect(() => {
+    const node = menu.current;
+    if (!open || !node) return;
+    node.style.left = '';
+    const overflow = node.getBoundingClientRect().right - (window.innerWidth - 8);
+    if (overflow > 0) node.style.left = `${-overflow}px`;
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     menu.current?.querySelector<HTMLElement>(MENU_ITEM)?.focus();
@@ -91,6 +99,7 @@ export function MenuItem({
   shortcut,
   disabled,
   checked,
+  kind = 'radio',
   title,
   close,
   onSelect,
@@ -98,19 +107,20 @@ export function MenuItem({
   label: string;
   shortcut?: string;
   disabled?: boolean;
-  /** Set for a choice among options (a radio item), shown with a check. */
+  /** Set for an option, shown with a check: one of several (radio) or on/off (checkbox). */
   checked?: boolean;
+  kind?: 'radio' | 'checkbox';
   title?: string;
   close(): void;
   onSelect(): void;
 }) {
-  const radio = checked !== undefined;
+  const option = checked !== undefined;
   return (
     <button
       type="button"
-      role={radio ? 'menuitemradio' : 'menuitem'}
-      aria-checked={radio ? checked : undefined}
-      className={cx(radio && 'menu-choice')}
+      role={option ? `menuitem${kind}` : 'menuitem'}
+      aria-checked={option ? checked : undefined}
+      className={cx(option && 'menu-choice')}
       disabled={disabled}
       title={title}
       onClick={() => {

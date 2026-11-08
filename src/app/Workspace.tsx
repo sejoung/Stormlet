@@ -16,7 +16,7 @@ import { DraftProvider, useDraftRegistry } from '../components/common/drafts';
 import { FitProvider, useFitRegistry } from '../components/common/fitted-fonts';
 import { useBoardFiles } from './useBoardFiles';
 import { useBoardSession } from './useBoardSession';
-import { useShortcuts } from './useShortcuts';
+import { useShortcuts, type ShortcutHandlers } from './useShortcuts';
 import { useNoteActions } from './useNoteActions';
 import { useClipboard } from './useClipboard';
 import { useCreationDefaults } from './useCreationDefaults';
@@ -196,7 +196,8 @@ export function Workspace({
     replaceBoard: replace,
     onStatus: setStatus,
   });
-  useShortcuts({
+  // The same commands back the shortcuts and the Edit and View menus.
+  const keys: ShortcutHandlers = {
     onUndo: undo,
     onRedo: redo,
     onDelete: commands.remove,
@@ -216,7 +217,8 @@ export function Workspace({
       selected.clear();
       finishTool();
     },
-  });
+  };
+  useShortcuts(keys);
 
   const canUndo = session.undo.length > 0;
   const canRedo = session.redo.length > 0;
@@ -240,6 +242,12 @@ export function Workspace({
                 fileInput={fileInput}
                 onOpenFile={onOpen}
                 onDownload={save}
+                keys={keys}
+                clipboard={clipboard}
+                canvas={canvas}
+                minimap={minimap}
+                history={{ canUndo, canRedo }}
+                selection={{ ids: activeIds, object: selected.frameId ?? selected.connectionId }}
                 drive={drive}
                 language={language}
                 onLanguage={onLanguage}

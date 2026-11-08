@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { MenuButton, MenuItem } from '../menus/MenuButton';
+import { MenuButton, MenuItem } from './MenuButton';
 import { useT } from '../common/i18n';
 
 /** What the File menu needs from Google Drive, when this build has it. */

@@ -1,17 +1,28 @@
 import type { RefObject } from 'react';
 import type { LocalePreference } from '../../i18n/messages';
-import { FileMenu } from '../../components/toolbar/FileMenu';
-import { SettingsMenu } from '../../components/toolbar/SettingsMenu';
+import { FileMenu } from '../../components/menus/FileMenu';
+import { SettingsMenu } from '../../components/menus/SettingsMenu';
+import { EditMenu } from '../../components/menus/EditMenu';
+import { ViewMenu } from '../../components/menus/ViewMenu';
+import type { ShortcutHandlers } from '../useShortcuts';
+import type { Clipboard } from '../useClipboard';
+import type { BoardView } from '../view/useBoardView';
 import { DriveButton } from '../../components/drive/DriveButton';
 import { needsAttention } from '../../components/drive/drive-status';
 import type { Drive } from '../drive/useDrive';
 import type { DialogName } from './WorkspaceDialogs';
 
-/** The File and Settings menus under the board's name. */
+/** The menu bar under the board's name: File, Edit, View and Settings. */
 export function ToolbarMenus({
   fileInput,
   onOpenFile,
   onDownload,
+  keys,
+  clipboard,
+  canvas,
+  minimap,
+  history,
+  selection,
   drive,
   language,
   onLanguage,
@@ -20,11 +31,20 @@ export function ToolbarMenus({
   fileInput: RefObject<HTMLInputElement | null>;
   onOpenFile(file: File): void;
   onDownload(): void;
+  /** The commands behind the shortcuts, which the Edit and View menus run too. */
+  keys: ShortcutHandlers;
+  clipboard: Clipboard;
+  canvas: BoardView;
+  minimap: { open: boolean; toggle(): void };
+  history: { canUndo: boolean; canRedo: boolean };
+  /** The selected notes, and the selected frame or connection. */
+  selection: { ids: readonly string[]; object: string | null | undefined };
   drive: Drive;
   language: LocalePreference;
   onLanguage(language: LocalePreference): void;
   onDialog(dialog: DialogName): void;
 }) {
+  const selected = selection.ids.length > 0 || Boolean(selection.object);
   return (
     <>
       <FileMenu
@@ -48,6 +68,27 @@ export function ToolbarMenus({
               }
             : undefined
         }
+      />
+      <EditMenu
+        commands={{
+          ...keys,
+          ...history,
+          selected,
+          notes: selection.ids.length,
+          onCut: () => void clipboard.copy(true),
+          onCopy: () => void clipboard.copy(),
+          onPaste: () => void clipboard.paste(canvas.boardCenter()),
+        }}
+      />
+      <ViewMenu
+        commands={{
+          zoom: canvas.view.zoom,
+          selected,
+          minimap: minimap.open,
+          onZoom: canvas.zoomTo,
+          onFit: keys.onFit,
+          onMinimap: minimap.toggle,
+        }}
       />
       <SettingsMenu
         language={language}

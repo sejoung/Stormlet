@@ -1,5 +1,5 @@
 import { LOCALES, translate, type LocalePreference } from '../../i18n/messages';
-import { MenuButton, MenuItem } from '../menus/MenuButton';
+import { MenuButton, MenuItem } from './MenuButton';
 import { useT } from '../common/i18n';
 
 const CHOICES: readonly LocalePreference[] = ['auto', ...LOCALES];
