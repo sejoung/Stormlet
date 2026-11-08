@@ -118,7 +118,8 @@ describe('Google Drive', () => {
       language: 'ko',
       title: '이 보드를 저장할 폴더 선택',
     });
-    expect(drive.calls).toEqual(['create folder']);
+    // Connecting first looks for a file an earlier page saved without hearing back.
+    expect(drive.calls).toEqual(['unconfirmed', 'create folder']);
     expect(driveButton()).toHaveAccessibleName('Google Drive: Drive에 저장됨');
     expect(driveButton()).toHaveTextContent('저장됨');
     expect(sync.current.status).toBe('synced');
@@ -128,6 +129,20 @@ describe('Google Drive', () => {
     expect(
       within(linked).getByRole('button', { name: '다른 폴더에 사본 저장…' }),
     ).toBeInTheDocument();
+  });
+
+  it('links a file saved just before the page closed once connected', async () => {
+    const { drive, links } = renderWithDrive({ ...boardOf(sticky('a')), title: 'Plan' });
+    drive.files.set('made', { name: 'Plan.stormlet', version: 1, board: boardOf() });
+    drive.unseen.id = 'made';
+    await connect();
+    expect(
+      await screen.findByText(
+        '페이지를 닫기 직전 Drive에 저장한 Plan.stormlet을(를) 찾아 다시 연결했습니다.',
+      ),
+    ).toBeInTheDocument();
+    expect(links.link?.file.id).toBe('made');
+    expect(recentLog().map((entry) => entry.event)).toContain('drive.recovered');
   });
 
   it('opens a board from Drive without saving it back', async () => {
@@ -146,7 +161,7 @@ describe('Google Drive', () => {
     expect(screen.getByRole('button', { name: '도메인 이벤트: from drive' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '보드 이름: Shared' })).toBeInTheDocument();
     expect(links.link?.file).toEqual({ id: 'remote', name: 'Shared.stormlet', version: '4' });
-    expect(drive.calls).toEqual(['open remote']);
+    expect(drive.calls).toEqual(['unconfirmed', 'open remote']);
   });
 
   it('reconnects a remembered file from the toolbar and resolves conflicts there', async () => {

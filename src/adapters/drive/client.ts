@@ -7,6 +7,7 @@ import {
   type RemoteFile,
 } from '../../domain/sync/remote';
 import { FILE_EXTENSION, FormatError, parseBoard, serializeBoard } from '../files/stormlet-format';
+import { memoryCreations, type CreationRecord } from './creations';
 
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
 export const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
@@ -21,6 +22,12 @@ export const CREATE_ATTEMPTS = 3;
 export const CREATE_BACKOFF = 500;
 /** Failures after which an upload may have landed anyway. */
 const RETRY_CREATE: readonly RemoteFailure[] = ['network', 'conflict'];
+/** An upload not seen this long after it started can no longer land. */
+export const LATE_UPLOAD = 10 * 60_000;
+/** 403 reasons that mean "slow down" rather than "not allowed": retried like network failures. */
+const RATE_LIMITS = ['rateLimitExceeded', 'userRateLimitExceeded', 'sharingRateLimitExceeded'];
+/** 403 reasons that mean the owner's Drive has no room for the file. */
+const FULL = ['storageQuotaExceeded', 'quotaExceeded'];
 
 /** What one creation attempt sent. */
 interface Sent {
@@ -38,6 +45,16 @@ interface Created {
   content: string;
 }
 
+/** A downloaded board file, or `unreadable` when it is not one this version reads. */
+function read(content: string): Board {
+  try {
+    return parseBoard(content);
+  } catch (error) {
+    if (error instanceof FormatError) throw new RemoteError('unreadable', error.message);
+    throw error;
+  }
+}
+
 /** The Drive file name for a board: its title, as for downloads. */
 export const driveFileName = (board: Board): string =>
   `${boardFileStem(boardTitle(board))}${FILE_EXTENSION}`;
@@ -49,6 +66,23 @@ const STATUS_FAILURES: Record<number, RemoteFailure> = {
   409: 'conflict',
   412: 'conflict',
 };
+
+/** The failure for a refused request; 403 covers several, told apart by Google's reason. */
+async function failureOf(response: Response): Promise<RemoteError> {
+  const status = `Drive answered ${response.status}`;
+  if (response.status !== 403)
+    return new RemoteError(STATUS_FAILURES[response.status] ?? 'network', `${status}.`);
+  const body = (await response.json().catch(() => null)) as {
+    error?: { errors?: { reason?: unknown }[] };
+  } | null;
+  const reason = String(body?.error?.errors?.[0]?.reason ?? '');
+  const failure = RATE_LIMITS.includes(reason)
+    ? 'network'
+    : FULL.includes(reason)
+      ? 'full'
+      : 'permission';
+  return new RemoteError(failure, reason ? `${status} (${reason}).` : `${status}.`);
+}
 
 interface Reply<T> {
   data: T;
@@ -73,12 +107,17 @@ function multipart(metadata: object, content: string) {
 export class DriveClient implements RemoteBoards {
   /** Unfinished creations by folder, kept so saving there again reuses the reserved ID. */
   private readonly reserved = new Map<string, Reservation>();
+  /** Creations running in this page; their own retries look for the file. */
+  private creating = 0;
 
   constructor(
     private readonly token: () => string | null,
     private readonly fetcher: typeof fetch = (...args) => globalThis.fetch(...args),
     /** Called with a token Drive refused (revoked or expired), so it can be dropped. */
     private readonly onRefused: (token: string) => void = () => {},
+    /** Where the latest creation is remembered until its answer arrives. */
+    private readonly creations: CreationRecord = memoryCreations(),
+    private readonly now: () => number = Date.now,
   ) {}
 
   async open(id: string): Promise<{ file: RemoteFile; board: Board }> {
@@ -90,15 +129,7 @@ export class DriveClient implements RemoteBoards {
     if (Number(meta.size) > MAX_FILE_BYTES)
       throw new RemoteError('unreadable', `The file is larger than ${MAX_FILE_BYTES} bytes.`);
     const { data: content } = await this.request(`${url}?alt=media`, (response) => response.text());
-    try {
-      return {
-        file: { id: meta.id, name: meta.name, version: meta.version },
-        board: parseBoard(content),
-      };
-    } catch (error) {
-      if (error instanceof FormatError) throw new RemoteError('unreadable', error.message);
-      throw error;
-    }
+    return { file: { id: meta.id, name: meta.name, version: meta.version }, board: read(content) };
   }
 
   async version(id: string): Promise<string> {
@@ -132,18 +163,58 @@ export class DriveClient implements RemoteBoards {
   /**
    * Create the file under an ID reserved from Drive beforehand, so repeating a creation
    * whose answer was lost finds the file it made instead of making a second one. The
-   * reservation outlives a failed call: saving to the same folder again reuses it.
+   * reservation outlives a failed call: saving to the same folder again reuses it. It is
+   * also written down until the answer arrives, so `unconfirmed` can find the file after
+   * the page was closed in between.
    */
   async create(folderId: string, board: Board): Promise<RemoteFile> {
     const sent = { name: driveFileName(board), content: serializeBoard(board) };
-    const reservation = this.reserved.get(folderId) ?? { id: await this.reserveId(), sent: [] };
-    this.reserved.set(folderId, reservation);
-    reservation.sent.push(sent);
+    this.creating++;
+    try {
+      const reservation = this.reserved.get(folderId) ?? { id: await this.reserveId(), sent: [] };
+      this.reserved.set(folderId, reservation);
+      reservation.sent.push(sent);
+      this.creations.write({ folderId, id: reservation.id, at: this.now() });
+      const file = await this.attempts(reservation, folderId, sent, board);
+      this.reserved.delete(folderId);
+      this.creations.write(null);
+      return file;
+    } finally {
+      this.creating--;
+    }
+  }
+
+  async unconfirmed(): Promise<{ file: RemoteFile; board: Board } | null> {
+    const pending = this.creations.read();
+    // This page's own creation finds its file itself.
+    if (!pending || this.creating) return null;
+    const existing = await this.created(pending.id);
+    if (!existing) {
+      // An upload still on its way may land; past that, nothing will.
+      if (this.now() - pending.at > LATE_UPLOAD) this.forgetUnconfirmed();
+      return null;
+    }
+    // Only Stormlet uploads to a reserved ID, but the folder must be the one chosen.
+    if (!existing.parents.includes(pending.folderId)) {
+      this.forgetUnconfirmed();
+      return null;
+    }
+    return { file: existing.file, board: read(existing.content) };
+  }
+
+  forgetUnconfirmed(): void {
+    this.creations.write(null);
+  }
+
+  private async attempts(
+    reservation: Reservation,
+    folderId: string,
+    sent: Sent,
+    board: Board,
+  ): Promise<RemoteFile> {
     for (let attempt = 0; ; attempt++) {
       try {
-        const file = await this.upload(reservation.id, folderId, sent);
-        this.reserved.delete(folderId);
-        return file;
+        return await this.upload(reservation.id, folderId, sent);
       } catch (error) {
         // A lost answer or 409 may mean an earlier upload went through: look before retrying.
         if (!(error instanceof RemoteError && RETRY_CREATE.includes(error.reason))) throw error;
@@ -214,9 +285,10 @@ export class DriveClient implements RemoteBoards {
     const ours = reservation.sent.some(
       (sent) => sent.content === existing.content && sent.name === existing.file.name,
     );
-    if (!ours || !existing.parents.includes(folderId))
+    if (!ours || !existing.parents.includes(folderId)) {
+      this.forgetUnconfirmed();
       throw new RemoteError('conflict', 'The reserved file holds something else.');
-    this.reserved.delete(folderId);
+    }
     const latest = reservation.sent.at(-1)!;
     if (existing.content === latest.content && existing.file.name === latest.name)
       return existing.file;
@@ -248,10 +320,7 @@ export class DriveClient implements RemoteBoards {
         headers: { ...init.headers, Authorization: `Bearer ${token}` },
       });
       if (response.status === 401) this.onRefused(token);
-      if (!response.ok) {
-        const reason = STATUS_FAILURES[response.status] ?? 'network';
-        throw new RemoteError(reason, `Drive answered ${response.status}.`);
-      }
+      if (!response.ok) throw await failureOf(response);
       return { data: await read(response), etag: response.headers.get('ETag') };
     } catch (error) {
       if (error instanceof RemoteError) throw error;

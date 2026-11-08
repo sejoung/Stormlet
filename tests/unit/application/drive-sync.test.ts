@@ -6,29 +6,11 @@ import {
   SYNC_DELAY,
   type SyncState,
 } from '../../../src/application/drive-sync';
-import { applyPatches, type Patch } from '../../../src/domain/patch';
+import type { Patch } from '../../../src/domain/patch';
 import type { Board } from '../../../src/domain/model';
-import type { BoardStore } from '../../../src/domain/store';
 import type { RemoteLink } from '../../../src/domain/sync/remote';
 import { boardOf, sticky } from '../../support/boards';
-import { fakeDrive, memoryLinks } from '../../support/drive';
-
-/** The board store underneath, as the browser's local store would be. */
-function localStore(board: Board = boardOf(sticky('a'))) {
-  const store: BoardStore & { board: Board } = {
-    board,
-    load: () => store.board,
-    apply: (patches) => {
-      store.board = applyPatches(store.board, patches).board;
-    },
-    subscribe: () => () => {},
-    watchSaved: (listener) => {
-      listener(true);
-      return () => {};
-    },
-  };
-  return store;
-}
+import { fakeDrive, localStore, memoryLinks } from '../../support/drive';
 
 const text = (board: Board, id: string) => board.stickies[id]?.text;
 const withText = (board: Board, id: string, value: string): Board => ({
@@ -346,7 +328,8 @@ describe('Drive sync', () => {
     sync.unlink();
     local.board = withText(base, 'a', 'newer');
     links.elsewhere({ file: { id: 'g', name: 'G', version: '2' }, base });
-    expect(sync.current.status).toBe('pending');
+    // Shown as synced while the other tab's board may still be on its way.
+    expect(sync.current.status).toBe('synced');
     await vi.advanceTimersByTimeAsync(SYNC_DELAY);
     expect(text(drive.files.get('g')!.board, 'a')).toBe('newer');
   });

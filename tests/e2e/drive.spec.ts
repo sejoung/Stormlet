@@ -217,3 +217,35 @@ test('an open tab follows the file another tab opens, and saves its edits there'
   expect(Object.values(shared.stickies).map((note) => note.text)).toEqual(['Second tab']);
   expect(drive.files.get('created-1')!.version).toBe(before);
 });
+
+test('a page closed before Drive answered a creation links that file after reconnecting', async ({
+  page,
+}) => {
+  await mockGoogleScripts(page);
+  const drive = await mockDrive(page);
+  const dialog = await connect(page);
+  drive.faults.holdNextCreate = true;
+  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
+  await page
+    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
+    .getByRole('button')
+    .click();
+  await expect.poll(() => drive.files.size).toBe(1);
+  await page.reload();
+  await expect(driveButton(page)).toHaveText('Drive');
+
+  // The dialog may already show the linked file when the lookup is quick, so only connect.
+  await driveButton(page).click();
+  await page
+    .getByRole('dialog', { name: 'Google Drive' })
+    .getByRole('button', { name: 'Google Drive 연결' })
+    .click();
+  await expect(
+    page.getByText(
+      '페이지를 닫기 직전 Drive에 저장한 My idea board.stormlet을(를) 찾아 다시 연결했습니다.',
+    ),
+  ).toBeVisible();
+  await expect(driveButton(page)).toHaveText('저장됨');
+  expect([...drive.files.keys()]).toEqual(['created-1']);
+  expect(drive.requests.filter((request) => request.startsWith('POST'))).toHaveLength(1);
+});

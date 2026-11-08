@@ -10,7 +10,7 @@ export interface RemoteFile {
 
 /** Why a remote operation failed, in the terms the sync rules act on. */
 export type RemoteFailure =
-  'auth' | 'conflict' | 'permission' | 'missing' | 'network' | 'unreadable';
+  'auth' | 'conflict' | 'permission' | 'full' | 'missing' | 'network' | 'unreadable';
 
 export class RemoteError extends Error {
   constructor(
@@ -30,6 +30,13 @@ export interface RemoteBoards {
   /** Write `board` over `file`; fails with `conflict` if it changed since `file.version`. */
   save(file: RemoteFile, board: Board): Promise<RemoteFile>;
   create(folderId: string, board: Board): Promise<RemoteFile>;
+  /**
+   * The file a creation made without the answer reaching this page (it was closed or
+   * reloaded first), or null. It stays reported until `forgetUnconfirmed`.
+   */
+  unconfirmed?(): Promise<{ file: RemoteFile; board: Board } | null>;
+  /** Stop looking for an unconfirmed creation: it was linked, or the board moved on. */
+  forgetUnconfirmed?(): void;
 }
 
 /** The linked file, remembered across reloads with the board as last synced. */

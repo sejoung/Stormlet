@@ -12,6 +12,7 @@ import { GoogleConnection } from './adapters/drive/google';
 import { openAuthChannel } from './adapters/drive/auth-channel';
 import { DriveClient } from './adapters/drive/client';
 import { LocalDriveLinks } from './adapters/drive/links';
+import { LocalCreations } from './adapters/drive/creations';
 import { DriveSync } from './application/drive-sync';
 import './styles.css';
 
@@ -31,7 +32,12 @@ else {
     auth,
     sync: new DriveSync(
       local,
-      new DriveClient(auth.getToken, undefined, (token) => auth.clearToken(token)),
+      new DriveClient(
+        auth.getToken,
+        undefined,
+        (token) => auth.clearToken(token),
+        new LocalCreations(),
+      ),
       new LocalDriveLinks(),
       Date.now,
       local.damaged !== null,

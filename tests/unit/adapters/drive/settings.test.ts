@@ -11,6 +11,7 @@ import {
   parseAuthMessage,
   type AuthMessage,
 } from '../../../../src/adapters/drive/auth-channel';
+import { DRIVE_CREATING_KEY, LocalCreations } from '../../../../src/adapters/drive/creations';
 import { clearLog, recentLog } from '../../../../src/adapters/diagnostics/log';
 import { boardOf, sticky } from '../../../support/boards';
 
@@ -86,6 +87,20 @@ describe('Drive link storage', () => {
       'drive.link-unreadable',
       'drive.link-unreadable',
     ]);
+  });
+});
+
+describe('pending creation storage', () => {
+  it('keeps the reserved ID across pages, and ignores a broken record', () => {
+    const creation = { folderId: 'folder', id: 'reserved', at: 5 };
+    new LocalCreations().write(creation);
+    expect(new LocalCreations().read()).toEqual(creation);
+    new LocalCreations().write(null);
+    expect(localStorage.getItem(DRIVE_CREATING_KEY)).toBeNull();
+    for (const broken of ['{', '{"folderId":"folder","id":"","at":5}', 'null']) {
+      localStorage.setItem(DRIVE_CREATING_KEY, broken);
+      expect(new LocalCreations().read()).toBeNull();
+    }
   });
 });
 

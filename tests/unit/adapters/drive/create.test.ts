@@ -4,7 +4,9 @@ import {
   CREATE_BACKOFF,
   DRIVE_UPLOAD,
   DriveClient,
+  LATE_UPLOAD,
 } from '../../../../src/adapters/drive/client';
+import { memoryCreations } from '../../../../src/adapters/drive/creations';
 import { serializeBoard } from '../../../../src/adapters/files/stormlet-format';
 import type { RemoteError } from '../../../../src/domain/sync/remote';
 import { boardOf, sticky } from '../../../support/boards';
@@ -18,7 +20,11 @@ const lost = () => new TypeError('Failed to fetch');
  * Drive as a list of answers keyed by request, so each test says what Drive does to each
  * call: `GET ids`, `POST upload`, `GET meta`, `GET media`, `GET version`, `PATCH upload`.
  */
-function fakeDrive(script: Record<string, (Response | Error)[]>) {
+function fakeDrive(
+  script: Record<string, (Response | Error | Promise<Response>)[]>,
+  creations = memoryCreations(),
+) {
+  let now = 1_000;
   const log: string[] = [];
   const bodies: string[] = [];
   const fetcher = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -35,12 +41,20 @@ function fakeDrive(script: Record<string, (Response | Error)[]>) {
             : 'GET meta';
     log.push(key);
     if (init.body) bodies.push(String(init.body));
-    const reply = script[key]?.shift();
+    const reply = await script[key]?.shift();
     if (!reply) throw new Error(`unexpected ${key}`);
     if (reply instanceof Error) throw reply;
     return reply;
   }) as unknown as typeof fetch;
-  return { client: new DriveClient(() => 'token', fetcher), log, bodies };
+  const client = new DriveClient(
+    () => 'token',
+    fetcher,
+    undefined,
+    creations,
+    () => now,
+  );
+  const later = (ms: number) => (now += ms);
+  return { client, log, bodies, creations, later };
 }
 
 const created = (version = '1') => json({ id: 'reserved', name: 'Plan.stormlet', version });
@@ -177,5 +191,79 @@ describe('creating Drive files without duplicates', () => {
     const result = failure(swapped.client.create('folder', board));
     await vi.advanceTimersByTimeAsync(CREATE_BACKOFF * 2 ** CREATE_ATTEMPTS);
     expect(await result).toBe('conflict: Drive created a different file.');
+  });
+
+  it('remembers a creation until Drive answers, so a reloaded page can find its file', async () => {
+    let answer: (reply: Response) => void = () => {};
+    const drive = fakeDrive({
+      'GET ids': [json({ ids: ['reserved'] })],
+      'POST upload': [new Promise<Response>((resolve) => (answer = resolve))],
+    });
+    const creating = drive.client.create('folder', board);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(drive.creations.read()).toEqual({ folderId: 'folder', id: 'reserved', at: 1_000 });
+    // While this page still waits for the answer, it does not report the file itself.
+    expect(await drive.client.unconfirmed()).toBeNull();
+    answer(created());
+    await creating;
+    expect(drive.creations.read()).toBeNull();
+
+    // A page that closed before the answer leaves the record for the next one.
+    const record = memoryCreations();
+    record.write({ folderId: 'folder', id: 'reserved', at: 1_000 });
+    const next = fakeDrive(
+      { 'GET meta': [meta()], 'GET media': [new Response(serializeBoard(board))] },
+      record,
+    );
+    expect(await next.client.unconfirmed()).toEqual({
+      file: { id: 'reserved', name: 'Plan.stormlet', version: '1' },
+      board,
+    });
+    // It is reported until the caller has linked it.
+    expect(record.read()).not.toBeNull();
+    next.client.forgetUnconfirmed();
+    expect([record.read(), await next.client.unconfirmed()]).toEqual([null, null]);
+  });
+
+  it('keeps looking while a late upload may still land, and drops a file elsewhere', async () => {
+    const record = memoryCreations();
+    record.write({ folderId: 'folder', id: 'reserved', at: 1_000 });
+    const drive = fakeDrive(
+      {
+        'GET meta': [json({}, 404), json({}, 404), meta(['elsewhere'])],
+        'GET media': [new Response(serializeBoard(board))],
+      },
+      record,
+    );
+    expect(await drive.client.unconfirmed()).toBeNull();
+    expect(record.read()).not.toBeNull();
+    drive.later(LATE_UPLOAD + 1);
+    expect(await drive.client.unconfirmed()).toBeNull();
+    expect(record.read()).toBeNull();
+
+    record.write({ folderId: 'folder', id: 'reserved', at: 1_000 });
+    expect(await drive.client.unconfirmed()).toBeNull();
+    expect(record.read()).toBeNull();
+  });
+
+  it('keeps the record after a failed creation, and drops it for a file not its own', async () => {
+    const offline = fakeDrive({
+      'GET ids': [json({ ids: ['reserved'] })],
+      'POST upload': Array.from({ length: CREATE_ATTEMPTS }, lost),
+      'GET meta': Array.from({ length: CREATE_ATTEMPTS }, () => json({}, 404)),
+    });
+    const attempt = failure(offline.client.create('folder', board));
+    await vi.advanceTimersByTimeAsync(CREATE_BACKOFF * 2 ** CREATE_ATTEMPTS);
+    await attempt;
+    expect(offline.creations.read()).toMatchObject({ id: 'reserved' });
+
+    const other = fakeDrive({
+      'GET ids': [json({ ids: ['reserved'] })],
+      'POST upload': [json({}, 409)],
+      'GET meta': [meta()],
+      'GET media': [new Response(serializeBoard(boardOf()))],
+    });
+    await failure(other.client.create('folder', board));
+    expect(other.creations.read()).toBeNull();
   });
 });

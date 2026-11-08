@@ -39,6 +39,7 @@ export const needsAttention = (state: SyncState): boolean =>
 export const FAILURES: Record<Extract<SyncState, { status: 'failed' }>['reason'], MessageKey> = {
   conflict: 'drive.failure.conflict',
   permission: 'drive.failure.permission',
+  full: 'drive.failure.full',
   missing: 'drive.failure.missing',
   network: 'drive.failure.network',
   unreadable: 'drive.failure.unreadable',

@@ -1,4 +1,7 @@
 import type { Board } from '../../src/domain/model';
+import type { BoardStore } from '../../src/domain/store';
+import { applyPatches } from '../../src/domain/patch';
+import { boardOf, sticky } from './boards';
 import {
   RemoteError,
   type RemoteBoards,
@@ -23,6 +26,8 @@ export function fakeDrive() {
     if (failure) throw new RemoteError(failure);
     if (file && !files.has(id)) throw new RemoteError('missing');
   };
+  /** A file a creation made whose answer never reached the page. */
+  const unseen = { id: null as string | null };
   const remote: RemoteBoards = {
     open: async (id) => {
       call('open', id);
@@ -49,6 +54,18 @@ export function fakeDrive() {
       });
       return ref(id);
     },
+    unconfirmed: async () => {
+      calls.push('unconfirmed');
+      const failure = failures.shift();
+      if (failure) throw new RemoteError(failure);
+      const id = unseen.id;
+      return id && files.has(id)
+        ? { file: ref(id), board: structuredClone(files.get(id)!.board) }
+        : null;
+    },
+    forgetUnconfirmed: () => {
+      unseen.id = null;
+    },
   };
   /** Someone else edits the file in Drive. */
   const elsewhere = (id: string, change: (board: Board) => Board) => {
@@ -58,7 +75,7 @@ export function fakeDrive() {
       version: stored.version + 1,
     });
   };
-  return { remote, files, calls, failures, elsewhere };
+  return { remote, files, calls, failures, elsewhere, unseen };
 }
 
 /** Links in memory; `elsewhere` stands in for another tab writing them. */
@@ -81,4 +98,21 @@ export function memoryLinks(link: RemoteLink | null = null) {
       for (const watcher of watchers) watcher(structuredClone(next));
     },
   };
+}
+
+/** The board store underneath, as the browser's local store would be. */
+export function localStore(board: Board = boardOf(sticky('a'))) {
+  const store: BoardStore & { board: Board } = {
+    board,
+    load: () => store.board,
+    apply: (patches) => {
+      store.board = applyPatches(store.board, patches).board;
+    },
+    subscribe: () => () => {},
+    watchSaved: (listener) => {
+      listener(true);
+      return () => {};
+    },
+  };
+  return store;
 }

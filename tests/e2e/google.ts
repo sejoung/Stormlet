@@ -86,8 +86,11 @@ export async function mockDrive(page: Target) {
   const files = new Map<string, FakeFile>();
   const requests: string[] = [];
   let created = 0;
-  /** Drop the answer to the next creation after storing the file, as a lost response would. */
-  const faults = { loseNextCreate: false };
+  /**
+   * `loseNextCreate` drops the answer to the next creation after storing the file, as a
+   * lost response would; `holdNextCreate` stores it and never answers.
+   */
+  const faults = { loseNextCreate: false, holdNextCreate: false };
   const reply = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   const meta = (id: string) => {
@@ -117,6 +120,10 @@ export async function mockDrive(page: Target) {
         content,
         parents: metadata.parents as string[],
       });
+      if (faults.holdNextCreate) {
+        faults.holdNextCreate = false;
+        return new Promise<void>(() => {});
+      }
       if (faults.loseNextCreate) {
         faults.loseNextCreate = false;
         return route.abort('failed');

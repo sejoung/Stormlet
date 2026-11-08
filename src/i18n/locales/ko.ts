@@ -426,6 +426,7 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'drive.pickFile': 'Stormlet 보드 열기',
   'drive.saved': '{name}을(를) Drive에 저장했습니다.',
   'drive.opened': 'Drive에서 {name}을(를) 열었습니다.',
+  'drive.recovered': '페이지를 닫기 직전 Drive에 저장한 {name}을(를) 찾아 다시 연결했습니다.',
   'drive.openBlocked':
     '지금 Drive 파일의 변경 내용이 아직 저장되지 않았습니다. 먼저 저장하거나 동기화를 중지하세요.',
   'drive.disconnected': 'Google Drive 연결을 해제했습니다.',
@@ -435,7 +436,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'drive.error.unavailable': 'Google에 연결할 수 없습니다. 인터넷 연결을 확인하고 다시 시도하세요.',
   'drive.failure.auth': 'Drive 접근 권한이 끝났습니다. 다시 연결한 뒤 시도하세요.',
   'drive.failure.conflict': '저장하는 동안 Drive 파일이 계속 바뀌었습니다. 다시 시도하세요.',
-  'drive.failure.permission': 'Drive가 파일 접근을 거부했거나 요청이 너무 많습니다.',
+  'drive.failure.permission': 'Drive가 파일 접근을 거부했습니다.',
+  'drive.failure.full': 'Drive 저장 공간이 부족합니다. 공간을 비운 뒤 다시 시도하세요.',
   'drive.failure.missing': 'Drive 파일이 더 이상 없습니다. 보드를 폴더에 다시 저장하세요.',
   'drive.failure.network': 'Drive에 연결할 수 없습니다. 저장을 다시 시도합니다.',
   'drive.failure.unreadable': '이 버전에서 읽을 수 있는 Stormlet 보드 파일이 아닙니다.',

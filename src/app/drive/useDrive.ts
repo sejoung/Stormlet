@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Board } from '../../domain/model';
 import { RemoteError } from '../../domain/sync/remote';
 import type { Side } from '../../domain/sync/merge';
@@ -52,13 +52,27 @@ export function useDrive({ services, flushEditor, replaceBoard, onStatus }: Opti
   const [busy, setBusy] = useState(false);
 
   useEffect(() => services?.sync.watch(setState), [services]);
+  /** Reports a file found again by `recover`; kept current without resubscribing below. */
+  const recovered = useRef<(name: string) => void>(() => {});
+  recovered.current = (name) => onStatus(t('drive.recovered', { name }));
   // Connections, expiries and disconnects come from this tab or from another one.
   useEffect(() => {
     if (!services) return;
     const { auth, sync } = services;
     const follow = (event: AuthEvent) => {
       setConnected(auth.getToken() !== null);
-      if (event === 'connected' && sync.current.status === 'paused') void sync.resume();
+      const { status } = sync.current;
+      if (event === 'connected' && status === 'paused') void sync.resume();
+      // A file saved just before the page closed is linked again once connected.
+      else if (event === 'connected' && status === 'unlinked')
+        sync.recover().then(
+          (file) => {
+            if (!file) return;
+            log.info('drive.recovered');
+            recovered.current(file.name);
+          },
+          (error: unknown) => log.warn('drive.recover-failed', errorDetails(error)),
+        );
       else if (event === 'expired') sync.pause();
       else if (event === 'disconnected') sync.unlink();
     };

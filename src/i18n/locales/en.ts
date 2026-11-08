@@ -429,6 +429,8 @@ export const en = {
   'drive.pickFile': 'Open a Stormlet board',
   'drive.saved': 'Saved {name} to Drive.',
   'drive.opened': 'Opened {name} from Drive.',
+  'drive.recovered':
+    'Found {name}, saved to Drive just before the page closed, and linked it again.',
   'drive.openBlocked':
     'Changes to the current Drive file are not saved yet. Save them or stop syncing first.',
   'drive.disconnected': 'Disconnected from Google Drive.',
@@ -438,7 +440,8 @@ export const en = {
   'drive.error.unavailable': 'Could not reach Google. Check your connection and try again.',
   'drive.failure.auth': 'Access to Drive has ended. Reconnect and try again.',
   'drive.failure.conflict': 'The Drive file kept changing while saving. Try again.',
-  'drive.failure.permission': 'Drive refused access to the file, or too many requests were made.',
+  'drive.failure.permission': 'Drive refused access to the file.',
+  'drive.failure.full': 'The Drive account has no room for the file. Free up space and try again.',
   'drive.failure.missing': 'The Drive file no longer exists. Save the board to a folder again.',
   'drive.failure.network': 'Could not reach Drive. Saving will be retried.',
   'drive.failure.unreadable': 'The Drive file is not a Stormlet board this version can read.',

@@ -139,6 +139,34 @@ describe('Drive client', () => {
     expect(signedOut.sent).toEqual([]);
   });
 
+  it('tells rate limits and a full Drive apart from refusals', async () => {
+    const forbidden = (reason?: string) =>
+      json(reason ? { error: { code: 403, errors: [{ reason }] } } : 'not json', {}, 403);
+    const answers = [
+      forbidden('userRateLimitExceeded'),
+      forbidden('rateLimitExceeded'),
+      forbidden('storageQuotaExceeded'),
+      forbidden('insufficientFilePermissions'),
+      forbidden(),
+    ];
+    const results = [];
+    for (const answer of answers) {
+      const { fetcher } = fakeFetch(answer);
+      results.push(
+        await new DriveClient(() => 't', fetcher)
+          .version('f1')
+          .catch((error: RemoteError) => `${error.reason}: ${error.message}`),
+      );
+    }
+    expect(results).toEqual([
+      'network: Drive answered 403 (userRateLimitExceeded).',
+      'network: Drive answered 403 (rateLimitExceeded).',
+      'full: Drive answered 403 (storageQuotaExceeded).',
+      'permission: Drive answered 403 (insufficientFilePermissions).',
+      'permission: Drive answered 403.',
+    ]);
+  });
+
   it('gives up on a request that does not answer in time', async () => {
     vi.useFakeTimers();
     try {

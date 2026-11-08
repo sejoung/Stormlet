@@ -132,6 +132,7 @@ export class DriveSync implements BoardStore {
   /** Link the file just opened, so replacing the board with it saves nothing back. */
   linkOpened({ file, board }: Opened): void {
     this.detach();
+    this.remote.forgetUnconfirmed?.();
     this.remember({ file, base: board });
     this.set('synced');
   }
@@ -139,9 +140,27 @@ export class DriveSync implements BoardStore {
   /** Stop syncing; the board stays as it is. */
   unlink(): void {
     this.detach();
+    this.remote.forgetUnconfirmed?.();
     this.link = null;
     this.links.write(null);
     this.set('unlinked');
+  }
+
+  /**
+   * After connecting with no file linked: link the file a creation made before the page
+   * was closed without hearing back, and save what changed here since. Null if none.
+   */
+  async recover(): Promise<RemoteFile | null> {
+    if (this.link || !this.remote.unconfirmed) return null;
+    const generation = this.generation;
+    const found = await this.remote.unconfirmed();
+    // Linking or creating something meanwhile decides for the user.
+    if (!found || generation !== this.generation || this.link) return null;
+    this.remote.forgetUnconfirmed?.();
+    this.remember({ file: found.file, base: found.board });
+    this.set('synced');
+    if (!same(this.load(), found.board)) this.changed();
+    return found.file;
   }
 
   /** Access ended: keep edits local until `resume`. */
@@ -199,7 +218,9 @@ export class DriveSync implements BoardStore {
     if (!link) return this.set('unlinked');
     // Access is per tab: one waiting for a reconnect still waits, now for the new file.
     this.set(paused ? 'paused' : 'synced');
-    if (!same(this.load(), link.base)) this.changed();
+    // The other tab's board usually arrives just after its link and matches the base; check
+    // after the usual delay instead of showing a save that will not happen.
+    if (!paused && !same(this.load(), link.base)) this.wait(SYNC_DELAY);
   }
 
   private changed(): void {
