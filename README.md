@@ -1,53 +1,103 @@
 # Stormlet
 
+[![Quality](https://github.com/sejoung/Stormlet/actions/workflows/ci.yml/badge.svg)](https://github.com/sejoung/Stormlet/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Node 24](https://img.shields.io/badge/node-24-339933?logo=nodedotjs&logoColor=white)
+![React 19](https://img.shields.io/badge/react-19-61dafb?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/typescript-5.9-3178c6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/vite-7-646cff?logo=vite&logoColor=white)
+![Tested with Vitest and Playwright](https://img.shields.io/badge/tested%20with-Vitest%20%2B%20Playwright-6e9f18)
+
 A local-first sticky note board for exploring and organizing ideas. [한국어](README.ko.md)
 
-Runs in the browser with no sign-in or server. Boards live in browser storage and in readable `.stormlet` JSON files. It follows the structure of [Maplet](https://github.com/sejoung/Maplet).
+Stormlet runs entirely in the browser, with no sign-in and no server. Boards are autosaved to browser storage and can be downloaded as `.stormlet` files, which are plain, readable JSON.
 
 ## Features
 
-- Floating board actions, a compact creation toolbar and a contextual toolbar beside selected notes
-- Create a 160 × 160 square note with the note tool or `N`, then click the board and start typing
-- Add a note at the center or enter multiple notes at once from the creation toolbar
-- Click the note or connection tool to open a side panel for default note color and line style; preferences survive reloads
-- Change individual note colors using the contextual toolbar, with sixteen colors available
-- Type into a selection or double-click/press Enter to edit; Enter/Escape finishes, Shift+Enter adds a newline, with IME-safe input
-- Drag the background to select; Space+drag or the hand tool pans. Use `N` for notes, `V` for select, `H` for hand
-- Whole-note bold/italic/underline, alignment, auto/manual font sizes, square and rectangular notes
-- Duplicate with Ctrl/Cmd+D or Alt/Option+drag; copy/cut/paste preserves styles and groups
-- Connect notes with `L` or drag a side port; attached arrows follow moves and resizing
-- Straight, smoothly rounded elbow (default) and curved connections, arrowheads, color/width/dashes, labels, endpoint reattachment and locking
-- Copy or duplicate a flow with its internal connections; deleting a note also removes its incident lines, all undoable
-- Create transparent or colored frames with `F` and a drag, or wrap selected notes using “프레임 만들기”; choose horizontal or vertical lane presets
-- Rename frame titles with a double-click, resize the boundary, and move, duplicate or copy its contained notes, nested frames and internal connections together
-- Frame deletion keeps the contents; cutting transfers the whole frame and contents, and frame locking leaves individual notes editable
-- Adjust frame borders from 1 to 8px; connect frames to other frames or notes using the connection tool or side ports
-- Right-click empty canvas, frames or connections for context actions; add and paste at the cursor, undo/redo, select notes and fit the board
-- Bulk entry and spreadsheet paste (up to 50 rows × 100 columns, 3,000 characters per note)
-- Align, distribute and arrange notes in a grid; alignment guides, grouping and locking
-- Toggle emoji reactions and search note contents
-- Right-click a note for front/back ordering, size presets, exact width and height, editing and deletion (also Shift+F10)
-- Resize using the selected note's bottom-right handle or arrow keys; text automatically fits the note, without a type label
-- Zoom with the wheel or bottom-right controls; fit all or selected notes with Alt/Option+1/2
-- Undo and redo (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`)
+**Notes**
+
+- Create a note with the note tool or `N`, click the board and start typing (160 × 160 square by default)
+- Add a note at the center, or enter many notes at once with bulk entry
+- Paste cells from Excel or Google Sheets (up to 50 rows × 100 columns, 3,000 characters per note)
+- Sixteen colors, whole-note bold/italic/underline, text alignment, square and rectangular shapes
+- Text automatically fits the note and never scrolls; a manually chosen font size is kept while the text fits, and sizes that would overflow are disabled
+- IME-safe editing: type into a selection, double-click or press Enter; Enter/Escape finishes and Shift+Enter adds a newline
+- Resize with the bottom-right handle (or its arrow keys), presets or an exact width and height
+- Align, distribute and arrange in a grid, with alignment guides while dragging; group and lock
+- Emoji reactions and full-text search
+
+**Connections**
+
+- Connect notes and frames with `L` or by dragging a side port; lines follow moves and resizing
+- Straight, rounded elbow (default) and curved lines with arrowheads, color, width, dashes, labels and locking
+- Drag an endpoint to reattach it; copying or duplicating a flow keeps its internal lines
+
+**Frames**
+
+- Draw a frame with `F`, or wrap selected notes with “프레임 만들기”; horizontal and vertical lane presets
+- Transparent or colored, borders from 1 to 8px, titles renamed with a double-click
+- Moving, duplicating or copying a frame takes the notes, nested frames and lines inside it along
+- Deleting a frame keeps its contents; locking a frame leaves the notes inside it editable
+
+**Board**
+
+- Pan with Space+drag, the middle mouse button or the hand tool; zoom with the wheel or on-screen controls
+- Fit all notes or the selected ones (`Alt/Option+1/2`)
+- Context menus on notes, frames, lines and the empty canvas (also Shift+F10)
+- Undo and redo for every change, including deletions that remove attached lines
 - Autosave in the browser, synced across tabs of the same browser
-- Double-click the board title to rename it (also Enter/F2); the title is autosaved and used as the download filename
-- Version 8 `.stormlet` files retain the title, notes, connections, frames and their styles; versions 1–7 remain readable
-- Keyboard help, responsive controls and dark mode
+- Rename the board by double-clicking its title; the title becomes the download filename
+- Keyboard help (`F1` or `?`), responsive layout and dark mode
 
-Reactions toggle using a stable local identifier without a visible profile. Same-browser tab synchronization includes the board title.
+Reactions use a stable local identifier, so no profile is shown.
 
-## Development
+## Keyboard shortcuts
 
-Requires Node 24.
+| Action                           | Shortcut                          |
+| -------------------------------- | --------------------------------- |
+| Note / select / hand tool        | `N` / `V` / `H`                   |
+| Connection / frame tool          | `L` / `F`                         |
+| Edit note, newline, finish       | `Enter`, `Shift+Enter`, `Esc`     |
+| Duplicate                        | `Ctrl/Cmd+D`, `Alt/Option+drag`   |
+| Duplicate in a direction         | `Alt/Option+arrow`                |
+| Select all                       | `Ctrl/Cmd+A`                      |
+| Group / ungroup                  | `Ctrl/Cmd+G` / `Ctrl/Cmd+Shift+G` |
+| Lock                             | `Ctrl/Cmd+Shift+L`                |
+| Bold / italic / underline        | `Ctrl/Cmd+B` / `I` / `U`          |
+| Move selection (10px with Shift) | Arrow keys                        |
+| Undo / redo                      | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` |
+| Fit all / fit selected           | `Alt/Option+1` / `2`              |
+| Search / save file               | `Ctrl/Cmd+F` / `Ctrl/Cmd+S`       |
+| Help                             | `F1`, `?`                         |
+
+## Getting started
+
+Requires Node 24 (see [`.nvmrc`](.nvmrc)).
 
 ```sh
+git clone https://github.com/sejoung/Stormlet.git
+cd Stormlet
 npm install
 npm run dev      # http://127.0.0.1:5173
-npm run verify   # format, lint, types, tests with coverage, build
 ```
 
-Playwright E2E tests run in real Chromium, covering frames, connections, context menus, text editing, dark mode and narrow layouts.
+`npm run build` writes a static site to `dist/` with relative paths, so it can be served from any static host or subfolder.
+
+## Scripts
+
+| Script             | Description                                                     |
+| ------------------ | --------------------------------------------------------------- |
+| `npm run dev`      | Start the dev server                                            |
+| `npm run build`    | Type-check and build to `dist/`                                 |
+| `npm run verify`   | Format check, lint, type check, unit tests with coverage, build |
+| `npm test`         | Run unit tests (Vitest, jsdom)                                  |
+| `npm run test:e2e` | Run E2E tests (Playwright, Chromium)                            |
+| `npm run arch`     | Report on layer dependency rules                                |
+| `npm run format`   | Format with Prettier                                            |
+
+### E2E tests
+
+Playwright runs the E2E suite in real Chromium, covering notes and text fitting, frames, connections, context menus, dark mode and narrow layouts.
 
 ```sh
 npm run test:e2e:install  # Install Chromium once
@@ -56,10 +106,37 @@ npm run test:e2e:headed   # Run with a visible browser
 npm run test:e2e:ui       # Open Playwright UI mode
 ```
 
-The test server starts on port 4173 and shuts down automatically. Find the HTML report at `playwright-report/index.html` and screenshots under `test-results/e2e`. Failed tests retain traces and videos. CI also runs the E2E suite.
+The test server starts on port 4173 and stops when the tests finish. The HTML report is written to `playwright-report/index.html` and screenshots to `test-results/e2e`. Failed tests keep traces and videos. CI runs `verify` and the E2E suite on every push and pull request.
 
-Design decisions are in [docs/adr](docs/adr). The model is built so a CRDT store can replace local storage later ([ADR 0002](docs/adr/0002-collaboration-ready-model.md)).
+## Architecture
+
+| Layer             | Responsibility                                                              |
+| ----------------- | --------------------------------------------------------------------------- |
+| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface |
+| `src/application` | Editing session and undo/redo built on inverse patches                      |
+| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view |
+| `src/adapters`    | `.stormlet` file format, localStorage store, clipboard, file download       |
+| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                |
+| `src/app`         | Composition, session hooks, shortcuts                                       |
+
+Dependencies point inward, from `app` towards `domain`. The rules are enforced by tests in `tests/architecture`, and lint keeps every file under 400 lines and every folder at 10 files or fewer.
+
+Design decisions are recorded in [docs/adr](docs/adr). The model is designed so a CRDT store can replace local storage later ([ADR 0002](docs/adr/0002-collaboration-ready-model.md)).
+
+### File format
+
+`.stormlet` files are JSON with a `format` and `version` field. The current version is 8 and stores the title, notes, connections, frames and their styles. Files from versions 1–7 can still be opened.
+
+## Roadmap
+
+- Minimap
+- Google Drive storage
+- Real-time collaboration: a Yjs implementation of `BoardStore` and a relay server ([ADR 0002](docs/adr/0002-collaboration-ready-model.md))
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a pull request, make sure `npm run verify` and `npm run test:e2e` pass. For larger changes, open an issue first to discuss the direction.
 
 ## License
 
-MIT
+[MIT](LICENSE) © sejoung kim
