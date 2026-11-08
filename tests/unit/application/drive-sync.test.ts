@@ -295,6 +295,62 @@ describe('Drive sync', () => {
     expect(sync.current).toEqual({ status: 'unlinked' });
   });
 
+  it('follows a file another tab links, saves or unlinks, dropping its own requests', async () => {
+    const { sync, drive, links, local, states } = setup();
+    await sync.create('folder');
+    drive.files.set('other', { name: 'Other.stormlet', version: 4, board: boardOf(sticky('o')) });
+    // A save for the old file is still out when the other tab opens another one.
+    sync.apply(setText('a', 'old file'));
+    const saving = sync.saveNow();
+    const other = {
+      file: { id: 'other', name: 'Other.stormlet', version: '4' },
+      base: boardOf(sticky('o')),
+    };
+    links.elsewhere(other);
+    local.board = other.base;
+    await saving;
+    // The board arrives just after the link; once it has, there is nothing to send.
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY);
+    expect(sync.current).toEqual({ status: 'synced', file: other.file });
+    expect(drive.calls).not.toContain('save other');
+    expect(links.link).toEqual(other);
+    // Edits here now go to the new file, from its base.
+    sync.apply(setText('o', 'here'));
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY);
+    expect(drive.calls.slice(-1)).toEqual(['save other']);
+    expect(text(drive.files.get('other')!.board, 'o')).toBe('here');
+    expect(drive.files.get('file1')!.version).toBe(2);
+
+    // The other tab's save of the same file becomes this tab's base; nothing is sent.
+    const before = drive.calls.length;
+    links.elsewhere({ file: { ...links.link!.file, version: '9' }, base: local.board });
+    expect(sync.current).toMatchObject({ status: 'synced', file: { version: '9' } });
+    links.elsewhere(links.link);
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY);
+    expect(drive.calls).toHaveLength(before);
+
+    links.elsewhere(null);
+    expect([sync.current, states.at(-1)]).toEqual([{ status: 'unlinked' }, 'unlinked']);
+  });
+
+  it('keeps waiting for a reconnect, and saves edits the followed base lacks', async () => {
+    const base = boardOf(sticky('a'));
+    const { sync, drive, links, local } = setup(base, {
+      file: { id: 'f', name: 'F', version: '1' },
+      base,
+    });
+    drive.files.set('g', { name: 'G', version: 2, board: base });
+    links.elsewhere({ file: { id: 'g', name: 'G', version: '2' }, base });
+    expect(sync.current).toMatchObject({ status: 'paused', file: { id: 'g' } });
+
+    sync.unlink();
+    local.board = withText(base, 'a', 'newer');
+    links.elsewhere({ file: { id: 'g', name: 'G', version: '2' }, base });
+    expect(sync.current.status).toBe('pending');
+    await vi.advanceTimersByTimeAsync(SYNC_DELAY);
+    expect(text(drive.files.get('g')!.board, 'a')).toBe('newer');
+  });
+
   it('passes the local store’s save health and outside changes through', () => {
     const { sync } = setup();
     const saved = vi.fn();

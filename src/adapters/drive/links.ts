@@ -17,7 +17,10 @@ const isFile = (value: unknown): value is RemoteFile => {
   );
 };
 
-/** The linked Drive file and its base board, kept in browser storage. */
+/**
+ * The linked Drive file and its base board, kept in browser storage. Tabs of one browser
+ * share it, so a change made in another tab is reported through `watch`.
+ */
 export class LocalDriveLinks implements RemoteLinks {
   read(): RemoteLink | null {
     const file = readItem(DRIVE_FILE_KEY);
@@ -44,5 +47,18 @@ export class LocalDriveLinks implements RemoteLinks {
     const { id, name, version } = link.file;
     writeItem(DRIVE_BASE_KEY, serializeBoard(link.base, { compact: true }));
     writeItem(DRIVE_FILE_KEY, JSON.stringify({ id, name, version }));
+  }
+
+  watch(listener: (link: RemoteLink | null) => void): () => void {
+    const onStorage = (event: StorageEvent) => {
+      // The base is written before the file record, so the record's change means both are in.
+      if (event.key !== DRIVE_FILE_KEY && event.key !== null) return;
+      if (readItem(DRIVE_FILE_KEY) === null) return listener(null);
+      // A record this version cannot read is not a reason to drop the file followed here.
+      const link = this.read();
+      if (link) listener(link);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }
 }

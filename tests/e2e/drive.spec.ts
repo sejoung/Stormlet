@@ -171,3 +171,49 @@ test('saving to a folder makes one file even when Drive’s answer is lost', asy
   expect([...drive.files.keys()]).toEqual(['created-1']);
   expect(drive.requests.filter((request) => request.startsWith('POST'))).toHaveLength(1);
 });
+
+test('an open tab follows the file another tab opens, and saves its edits there', async ({
+  page,
+  context,
+}) => {
+  await mockGoogleScripts(context);
+  const drive = await mockDrive(context);
+  const dialog = await connect(page);
+  await dialog.getByRole('button', { name: 'Drive 폴더에 저장…' }).click();
+  await page
+    .getByRole('dialog', { name: '이 보드를 저장할 폴더 선택' })
+    .getByRole('button')
+    .click();
+  await expect(driveButton(page)).toHaveText('저장됨');
+  const second = await context.newPage();
+  await second.goto('/');
+  await expect(driveButton(second)).toHaveText('저장됨');
+
+  drive.files.set('shared', {
+    name: 'Shared.stormlet',
+    version: 7,
+    parents: [],
+    content: serializeBoard({ title: 'Shared', stickies: {} }),
+  });
+  await driveButton(page).click();
+  await page
+    .getByRole('dialog', { name: 'Google Drive' })
+    .getByRole('button', { name: 'Drive에서 열기…' })
+    .click();
+  await page.getByRole('dialog', { name: 'Stormlet 보드 열기' }).getByRole('button').click();
+  await expect(second.getByRole('button', { name: '보드 이름: Shared' })).toBeVisible();
+
+  // The other tab's edit goes to the file it now follows, not the one it started with.
+  const before = drive.files.get('created-1')!.version;
+  await canvas(second).focus();
+  await second.keyboard.press('n');
+  const at = await point(second, 300, 300);
+  await second.mouse.click(at.x, at.y);
+  await second.keyboard.type('Second tab');
+  await second.keyboard.press('Escape');
+  await expect(driveButton(second)).toHaveText('저장 중…');
+  await expect(driveButton(second)).toHaveText('저장됨');
+  const shared = parseBoard(drive.files.get('shared')!.content);
+  expect(Object.values(shared.stickies).map((note) => note.text)).toEqual(['Second tab']);
+  expect(drive.files.get('created-1')!.version).toBe(before);
+});

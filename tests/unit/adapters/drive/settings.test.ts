@@ -56,6 +56,25 @@ describe('Drive link storage', () => {
     expect(localStorage.getItem(DRIVE_BASE_KEY)).toBeNull();
   });
 
+  it('reports links written by another tab, but not records it cannot read', () => {
+    const links = new LocalDriveLinks();
+    const seen = vi.fn();
+    const unsubscribe = links.watch(seen);
+    const elsewhere = (key: string | null, write: () => void) => {
+      write();
+      window.dispatchEvent(new StorageEvent('storage', { key }));
+    };
+    elsewhere('stormlet.board', () => {});
+    elsewhere(DRIVE_FILE_KEY, () => new LocalDriveLinks().write(link));
+    elsewhere(DRIVE_FILE_KEY, () => localStorage.setItem(DRIVE_FILE_KEY, '{'));
+    elsewhere(DRIVE_FILE_KEY, () => new LocalDriveLinks().write(null));
+    elsewhere(null, () => localStorage.clear());
+    expect(seen.mock.calls).toEqual([[link], [null], [null]]);
+    unsubscribe();
+    elsewhere(DRIVE_FILE_KEY, () => {});
+    expect(seen).toHaveBeenCalledTimes(3);
+  });
+
   it('ignores a broken record and logs it', () => {
     const links = new LocalDriveLinks();
     links.write(link);
