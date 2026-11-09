@@ -50,6 +50,8 @@ export default defineConfig({
       VITE_GOOGLE_CLIENT_ID: 'e2e-client',
       VITE_GOOGLE_API_KEY: 'e2e-key',
       VITE_GOOGLE_APP_ID: 'e2e-app',
+      // Overrides a measurement ID in .env.local: tests and captures never reach Analytics.
+      VITE_GA_MEASUREMENT_ID: '',
     },
     gracefulShutdown: { signal: 'SIGTERM', timeout: 1000 },
     // Includes the build.

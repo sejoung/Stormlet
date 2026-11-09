@@ -18,6 +18,8 @@ import { DriveClient } from './adapters/drive/client';
 import { LocalDriveFolder, LocalDriveLinks } from './adapters/drive/links';
 import { LocalCreations } from './adapters/drive/creations';
 import { DriveSync } from './application/drive-sync';
+import { analyticsConfig } from './adapters/analytics/config';
+import { GoogleAnalytics } from './adapters/analytics/google-analytics';
 import './styles.css';
 
 const root = document.getElementById('root')!;
@@ -36,7 +38,14 @@ else {
 
 function start({ slot, newTitle }: TabBoard) {
   const google = driveConfig();
-  log.info('app.started', { version: APP_VERSION, drive: google !== null });
+  const analytics = analyticsConfig();
+  log.info('app.started', {
+    version: APP_VERSION,
+    drive: google !== null,
+    usageStats: analytics !== null,
+  });
+  // Asks before sending anything; started after the tab cleared any title from the address.
+  const usageStats = analytics ? new GoogleAnalytics(analytics.measurementId) : undefined;
   const local = new LocalBoardStore(slotKey(BOARD_KEY, slot), SAVE_DELAY, () => markSaved(slot));
   // Another tab's "New board" opened this one with the title to start from.
   if (newTitle !== null) local.apply(renameBoard(local.load(), newTitle));
@@ -72,6 +81,7 @@ function start({ slot, newTitle }: TabBoard) {
         damaged={local.damaged}
         library={new LocalBoardLibrary(slot)}
         newId={() => crypto.randomUUID()}
+        usageStats={usageStats}
       />
     </StrictMode>,
   );

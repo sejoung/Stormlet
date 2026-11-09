@@ -1,0 +1,46 @@
+/* The usage statistics question, in a corner clear of the board's tools. */
+.consent-banner {
+  position: fixed;
+  z-index: 90;
+  right: 16px;
+  bottom: 16px;
+  width: min(380px, calc(100vw - 32px));
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+.consent-banner h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.consent-banner p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+.consent-banner a {
+  color: var(--accent);
+}
+.consent-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+.consent-actions button:not(.primary-button) {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+.consent-actions button:not(.primary-button):hover {
+  background: var(--selected);
+}

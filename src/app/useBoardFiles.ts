@@ -61,11 +61,13 @@ export function useBoardFiles({
         diffBoards(current, { ...emptyBoard(), title: normalizeBoardTitle(title) }),
       );
       reset();
+      log.info('files.new-board');
       onStatus(t('files.newBoard'));
     },
     save: () => {
       flushEditor();
       downloadBoard(store.load());
+      log.info('files.downloaded');
     },
     /** Download the board as a PNG or SVG picture named after its title. */
     exportImage: async (format: ImageFormat) => {
@@ -77,6 +79,7 @@ export function useBoardFiles({
         if (!image) return;
         if (format === 'svg') downloadText(name, image.svg, 'image/svg+xml');
         else downloadBlob(name, await svgToPng(image.svg, image.width, image.height));
+        log.info('files.exported', { format });
         onStatus(t('files.exported', { name }));
       } catch (error) {
         log.warn('files.export-failed', { format, ...errorDetails(error, false) });
@@ -91,6 +94,7 @@ export function useBoardFiles({
         const opened = parseBoard(await readFileText(file));
         beforeOpen?.();
         replace(opened, file.name);
+        log.info('files.opened', { size: file.size });
         onStatus(t('files.opened', { name: file.name }));
       } catch (error) {
         log.warn('files.open-failed', { size: file.size, ...errorDetails(error) });

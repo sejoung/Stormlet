@@ -4,15 +4,20 @@ import { useT } from '../common/i18n';
 
 const CHOICES: readonly LocalePreference[] = ['auto', ...LOCALES];
 
-/** Preferences and help: the language, the shortcut list and the diagnostics report. */
+/**
+ * Preferences and help: the language, usage statistics (in a build that has them), the
+ * shortcut list and the diagnostics report.
+ */
 export function SettingsMenu({
   language,
   onLanguage,
+  usageStats,
   onHelp,
   onDiagnostics,
 }: {
   language: LocalePreference;
   onLanguage(language: LocalePreference): void;
+  usageStats?: { on: boolean; onToggle(): void };
   onHelp(): void;
   onDiagnostics(): void;
 }) {
@@ -34,6 +39,18 @@ export function SettingsMenu({
               onSelect={() => onLanguage(choice)}
             />
           ))}
+          {usageStats && (
+            <>
+              <MenuSection />
+              <MenuItem
+                label={t('settings.usageStats')}
+                kind="checkbox"
+                checked={usageStats.on}
+                close={close}
+                onSelect={usageStats.onToggle}
+              />
+            </>
+          )}
           <MenuSection />
           <MenuItem
             label={t('chrome.shortcuts')}

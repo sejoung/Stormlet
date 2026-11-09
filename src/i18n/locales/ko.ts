@@ -85,9 +85,17 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
 
   'settings.language': '언어',
   'settings.languageAuto': '브라우저 언어',
+  'settings.usageStats': '사용 통계 보내기',
   'settings.diagnostics': '문제 해결',
   'settings.diagnosticsHint':
     '문제가 생기면 진단 정보를 복사해 GitHub 이슈에 붙여 넣어 주세요. 앱 버전, 브라우저, 최근 오류가 들어 있고 포스트잇 내용은 들어 있지 않습니다.',
+
+  'consent.title': '사용 통계',
+  'consent.message':
+    'Stormlet 개선을 위해 익명 사용 통계를 Google Analytics로 보내도 될까요? 어떤 기능을 썼는지와 오류 이름만 보내며, 포스트잇 내용과 보드 이름은 보내지 않습니다.',
+  'consent.details': '자세히 보기',
+  'consent.allow': '허용',
+  'consent.deny': '거부',
 
   'files.opened': '{name}을(를) 열었습니다.',
   'files.tooLarge': '파일이 {size}MB보다 큽니다',

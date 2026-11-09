@@ -25,6 +25,7 @@ export const MAX_VALUE_LENGTH = 1000;
 const STACK_FRAMES = 8;
 
 const entries: LogEntry[] = [];
+const listeners = new Set<(entry: LogEntry) => void>();
 // Tests check the log itself; echoing it would only bury their output.
 let echo = import.meta.env.MODE !== 'test';
 
@@ -45,6 +46,12 @@ function record(level: LogLevel, event: string, details: LogDetails = {}) {
   entries.push(entry);
   if (entries.length > LOG_CAPACITY) entries.splice(0, entries.length - LOG_CAPACITY);
   if (echo) console[level](`[stormlet] ${event}`, entry.details);
+  for (const listener of listeners)
+    try {
+      listener(entry);
+    } catch {
+      // A broken listener must not stop the log; logging its failure could loop.
+    }
 }
 
 /** Event names are dotted and stable (`store.save-failed`), so reports can be searched. */
@@ -57,6 +64,17 @@ export const log = {
 
 /** The kept entries, oldest first. */
 export const recentLog = (): readonly LogEntry[] => [...entries];
+
+/**
+ * Calls `listener` with each entry recorded from now on, such as for usage statistics.
+ * Returns a function that stops listening.
+ */
+export function onLogEntry(listener: (entry: LogEntry) => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
 
 export function clearLog(): void {
   entries.length = 0;

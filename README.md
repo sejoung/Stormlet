@@ -60,7 +60,7 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 - Optional Google Drive sync, the main place for boards once connected: a Drive button in the toolbar connects and saves, the chosen folder is shared by every tab so new boards go there with their first edit, and `Ctrl/Cmd+S` saves to Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Export the whole board from the File menu as a PNG (at 2× resolution) or SVG picture, drawn in the light theme on white so it is ready to post elsewhere
 - Rename the board by double-clicking its title; the title becomes the download filename
-- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, PNG/SVG export, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), Arrange (align, distribute, grid, match size), View (zoom, fit, minimap, grid) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
+- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, PNG/SVG export, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), Arrange (align, distribute, grid, match size), View (zoom, fit, minimap, grid) and Settings (language, usage statistics, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 - Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports
@@ -109,6 +109,8 @@ npm run dev      # http://127.0.0.1:5173
 
 Google Drive is optional: copy `.env.example` to `.env.local` and fill in the three public Google values to enable it. See [docs/google-drive.md](docs/google-drive.md) for the Google Cloud setup.
 
+Usage statistics are optional too: set `VITE_GA_MEASUREMENT_ID` to a Google Analytics 4 measurement ID (`G-…`, public like the Drive values). Users are then asked once whether to send anonymous statistics, and can change their answer under **Settings → Send usage statistics**. Nothing loads from Google until they allow it, and only feature and error names are sent, never note text or board names ([ADR 0014](docs/adr/0014-usage-statistics.md)). E2E tests always build without it.
+
 ## Scripts
 
 | Script                   | Description                                                     |
@@ -141,19 +143,20 @@ Stormlet needs no backend: boards stay in the browser, and the browser reads and
 
 1. In **Settings → Pages**, set Source to **GitHub Actions**.
 2. For Google Drive, add `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY` and `VITE_GOOGLE_APP_ID` under **Settings → Secrets and variables → Actions → Variables**. They are public settings, so plain variables will do. Without them the site is deployed without Drive, with a warning in the run. Register the deployed origin (`https://<account>.github.io`) in Google Cloud ([setup](docs/google-drive.md)).
-3. Run **Actions → Pages → Run workflow** by hand. It deploys only after `verify` and the E2E tests pass.
+3. For usage statistics, add `VITE_GA_MEASUREMENT_ID` there as well (optional).
+4. Run **Actions → Pages → Run workflow** by hand. It deploys only after `verify` and the E2E tests pass.
 
 ## Architecture
 
-| Layer             | Responsibility                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface                          |
-| `src/application` | Editing session, undo/redo built on inverse patches, Google Drive sync                               |
-| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view                          |
-| `src/adapters`    | `.stormlet` file format, localStorage store, Google Drive, clipboard, file download, diagnostics log |
-| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                                         |
-| `src/app`         | Composition, session hooks, shortcuts                                                                |
-| `src/i18n`        | Message catalogs per language and the translate function                                             |
+| Layer             | Responsibility                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface                                            |
+| `src/application` | Editing session, undo/redo built on inverse patches, Google Drive sync                                                 |
+| `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view                                            |
+| `src/adapters`    | `.stormlet` file format, localStorage store, Google Drive, clipboard, file download, diagnostics log, usage statistics |
+| `src/components`  | Canvas, notes, frames, connections, toolbars, menus, dialogs                                                           |
+| `src/app`         | Composition, session hooks, shortcuts                                                                                  |
+| `src/i18n`        | Message catalogs per language and the translate function                                                               |
 
 Dependencies point inward, from `app` towards `domain`. The rules are enforced by tests in `tests/architecture`, and lint keeps every file under 400 lines and every folder at 10 files or fewer.
 

@@ -1,11 +1,14 @@
 import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
+import { analyticsCsp } from './scripts/analytics-csp';
 
 const { version } = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  // A build with a GA4 measurement ID may reach Google Analytics (ADR 0014).
+  plugins: [react(), analyticsCsp(loadEnv(mode, process.cwd(), 'VITE_').VITE_GA_MEASUREMENT_ID)],
   // Diagnostics reports name the version they came from (src/adapters/diagnostics).
   define: { __APP_VERSION__: JSON.stringify(version) },
   base: './',
@@ -23,4 +26,4 @@ export default defineConfig({
       thresholds: { statements: 85, branches: 75, functions: 90, lines: 85 },
     },
   },
-});
+}));

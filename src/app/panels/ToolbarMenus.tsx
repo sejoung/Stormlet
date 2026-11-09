@@ -14,6 +14,7 @@ import { DriveButton } from '../../components/drive/DriveButton';
 import { needsAttention } from '../../components/drive/drive-status';
 import type { Drive } from '../drive/useDrive';
 import type { DialogName } from './WorkspaceDialogs';
+import { useUsageStats } from '../settings/usage-stats';
 
 /** The board's menus: File, Edit and View. */
 export function ToolbarMenus({
@@ -164,10 +165,19 @@ export function AppSettings({
   onLanguage(language: LocalePreference): void;
   onDialog(dialog: DialogName): void;
 }) {
+  const usage = useUsageStats();
   return (
     <SettingsMenu
       language={language}
       onLanguage={onLanguage}
+      usageStats={
+        usage
+          ? {
+              on: usage.consent === 'granted',
+              onToggle: () => usage.choose(usage.consent === 'granted' ? 'denied' : 'granted'),
+            }
+          : undefined
+      }
       onHelp={() => onDialog('help')}
       onDiagnostics={() => onDialog('diagnostics')}
     />

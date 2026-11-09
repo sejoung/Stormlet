@@ -87,9 +87,17 @@ export const en = {
 
   'settings.language': 'Language',
   'settings.languageAuto': 'Browser language',
+  'settings.usageStats': 'Send usage statistics',
   'settings.diagnostics': 'Troubleshooting',
   'settings.diagnosticsHint':
     'If something goes wrong, copy the diagnostics and paste them into a GitHub issue. They hold the app version, your browser and recent errors, never the text of your notes.',
+
+  'consent.title': 'Usage statistics',
+  'consent.message':
+    'May Stormlet send anonymous usage statistics to Google Analytics to help improve it? They name the features used and any errors, never the text of your notes or board names.',
+  'consent.details': 'Learn more',
+  'consent.allow': 'Allow',
+  'consent.deny': 'Decline',
 
   'files.opened': 'Opened {name}.',
   'files.tooLarge': 'the file is larger than {size} MB',
