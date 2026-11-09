@@ -17,7 +17,8 @@ const transform = (id: string | undefined) => {
 };
 
 describe('analytics content security policy', () => {
-  it('keeps the strict policy in a build without a measurement ID', () => {
+  it('keeps the strict policy in a build without a measurement ID, and on the dev server', () => {
+    expect(analyticsCsp('G-518PHP5LCZ').apply).toBe('build');
     expect(transform(undefined)).toBe(html);
     expect(transform('  ')).toBe(html);
     expect(policyOf(html)).not.toContain('google-analytics');

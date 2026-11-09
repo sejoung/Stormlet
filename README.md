@@ -109,7 +109,7 @@ npm run dev      # http://127.0.0.1:5173
 
 Google Drive is optional: copy `.env.example` to `.env.local` and fill in the three public Google values to enable it. See [docs/google-drive.md](docs/google-drive.md) for the Google Cloud setup.
 
-Usage statistics are optional too: set `VITE_GA_MEASUREMENT_ID` to a Google Analytics 4 measurement ID (`G-…`, public like the Drive values). Users are then asked once whether to send anonymous statistics, and can change their answer under **Settings → Send usage statistics**. Nothing loads from Google until they allow it, and only feature and error names are sent, never note text or board names ([ADR 0014](docs/adr/0014-usage-statistics.md)). E2E tests always build without it.
+Usage statistics are optional too: set `VITE_GA_MEASUREMENT_ID` to a Google Analytics 4 measurement ID (`G-…`, public like the Drive values). Users are then asked once whether to send anonymous statistics, and can change their answer under **Settings → Send usage statistics**. Nothing loads from Google until they allow it, and only feature and error names are sent, never note text or board names ([ADR 0014](docs/adr/0014-usage-statistics.md)). Only production builds use it: `npm run dev` never shows the question or loads Google Analytics (try the banner with `npm run build && npx vite preview`), and E2E tests always build without it.
 
 ## Scripts
 

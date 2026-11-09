@@ -27,11 +27,16 @@ afterEach(() => {
 
 describe('analytics configuration', () => {
   it('reads a measurement ID and builds without one that is missing or malformed', () => {
-    expect(analyticsConfig({ VITE_GA_MEASUREMENT_ID: ' G-518PHP5LCZ ' })).toEqual({
+    expect(analyticsConfig({ PROD: true, VITE_GA_MEASUREMENT_ID: ' G-518PHP5LCZ ' })).toEqual({
       measurementId: 'G-518PHP5LCZ',
     });
     for (const value of [undefined, '', 'GTM-N42X3TFG', 'UA-1234-1', 'G-<script>'])
-      expect(analyticsConfig({ VITE_GA_MEASUREMENT_ID: value })).toBeNull();
+      expect(analyticsConfig({ PROD: true, VITE_GA_MEASUREMENT_ID: value })).toBeNull();
+  });
+
+  it('is off outside production builds, such as on the dev server', () => {
+    for (const PROD of [false, undefined])
+      expect(analyticsConfig({ PROD, VITE_GA_MEASUREMENT_ID: 'G-518PHP5LCZ' })).toBeNull();
   });
 });
 

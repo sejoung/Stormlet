@@ -109,7 +109,7 @@ npm run dev      # http://127.0.0.1:5173
 
 Google Drive는 선택 기능이다. `.env.example`을 `.env.local`로 복사해 Google 공개 설정 세 개를 넣으면 켜진다. Google Cloud 설정은 [docs/google-drive.md](docs/google-drive.md)를 참고한다.
 
-사용 통계도 선택 기능이다. `VITE_GA_MEASUREMENT_ID`에 Google Analytics 4 측정 ID(`G-…`, Drive 설정처럼 공개 값)를 넣으면 켜진다. 사용자에게 익명 통계를 보내도 되는지 한 번 묻고, **설정 → 사용 통계 보내기**에서 언제든 바꿀 수 있다. 허용하기 전에는 Google에서 아무것도 불러오지 않으며, 기능과 오류 이름만 보내고 포스트잇 내용이나 보드 이름은 보내지 않는다([ADR 0014](docs/adr/0014-usage-statistics.md)). E2E 테스트는 항상 이 값 없이 빌드한다.
+사용 통계도 선택 기능이다. `VITE_GA_MEASUREMENT_ID`에 Google Analytics 4 측정 ID(`G-…`, Drive 설정처럼 공개 값)를 넣으면 켜진다. 사용자에게 익명 통계를 보내도 되는지 한 번 묻고, **설정 → 사용 통계 보내기**에서 언제든 바꿀 수 있다. 허용하기 전에는 Google에서 아무것도 불러오지 않으며, 기능과 오류 이름만 보내고 포스트잇 내용이나 보드 이름은 보내지 않는다([ADR 0014](docs/adr/0014-usage-statistics.md)). 프로덕션 빌드에서만 쓰이므로 `npm run dev`에서는 배너도 GA도 없다(배너는 `npm run build && npx vite preview`로 확인). E2E 테스트는 항상 이 값 없이 빌드한다.
 
 ## 스크립트
 

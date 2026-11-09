@@ -30,11 +30,13 @@ const CSP_META = /(<meta\s+http-equiv="Content-Security-Policy"\s+content=")([^"
 
 /**
  * Opens the page's Content Security Policy to Google Analytics, only in a build that sends
- * usage statistics (`measurementId` set); other builds keep the stricter policy.
+ * usage statistics (`measurementId` set); other builds, and the dev server, which never
+ * sends them, keep the stricter policy.
  */
 export function analyticsCsp(measurementId: string | undefined): Plugin {
   return {
     name: 'stormlet-analytics-csp',
+    apply: 'build',
     transformIndexHtml(html) {
       if (!measurementId?.trim()) return html;
       if (!CSP_META.test(html)) throw new Error('index.html has no Content-Security-Policy');
