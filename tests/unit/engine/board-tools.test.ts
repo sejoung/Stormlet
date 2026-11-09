@@ -3,7 +3,7 @@ import { textCells } from '../../../src/engine/paste';
 import { fitBoard, fitView } from '../../../src/engine/fit-view';
 import { frame } from '../../support/frames';
 import { connection } from '../../support/connections';
-import { snapOffset } from '../../../src/engine/snapping';
+import { snapOffset, snapSize } from '../../../src/engine/snapping';
 import { boardOf, sticky } from '../../support/boards';
 
 describe('board tools', () => {
@@ -64,5 +64,31 @@ describe('board tools', () => {
     expect(snapOffset(board, ['a'], { x: 37, y: 76 }, 3).offset).toEqual({ x: 37, y: 76 });
     expect(snapOffset(board, ['a', 'b'], { x: 37, y: 76 }, 1).guides).toEqual({});
     expect(snapOffset(board, ['missing'], { x: 1, y: 2 }, 1).offset).toEqual({ x: 1, y: 2 });
+  });
+
+  it("snaps a resize to other notes' sizes or edges and marks the notes it now matches", () => {
+    const board = boardOf(
+      sticky('a'),
+      sticky('b', { x: 400, width: 240, height: 100 }),
+      sticky('c', { x: 0, y: 400, width: 300 }),
+    );
+    // Width 236 is 4px from b's 240: the sizes match, so b gets a marker and no edge guide.
+    const same = snapSize(board, 'a', { width: 236, height: 103 }, 1);
+    expect(same.size).toEqual({ width: 240, height: 100 });
+    expect(same.guides).toEqual({ sameWidth: ['b'], sameHeight: ['b'] });
+    // A right edge near b's left edge (x 400) aligns to it with a guide line instead.
+    const edge = snapSize(board, 'a', { width: 397, height: 200 }, 1);
+    expect(edge.size.width).toBe(400);
+    expect(edge.guides).toEqual({ x: 400 });
+    // When a size and an edge are the same distance away, the equal size wins.
+    expect(snapSize(board, 'a', { width: 297, height: 200 }, 1).guides).toEqual({
+      sameWidth: ['c'],
+    });
+    // The snap distance is in screen pixels, so zooming in narrows it.
+    expect(snapSize(board, 'a', { width: 236, height: 200 }, 4).size.width).toBe(236);
+    expect(snapSize(board, 'missing', { width: 1, height: 2 }, 1).size).toEqual({
+      width: 1,
+      height: 2,
+    });
   });
 });

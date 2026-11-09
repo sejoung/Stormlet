@@ -9,7 +9,14 @@ import type { Guides } from '../../../engine/snapping';
 export type Gesture =
   | { type: 'pan'; last: Point }
   | { type: 'place'; start: Point }
-  | { type: 'resize'; id: string; start: Point; original: StickySize; size: StickySize }
+  | {
+      type: 'resize';
+      id: string;
+      start: Point;
+      original: StickySize;
+      size: StickySize;
+      guides?: Guides;
+    }
   | {
       type: 'drag';
       ids: string[];

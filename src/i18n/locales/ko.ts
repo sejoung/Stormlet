@@ -132,6 +132,11 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'selection.arrangeHorizontal': '가로 간격 맞춤',
   'selection.arrangeVertical': '세로 간격 맞춤',
   'selection.arrangeGrid': '격자로 정리',
+  'selection.matchHeading': '크기 맞춤',
+  'selection.matchWidth': '너비 같게',
+  'selection.matchHeight': '높이 같게',
+  'selection.matchSize': '크기 같게',
+  'selection.matchHint': '선택한 메모 중 가장 큰 값에 맞춥니다',
   'selection.alignLeft': '왼쪽',
   'selection.alignCenter': '가운데',
   'selection.alignRight': '오른쪽',
@@ -291,7 +296,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'creation.closeDefaults': '기본 설정 닫기',
   'creation.stickyColors': '새 포스트잇 기본 색상',
   'creation.stickyColor': '{color} 기본 색상',
-  'creation.stickyFlyoutHint': '색을 고른 뒤 보드를 클릭해 붙이세요.',
+  'creation.stickyFlyoutHint':
+    '색을 고른 뒤 보드를 클릭해 붙이세요. 색을 보드로 끌어다 놓아도 됩니다.',
   'creation.linePresets': '새 연결선 기본 종류',
   'creation.presetLine': '선',
   'creation.presetArrow': '화살표',
@@ -369,6 +375,9 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'connection.width': '연결선 두께',
   'connection.lock': '연결선 잠금',
   'connection.delete': '연결선 삭제',
+  'connection.applyToAll': '모든 연결선에 이 스타일 적용',
+  'connection.applyToAllHint':
+    '이 선의 색상·두께·점선을 보드의 모든 연결선에 적용합니다 (잠긴 선 제외)',
   'connection.startArrow': '시작 화살표',
   'connection.endArrow': '끝 화살표',
   'connection.dashed': '점선',
@@ -419,6 +428,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'contextMenu.fitAll': '전체 보기',
 
   'connectionSession.invalid': '서로 다른 메모나 떨어진 두 지점을 연결해 주세요.',
+  'connectionSession.restyled': '연결선 {count}개에 스타일을 적용했습니다.',
+  'connectionSession.sameStroke': '모든 연결선이 이미 같은 스타일입니다.',
 
   'diagnostics.copy': '진단 정보 복사',
   'diagnostics.copied': '진단 정보를 복사했습니다.',

@@ -247,3 +247,38 @@
     bottom: 64px;
   }
 }
+/* Size markers: a bracket beside each note of equal width or height while resizing. */
+.size-marker {
+  position: absolute;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 0 none var(--focus);
+  opacity: 0.8;
+}
+.marker-width {
+  height: 4px;
+  border-top-style: solid;
+  border-right-style: solid;
+  border-left-style: solid;
+  transform: translateY(-100%);
+}
+.marker-height {
+  width: 4px;
+  border-top-style: solid;
+  border-bottom-style: solid;
+  border-left-style: solid;
+  transform: translateX(-100%);
+}
+.size-badge {
+  position: absolute;
+  z-index: 2147483647;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--focus);
+  color: white;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 0 0;
+}

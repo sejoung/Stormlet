@@ -4,6 +4,7 @@ import {
   deleteConnections,
   updateConnection,
   internalConnections,
+  restyleConnections,
 } from '../../../src/domain/connections/commands';
 import { applyPatches, diffBoards } from '../../../src/domain/patch';
 import { deleteStickies } from '../../../src/domain/commands';
@@ -130,5 +131,23 @@ describe('connection model', () => {
       { op: 'connection:add', connection: connection('line', { label: '바뀜' }) },
     ]);
     expect(applyPatches(overwritten.board, overwritten.inverse).board).toStrictEqual(before);
+  });
+
+  it('restyles every unlocked line in one undoable edit, keeping paths and arrows', () => {
+    const board = frozen({
+      ...connectedBoard(connection('a-b', { path: 'curve' })),
+      connections: {
+        'a-b': connection('a-b', { path: 'curve' }),
+        'b-c': connection('b-c', { color: 'blue', width: 4, dashed: true }),
+        locked: connection('locked', { color: 'red', locked: true }),
+      },
+    });
+    const stroke = { color: 'green', width: 3, dashed: false } as const;
+    const applied = applyPatches(board, restyleConnections(board, stroke));
+    expect(applied.board.connections?.['a-b']).toMatchObject({ ...stroke, path: 'curve' });
+    expect(applied.board.connections?.['b-c']).toMatchObject(stroke);
+    expect(applied.board.connections?.locked.color).toBe('red');
+    expect(applyPatches(applied.board, applied.inverse).board).toStrictEqual(board);
+    expect(restyleConnections(applied.board, stroke)).toEqual([]);
   });
 });

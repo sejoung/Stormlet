@@ -2,10 +2,12 @@ import { DEFAULT_STICKY_SIZE } from '../domain/sticky-size';
 import {
   cloneNotes,
   arrangeNotes,
+  matchSizes,
   reactToNotes,
   updateNotes,
   NOTE_GAP,
   type Arrangement,
+  type SizeMatch,
 } from '../domain/note-actions';
 import { addStickies } from '../domain/commands';
 import {
@@ -39,6 +41,8 @@ export interface NoteActions {
   /** Group the notes, or ungroup when any is grouped (or when `ungroup` says so). */
   group(ungroup?: boolean): void;
   arrange(action: Arrangement): void;
+  /** Make the notes' widths and/or heights equal to the largest. */
+  matchSize(match: SizeMatch): void;
   react(emoji: string, target?: readonly string[]): void;
   lock(): void;
   toggleFormat(field: FormatToggle): void;
@@ -124,6 +128,7 @@ export function useNoteActions(options: Options): NoteActions {
       format({ groupId: ungroup ? null : newId() });
     },
     arrange: (action) => edit((current) => arrangeNotes(current, ids, action)),
+    matchSize: (match) => edit((current) => matchSizes(current, ids, match)),
     react: (emoji, target = ids) =>
       edit((current) => reactToNotes(current, target, emoji, reactor)),
     lock: () => format({ locked: !ids.some((id) => own(board.stickies, id)?.locked) }),

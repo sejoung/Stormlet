@@ -10,7 +10,7 @@ import {
 import { boundsOf } from '../../domain/geometry/bounds';
 import { HORIZONTAL_KEYS, moveFocus } from '../common/keyboard';
 import { useLargestFit } from '../common/fitted-fonts';
-import type { Arrangement } from '../../domain/note-actions';
+import type { Arrangement, SizeMatch } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
 import { Icon } from '../toolbar/Icon';
@@ -25,6 +25,7 @@ interface Props {
   onColor(color: Sticky['color']): void;
   onResize(size: { width: number; height: number }): void;
   onArrange(action: Arrangement): void;
+  onMatchSize(match: SizeMatch): void;
   onDuplicate(): void;
   onGroup(): void;
   onFrame(): void;
@@ -72,6 +73,12 @@ const ARRANGEMENTS: [Arrangement, MessageKey][] = [
   ['grid', 'selection.arrangeGrid'],
 ];
 
+const SIZE_MATCHES: [SizeMatch, MessageKey][] = [
+  ['width', 'selection.matchWidth'],
+  ['height', 'selection.matchHeight'],
+  ['size', 'selection.matchSize'],
+];
+
 const ALIGN_LABELS: Record<TextAlign, MessageKey> = {
   left: 'selection.alignLeft',
   center: 'selection.alignCenter',
@@ -81,7 +88,7 @@ const FONT_SIZES = [8, 10, 12, 14, 16, 18, 24, 32, 48, 64];
 /** Rectangle notes keep their width and take this share of it as height. */
 const RECTANGLE_RATIO = 0.75;
 /** Toolbar footprint and gaps used to keep it on screen above or below the selection. */
-const PANEL = { width: 660, height: 300, margin: 12, above: 60, below: 16, minTop: 64 };
+const PANEL = { width: 660, height: 360, margin: 12, above: 60, below: 16, minTop: 64 };
 
 /** Screen-space controls stay readable at every board zoom level. */
 export function SelectionToolbar(props: Props) {
@@ -295,6 +302,21 @@ export function SelectionToolbar(props: Props) {
                   <div className="arrange-options">
                     {ARRANGEMENTS.map(([action, label]) => (
                       <button key={action} type="button" onClick={() => props.onArrange(action)}>
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="popover-label" title={t('selection.matchHint')}>
+                    {t('selection.matchHeading')}
+                  </span>
+                  <div className="arrange-options match-options">
+                    {SIZE_MATCHES.map(([match, label]) => (
+                      <button
+                        key={match}
+                        type="button"
+                        title={t('selection.matchHint')}
+                        onClick={() => props.onMatchSize(match)}
+                      >
                         {t(label)}
                       </button>
                     ))}

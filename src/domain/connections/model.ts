@@ -90,6 +90,13 @@ export const CONNECTION_WIDTHS = [1, 2, 3, 4, 6] as const;
 export const isConnectionWidth = (value: unknown): value is number =>
   (CONNECTION_WIDTHS as readonly unknown[]).includes(value);
 export const MAX_CONNECTION_LABEL_LENGTH = 300;
+/**
+ * The stroke look lines on one board usually share. Changing one of these on a line also
+ * makes it the default for new lines, and "apply to all lines" copies them board-wide.
+ */
+export const SHARED_STROKE_FIELDS = ['color', 'width', 'dashed'] as const;
+export type SharedStroke = Pick<ConnectionStyle, (typeof SHARED_STROKE_FIELDS)[number]>;
+
 export const DEFAULT_CONNECTION = {
   path: 'elbow',
   color: 'slate',

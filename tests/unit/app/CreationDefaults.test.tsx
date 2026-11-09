@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { App } from '../../../src/app/App';
@@ -172,5 +172,40 @@ describe('tool default flyouts', () => {
       'aria-pressed',
       'true',
     );
+  });
+
+  it('places a note in a color dragged from the flyout onto the board', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore();
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    await user.click(screen.getByRole('button', { name: '포스트잇 도구' }));
+    const swatch = screen.getByRole('button', { name: '초록색 기본 색상' });
+    const data = new Map<string, string>();
+    const dataTransfer = {
+      setData: (type: string, value: string) => data.set(type, value),
+      getData: (type: string) => data.get(type) ?? '',
+      get types() {
+        return [...data.keys()];
+      },
+      dropEffect: 'none',
+      effectAllowed: 'all',
+    };
+    fireEvent.dragStart(swatch, { dataTransfer });
+    fireEvent.dragOver(board, { dataTransfer, clientX: 600, clientY: 400 });
+    // jsdom has no DragEvent, so the drop's pointer position is set by hand.
+    const drop = createEvent.drop(board, { dataTransfer });
+    Object.defineProperties(drop, { clientX: { value: 600 }, clientY: { value: 400 } });
+    fireEvent(board, drop);
+    expect(store.board.stickies.s1).toMatchObject({ color: 'green', x: 320, y: 240 });
+    // The default colour is unchanged; only the dragged note takes the dragged colour.
+    await user.click(screen.getByRole('button', { name: '포스트잇 도구' }));
+    expect(screen.getByRole('button', { name: '노란색 기본 색상' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    // Other drops, such as files or text, do not create notes.
+    fireEvent.drop(board, { dataTransfer: { getData: () => 'text', types: ['text/plain'] } });
+    expect(Object.keys(store.board.stickies)).toEqual(['s1']);
   });
 });

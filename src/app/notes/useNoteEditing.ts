@@ -26,7 +26,8 @@ export interface NoteEditing {
   startEdit(id: string | null, seed?: string): void;
   stopEdit(): void;
   /** Add a note centered at `at`, select it and start editing it. */
-  add(at: Point): void;
+  /** Place a note centred at `at`, in `color` or the default colour. */
+  add(at: Point, color?: StickyColor): void;
   move(moves: Move[]): void;
   resize(ids: readonly string[], size: StickySize): void;
   commitText(id: string, text: string): void;
@@ -67,13 +68,13 @@ export function useNoteEditing(options: Options): NoteEditing {
     activeNotes: activeIds.map((id) => board.stickies[id]),
     startEdit,
     stopEdit: () => setEditing(null),
-    add: (at) => {
+    add: (at, color = options.stickyColor) => {
       const id = options.newId();
       edit((current) =>
         addSticky(current, {
           id,
           ...DEFAULT_STICKY_APPEARANCE,
-          color: options.stickyColor,
+          color,
           ...centeredAt(at),
         }),
       );

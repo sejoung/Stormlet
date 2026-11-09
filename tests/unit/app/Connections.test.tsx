@@ -1,18 +1,21 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../../src/app/App';
+import { CREATION_DEFAULTS_KEY } from '../../../src/adapters/storage/creation-defaults';
 import { parseBoard } from '../../../src/adapters/files/stormlet-format';
 import { downloadText } from '../../../src/adapters/files/download';
 import { memoryStore, ids, boardBounds } from '../../support/app';
 import { boardOf, sticky } from '../../support/boards';
-import { connectedBoard } from '../../support/connections';
+import { connectedBoard, connection } from '../../support/connections';
 
 vi.mock('../../../src/adapters/files/download', async (original) => ({
   ...(await original<typeof import('../../../src/adapters/files/download')>()),
   downloadText: vi.fn(),
 }));
+// Editing a line's stroke changes the default for new lines; keep tests independent.
+afterEach(() => localStorage.removeItem(CREATION_DEFAULTS_KEY));
 const note = (id: string) => screen.getByRole('button', { name: `도메인 이벤트: ${id}` });
 const line = () => screen.getByRole('button', { name: '연결선: a → b' });
 const stroke = () => line().querySelector('.connection-stroke')!.getAttribute('d');
@@ -228,5 +231,37 @@ describe('flow connections', () => {
     await user.keyboard('{Control>}z{/Control}');
     expect(Object.keys(store.board.stickies)).toHaveLength(3);
     expect(Object.keys(store.board.connections ?? {})).toEqual(['line']);
+  });
+
+  it('shares stroke style: an edited line becomes the default, and can be applied to all lines', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore({
+      ...connectedBoard(),
+      connections: {
+        line: connection('line'),
+        other: connection('other', {
+          from: { stickyId: 'b', side: 'auto' },
+          to: { stickyId: 'c', side: 'auto' },
+        }),
+      },
+    });
+    render(<App store={store} newId={ids()} />);
+    boardBounds();
+    await user.click(line());
+    await user.selectOptions(screen.getByRole('combobox', { name: '연결선 두께' }), '4');
+    await user.click(screen.getByRole('button', { name: '초록색 연결선' }));
+    expect(store.board.connections?.other).toMatchObject({ width: 2, color: 'slate' });
+    await user.click(screen.getByRole('button', { name: '모든 연결선에 이 스타일 적용' }));
+    expect(store.board.connections?.other).toMatchObject({ width: 4, color: 'green' });
+    expect(screen.getByText('연결선 1개에 스타일을 적용했습니다.')).toBeInTheDocument();
+    await user.keyboard('{Control>}z{/Control}');
+    expect(store.board.connections?.other).toMatchObject({ width: 2, color: 'slate' });
+    // The next line drawn uses the stroke chosen on the last edited one.
+    await user.click(screen.getByRole('button', { name: '연결선 도구' }));
+    expect(screen.getByRole('combobox', { name: '기본 연결선 두께' })).toHaveValue('4');
+    expect(screen.getByRole('button', { name: '초록색 기본 연결선' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 });

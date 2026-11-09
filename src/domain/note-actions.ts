@@ -195,3 +195,25 @@ export function arrangeNotes(board: Board, ids: readonly string[], action: Arran
     ]);
   });
 }
+
+/** Which sides `matchSizes` makes equal. */
+export type SizeMatch = 'width' | 'height' | 'size';
+
+/**
+ * Gives every unlocked selected note the largest width and/or height in the selection. The
+ * largest wins so no note's text is squeezed, and the result does not depend on the order
+ * notes were selected in. Each note keeps its top-left corner.
+ */
+export function matchSizes(board: Board, ids: readonly string[], match: SizeMatch): Patch[] {
+  const notes = ids
+    .map((id) => own(board.stickies, id))
+    .filter((s): s is Sticky => !!s && !s.locked);
+  if (notes.length < 2) return [];
+  const fields = match === 'size' ? (['width', 'height'] as const) : ([match] as const);
+  return fields.flatMap((field) => {
+    const largest = Math.max(...notes.map((note) => note[field]));
+    return notes
+      .filter((note) => note[field] !== largest)
+      .map((note): Patch => ({ op: 'set', id: note.id, field, value: largest }));
+  });
+}

@@ -1,13 +1,13 @@
 import { useMemo, useState, type PointerEvent, type RefObject } from 'react';
 import { own } from '../../domain/ids';
-import { byStackOrder, type Board } from '../../domain/model';
+import { byStackOrder, type Board, type StickyColor } from '../../domain/model';
 import type { Move } from '../../domain/commands';
 import { clampStickySize, type StickySize } from '../../domain/sticky-size';
 import { groupSelection } from '../../domain/note-actions';
 import type { ConnectionSide } from '../../domain/connections/model';
-import { snapOffset } from '../../engine/snapping';
+import { snapOffset, snapSize } from '../../engine/snapping';
 import { panBy, toBoardPoint, type Point, type View } from '../../engine/viewport';
-import type { BoardTool } from './kinds';
+import { draggedColor, STICKY_DRAG_TYPE, type BoardTool } from './kinds';
 import {
   rectangle,
   intersects,
@@ -51,7 +51,7 @@ interface Props {
   onResize(ids: string[], size: StickySize): void;
   onContextMenu(id: string, point: Point): void;
   onCanvasMenu(point: Point, target: CanvasTarget): void;
-  onAdd(at: Point): void;
+  onAdd(at: Point, color?: StickyColor): void;
   onStartEdit(id: string | null, seed?: string): void;
   onCommitText(id: string, text: string): void;
   onDuplicate(ids: string[], offset: Point): void;
@@ -136,14 +136,14 @@ export function BoardCanvas(props: Props) {
         onSelect(groupSelection(board, [...new Set([...gesture.keep, ...inside])]));
         return setGesture({ ...gesture, point: at });
       }
-      case 'resize':
-        return setGesture({
-          ...gesture,
-          size: clampStickySize({
-            width: gesture.original.width + (point.x - gesture.start.x) / view.zoom,
-            height: gesture.original.height + (point.y - gesture.start.y) / view.zoom,
-          }),
+      case 'resize': {
+        const raw = clampStickySize({
+          width: gesture.original.width + (point.x - gesture.start.x) / view.zoom,
+          height: gesture.original.height + (point.y - gesture.start.y) / view.zoom,
         });
+        const { size, guides } = snapSize(board, gesture.id, raw, view.zoom);
+        return setGesture({ ...gesture, size: clampStickySize(size), guides });
+      }
       case 'drag': {
         const dx = point.x - gesture.start.x;
         const dy = point.y - gesture.start.y;
@@ -264,6 +264,18 @@ export function BoardCanvas(props: Props) {
             ? { x: event.clientX, y: event.clientY }
             : clientCenter(element.current!);
         openMenu(point, canvasTarget(event.target));
+      }}
+      onDragOver={(event) => {
+        // Accept only a colour swatch from the sticky flyout, not files or text.
+        if (!event.dataTransfer.types.includes(STICKY_DRAG_TYPE)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+      }}
+      onDrop={(event) => {
+        const color = draggedColor(event.dataTransfer);
+        if (!color) return;
+        event.preventDefault();
+        props.onAdd(toBoardPoint(view, local(event)), color);
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

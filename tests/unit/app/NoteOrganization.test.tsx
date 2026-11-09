@@ -98,4 +98,33 @@ describe('note organization', () => {
     expect(store.board.stickies.c.x).toBe(store.board.stickies.a.x);
     expect(store.board.stickies.c.y).toBeGreaterThan(store.board.stickies.a.y);
   });
+
+  it('matches widths from the arrange panel and snaps a resize to a matching size', async () => {
+    const user = userEvent.setup();
+    const store = memoryStore(
+      boardOf(sticky('a', { x: 40, y: 40 }), sticky('b', { x: 400, y: 40, width: 240 })),
+    );
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    fireEvent.pointerDown(note('b'), { button: 0 });
+    fireEvent.pointerUp(board);
+    // Dragging a's corner to 4px short of b's width snaps to it and marks both notes.
+    fireEvent.pointerDown(note('a'), { button: 0 });
+    fireEvent.pointerUp(board);
+    const handle = screen.getByRole('button', { name: '포스트잇 크기 조절' });
+    fireEvent.pointerDown(handle, { button: 0, clientX: 400, clientY: 280 });
+    fireEvent.pointerMove(board, { clientX: 476, clientY: 300 });
+    expect(note('a')).toHaveStyle({ width: '240px' });
+    expect(document.querySelectorAll('.marker-width')).toHaveLength(2);
+    expect(screen.getByText('240 × 140')).toBeInTheDocument();
+    fireEvent.pointerUp(board);
+    expect(store.board.stickies.a).toMatchObject({ width: 240, height: 140 });
+    expect(document.querySelector('.size-marker')).toBeNull();
+    await user.keyboard('{Control>}z{/Control}');
+    fireEvent.pointerDown(note('b'), { button: 0, shiftKey: true });
+    fireEvent.pointerUp(board);
+    await user.click(screen.getByRole('button', { name: '정렬과 배치' }));
+    await user.click(screen.getByRole('button', { name: '너비 같게' }));
+    expect(store.board.stickies.a).toMatchObject({ x: 40, width: 240, height: 120 });
+  });
 });

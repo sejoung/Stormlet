@@ -6,7 +6,7 @@ import {
   CONNECTION_WIDTHS,
   type ConnectionStyle,
 } from '../../domain/connections/model';
-import { COLOR_STYLES } from '../board/kinds';
+import { COLOR_STYLES, STICKY_DRAG_TYPE } from '../board/kinds';
 import { LINE_COLORS } from '../connections/colors';
 import type { CreationDefaults } from '../../domain/creation-defaults';
 import { Icon } from './Icon';
@@ -80,6 +80,11 @@ export function CreationFlyout({
                 aria-pressed={defaults.stickyColor === color}
                 style={{ background: COLOR_STYLES[color].paper }}
                 onClick={() => onStickyColor(color)}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(STICKY_DRAG_TYPE, color);
+                  event.dataTransfer.effectAllowed = 'copy';
+                }}
               />
             ))}
           </div>

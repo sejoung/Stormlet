@@ -3,6 +3,7 @@ import {
   arrangeNotes,
   cloneNotes,
   groupSelection,
+  matchSizes,
   reactToNotes,
   updateNotes,
   type Arrangement,
@@ -153,5 +154,25 @@ describe('note actions', () => {
     expect(next.stickies.c.x).toBe(0);
     expect(next.stickies.locked).toEqual(board.stickies.locked);
     expect(arrangeNotes(board, ['a', 'b'], 'grid')).toEqual([]);
+  });
+
+  it.each([
+    ['width', { width: 300, height: 120 }, { width: 300, height: 200 }],
+    ['height', { width: 160, height: 200 }, { width: 300, height: 200 }],
+    ['size', { width: 300, height: 200 }, { width: 300, height: 200 }],
+  ] as const)('matches %s to the largest in the selection and undoes it', (match, a, b) => {
+    const board = frozen(
+      boardOf(
+        sticky('a', { width: 160, height: 120 }),
+        sticky('b', { x: 400, width: 300, height: 200 }),
+        sticky('locked', { x: 900, width: 80, height: 60, locked: true }),
+      ),
+    );
+    const applied = applyPatches(board, matchSizes(board, ['a', 'b', 'locked', 'gone'], match));
+    expect(applied.board.stickies.a).toMatchObject({ x: 0, y: 0, ...a });
+    expect(applied.board.stickies.b).toMatchObject(b);
+    expect(applied.board.stickies.locked).toEqual(board.stickies.locked);
+    expect(applyPatches(applied.board, applied.inverse).board).toStrictEqual(board);
+    expect(matchSizes(board, ['a', 'locked'], match)).toEqual([]);
   });
 });

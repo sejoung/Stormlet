@@ -3,6 +3,15 @@ import type { MessageKey } from '../../i18n/messages';
 
 export type BoardTool = 'interact' | 'sticky' | 'hand' | 'connect' | 'frame';
 
+/** Drag-and-drop data type a colour swatch carries onto the board to place a note. */
+export const STICKY_DRAG_TYPE = 'application/x-stormlet-sticky-color';
+
+/** The dragged colour, when a drag carries one this app knows. */
+export function draggedColor(data: DataTransfer | null): StickyColor | null {
+  const color = data?.getData(STICKY_DRAG_TYPE);
+  return color && Object.hasOwn(COLOR_STYLES, color) ? (color as StickyColor) : null;
+}
+
 export const COLOR_STYLES: Record<StickyColor, { label: MessageKey; paper: string; ink: string }> =
   {
     yellow: { label: 'noteColor.yellow', paper: '#fff3a3', ink: '#2e2a07' },

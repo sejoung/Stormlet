@@ -124,7 +124,7 @@ export function Workspace({
     onLabelDone: selected.finishLabel,
     onCreated: finishTool,
     onStatus: setStatus,
-    style: defaults.connection,
+    defaults,
   });
   const frames = useFrameSession({
     board,

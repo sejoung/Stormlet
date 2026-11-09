@@ -125,6 +125,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
+.match-options {
+  grid-template-columns: repeat(3, 1fr);
+}
 .primary-button {
   padding: 10px 16px;
   border: 1px solid #4262e8;

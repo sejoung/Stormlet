@@ -134,6 +134,11 @@ export const en = {
   'selection.arrangeHorizontal': 'Distribute horizontally',
   'selection.arrangeVertical': 'Distribute vertically',
   'selection.arrangeGrid': 'Arrange in a grid',
+  'selection.matchHeading': 'Match size',
+  'selection.matchWidth': 'Same width',
+  'selection.matchHeight': 'Same height',
+  'selection.matchSize': 'Same size',
+  'selection.matchHint': 'Matches the largest note in the selection',
   'selection.alignLeft': 'Left',
   'selection.alignCenter': 'Center',
   'selection.alignRight': 'Right',
@@ -293,7 +298,8 @@ export const en = {
   'creation.closeDefaults': 'Close defaults',
   'creation.stickyColors': 'Default color for new sticky notes',
   'creation.stickyColor': 'Default color: {color}',
-  'creation.stickyFlyoutHint': 'Pick a color, then click the board to place a note.',
+  'creation.stickyFlyoutHint':
+    'Pick a color, then click the board to place a note, or drag a color onto the board.',
   'creation.linePresets': 'Default type for new connectors',
   'creation.presetLine': 'Line',
   'creation.presetArrow': 'Arrow',
@@ -371,6 +377,9 @@ export const en = {
   'connection.width': 'Line thickness',
   'connection.lock': 'Lock connector',
   'connection.delete': 'Delete connector',
+  'connection.applyToAll': 'Apply this style to all lines',
+  'connection.applyToAllHint':
+    "Gives every line on the board this line's color, width and dash (locked lines are skipped)",
   'connection.startArrow': 'Start arrow',
   'connection.endArrow': 'End arrow',
   'connection.dashed': 'Dashed',
@@ -421,6 +430,8 @@ export const en = {
   'contextMenu.fitAll': 'Zoom to fit',
 
   'connectionSession.invalid': 'Connect two different notes or two separate points.',
+  'connectionSession.restyled': 'Applied the style to {count} lines.',
+  'connectionSession.sameStroke': 'All lines already share this style.',
 
   'diagnostics.copy': 'Copy diagnostics',
   'diagnostics.copied': 'Diagnostics copied.',

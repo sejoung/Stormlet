@@ -19,7 +19,10 @@ export function ObjectToolbars({
   view: View;
   viewport: Size;
   frames: FrameInteraction;
-  links: Pick<ConnectionSession, 'selected' | 'editingLabel' | 'onChange' | 'remove'>;
+  links: Pick<
+    ConnectionSession,
+    'selected' | 'editingLabel' | 'onChange' | 'remove' | 'applyStrokeToAll'
+  >;
   onDeleteFrame(): void;
   hidden?: boolean;
 }) {
@@ -40,6 +43,7 @@ export function ObjectToolbars({
           editingLabel={links.editingLabel}
           onChange={(values) => links.onChange(line.id, values)}
           onDelete={links.remove}
+          onApplyToAll={links.applyStrokeToAll}
         />
       )}
     </>

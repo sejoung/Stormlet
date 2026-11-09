@@ -27,7 +27,7 @@ export function NoteSelection({
   view: View;
   viewport: Size;
   element: RefObject<HTMLDivElement | null>;
-  actions: Pick<NoteActions, 'format' | 'arrange' | 'duplicate' | 'group' | 'react'>;
+  actions: Pick<NoteActions, 'format' | 'arrange' | 'matchSize' | 'duplicate' | 'group' | 'react'>;
   edit: Edit;
   onResize(ids: readonly string[], size: StickySize): void;
   flushEditor(): void;
@@ -47,6 +47,7 @@ export function NoteSelection({
       onColor={(color) => edit((current) => setColor(current, ids, color))}
       onResize={(size) => onResize(ids, size)}
       onArrange={actions.arrange}
+      onMatchSize={actions.matchSize}
       onDuplicate={() => {
         flushEditor();
         actions.duplicate();

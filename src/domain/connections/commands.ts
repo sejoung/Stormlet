@@ -10,6 +10,8 @@ import {
   type Endpoint,
   type ConnectionSetPatch,
   type ConnectionStyle,
+  type SharedStroke,
+  SHARED_STROKE_FIELDS,
 } from './model';
 
 export const endpointExists = (board: Board, endpoint: Endpoint): boolean =>
@@ -64,4 +66,21 @@ export function internalConnections(
       .filter((line) => joinsStickies(line, selected))
       .map((line) => [line.id, line]),
   );
+}
+
+/** Gives every unlocked line on the board `stroke`, as one edit; locked lines keep theirs. */
+export function restyleConnections(board: Board, stroke: SharedStroke): Patch[] {
+  return Object.values(board.connections ?? {})
+    .filter((line) => !line.locked)
+    .flatMap((line) =>
+      SHARED_STROKE_FIELDS.filter((field) => line[field] !== stroke[field]).map(
+        (field) =>
+          ({
+            op: 'connection:set',
+            id: line.id,
+            field,
+            value: stroke[field],
+          }) as ConnectionSetPatch,
+      ),
+    );
 }

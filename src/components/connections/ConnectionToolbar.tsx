@@ -23,6 +23,7 @@ export function ConnectionToolbar({
   editingLabel,
   onChange,
   onDelete,
+  onApplyToAll,
   viewport,
 }: {
   board: Board;
@@ -31,6 +32,8 @@ export function ConnectionToolbar({
   editingLabel: boolean;
   onChange(values: Partial<Omit<Connection, 'id'>>): void;
   onDelete(): void;
+  /** Give every line this one's colour, width and dash. */
+  onApplyToAll(): void;
   viewport: { width: number; height: number };
 }) {
   const t = useT();
@@ -168,6 +171,14 @@ export function ConnectionToolbar({
           />
         ))}
       </div>
+      <button
+        type="button"
+        className="connection-apply-all"
+        title={t('connection.applyToAllHint')}
+        onClick={onApplyToAll}
+      >
+        {t('connection.applyToAll')}
+      </button>
       <input
         ref={input}
         className="connection-label-input"

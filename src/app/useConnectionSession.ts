@@ -1,8 +1,15 @@
 import { own } from '../domain/ids';
 import type { Board } from '../domain/model';
-import { addConnection, deleteConnections, updateConnection } from '../domain/connections/commands';
+import type { Patch } from '../domain/patch';
+import {
+  addConnection,
+  deleteConnections,
+  restyleConnections,
+  updateConnection,
+} from '../domain/connections/commands';
 import {
   DEFAULT_CONNECTION,
+  SHARED_STROKE_FIELDS,
   type Connection,
   type ConnectionStyle,
 } from '../domain/connections/model';
@@ -17,6 +24,8 @@ export interface ConnectionSession extends ConnectionInteraction {
   editingLabel: boolean;
   remove(): void;
   duplicate(): void;
+  /** Copy the selected line's colour, width and dash to every unlocked line. */
+  applyStrokeToAll(): void;
 }
 
 export function useConnectionSession({
@@ -30,7 +39,7 @@ export function useConnectionSession({
   onLabelDone,
   onCreated,
   onStatus,
-  style,
+  defaults,
 }: {
   board: Board;
   edit: Edit;
@@ -43,9 +52,11 @@ export function useConnectionSession({
   /** A new connection was drawn; drawing tools hand back to selection. */
   onCreated(): void;
   onStatus(message: string): void;
-  style: ConnectionStyle;
+  /** Creation defaults: new lines take `connection`; stroke edits update it via `onConnection`. */
+  defaults: { connection: ConnectionStyle; onConnection(style: Partial<ConnectionStyle>): void };
 }): ConnectionSession {
   const t = useT();
+  const style = defaults.connection;
   const selected = selectedId ? (own(board.connections ?? {}, selectedId) ?? null) : null;
   return {
     style,
@@ -69,11 +80,29 @@ export function useConnectionSession({
       return true;
     },
     onChange: (id, values) => {
-      edit((current) => updateConnection(current, id, values));
+      const { patches } = editWith((current) => ({
+        patches: updateConnection(current, id, values),
+      }));
+      // A line's stroke look becomes the default, so the next line drawn matches it.
+      const stroke = Object.fromEntries(
+        SHARED_STROKE_FIELDS.filter((field) => field in values).map((f) => [f, values[f]]),
+      );
+      if (patches.length && Object.keys(stroke).length) defaults.onConnection(stroke);
       if ('label' in values) onLabelDone(id);
     },
     remove: () => {
       if (selected) edit((current) => deleteConnections(current, [selected.id]));
+    },
+    applyStrokeToAll: () => {
+      if (!selected) return;
+      const { color, width, dashed } = selected;
+      const { patches } = editWith((current) => ({
+        patches: restyleConnections(current, { color, width, dashed }),
+      }));
+      const count = new Set(patches.map(lineOf)).size;
+      onStatus(
+        count ? t('connectionSession.restyled', { count }) : t('connectionSession.sameStroke'),
+      );
     },
     duplicate: () => {
       if (!selected) return;
@@ -83,3 +112,5 @@ export function useConnectionSession({
     },
   };
 }
+
+const lineOf = (patch: Patch) => ('id' in patch ? patch.id : '');
