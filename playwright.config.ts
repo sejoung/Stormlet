@@ -6,7 +6,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  workers: process.env.CI ? 2 : 3,
+  // GitHub's Linux runners for public repositories have 4 vCPUs; the static server below
+  // leaves them to the browsers.
+  workers: process.env.CI ? 4 : 3,
   timeout: 30000,
   outputDir: 'test-results/e2e',
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
@@ -36,7 +38,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --port 4173 --strictPort',
+    // The production bundle, served statically: no on-demand transforms competing with the
+    // browsers for CPU, and the tests exercise what is deployed. It builds into test-results
+    // so `dist/` from `npm run build` is left alone.
+    command:
+      'npx vite build --outDir test-results/e2e-dist --emptyOutDir --logLevel warn && npx vite preview --outDir test-results/e2e-dist --port 4173 --strictPort --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: false,
     // Public test values enable the Drive UI; Google itself is mocked (tests/e2e/google.ts).
@@ -46,6 +52,7 @@ export default defineConfig({
       VITE_GOOGLE_APP_ID: 'e2e-app',
     },
     gracefulShutdown: { signal: 'SIGTERM', timeout: 1000 },
-    timeout: 30000,
+    // Includes the build.
+    timeout: 60000,
   },
 });

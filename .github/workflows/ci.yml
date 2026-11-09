@@ -5,6 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
+  # The checks and the browser tests do not depend on each other, so they run side by side.
   verify:
     runs-on: ubuntu-24.04
     env:
@@ -20,5 +21,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
-      - run: npx playwright install --with-deps chromium
+  e2e:
+    runs-on: ubuntu-24.04
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Headless tests only need Chromium's headless shell, a smaller download than Chromium.
+      - run: npx playwright install --with-deps --only-shell chromium
       - run: npm run test:e2e
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: e2e-results
+          path: test-results/e2e/
+          if-no-files-found: ignore
+          # Failure traces are only useful right after a run; keep storage from piling up.
+          retention-days: 3
