@@ -20,26 +20,31 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 
 **Notes**
 
-- Create a note with the note tool or `N`, click the board and start typing (160 × 160 square by default)
+- Create a note with the note tool or `N`, click the board and start typing (160 × 160 square by default), or drag a color from the tool’s panel onto the board (touch works too)
 - Add a note at the center, or enter many notes at once with bulk entry
 - Paste cells from Excel or Google Sheets (up to 50 rows × 100 columns, 3,000 characters per note)
 - Sixteen colors, whole-note bold/italic/underline, text alignment, square and rectangular shapes
 - Text automatically fits the note and never scrolls; a manually chosen font size is kept while the text fits, and sizes that would overflow are disabled
 - IME-safe editing: type into a selection, double-click or press Enter; Enter/Escape finishes and Shift+Enter adds a newline
-- Resize with the bottom-right handle (or its arrow keys), presets or an exact width and height
-- Align, distribute and arrange in a grid, with alignment guides while dragging; group and lock
+- While editing, `Tab` carries on in a new note to the right and `Ctrl/Cmd+Enter` in one below, with the same size and style
+- Resize from any corner (Shift keeps the proportions, arrow keys step 20px), presets or an exact width and height; a multi-note selection scales as a whole from its bounding box
+- Guides to notes’ and frames’ edges and centers, equal-spacing snapping and same-size markers while moving or resizing; hold `Ctrl/Cmd` to move freely
+- Align, distribute, match sizes (to the largest) and arrange in a grid from the toolbar, the context menu or `Alt/Option` shortcuts; group and lock
+- Copy and paste a note’s style (color and text formatting), kept across reloads and tabs; select all notes of a color
 - Emoji reactions and full-text search
 
 **Connections**
 
 - Connect notes and frames with `L` or by dragging a side port; lines follow moves and resizing
-- Straight, rounded elbow (default) and curved lines with arrowheads, color, width, dashes, labels and locking
+- Straight, rounded elbow (default) and curved lines with arrowheads, color (six, black included), width, dashes, labels and locking
+- A line’s color, width and dashes become the default for the next line, and “Apply this style to all lines” matches the whole board at once
 - Drag an endpoint to reattach it; copying or duplicating a flow keeps its internal lines
 
 **Frames**
 
 - Draw a frame with `F`, or wrap selected notes with “Create frame”; horizontal and vertical lane presets
 - Transparent or colored, borders from 1 to 8px, titles renamed with a double-click
+- Moving or resizing a frame snaps to other frames and notes, with equal spacing and matching sizes
 - Moving, duplicating or copying a frame takes the notes, nested frames and lines inside it along
 - Deleting a frame keeps its contents; locking a frame leaves the notes inside it editable
 
@@ -47,13 +52,14 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 
 - Pan with Space+drag, the middle mouse button or the hand tool; zoom with the wheel or on-screen controls
 - Fit all notes or the selected ones (`Alt/Option+1/2`)
+- A 20px grid, shown and snapped to separately from the View menu; both settings stay across reloads
 - Minimap of the whole board: click or drag the outline to move the view, or use the arrow keys; it stays open across reloads
 - Context menus on notes, frames, lines and the empty canvas (also Shift+F10)
 - Undo and redo for every change, including deletions that remove attached lines
 - Autosave in the browser, a board for each tab: a new board opens in a new tab, coming back resumes the last board, and boards of closed tabs stay under File → Recent boards ([ADR 0011](docs/adr/0011-board-per-tab.md))
 - Optional Google Drive sync, the main place for boards once connected: a Drive button in the toolbar connects and saves, the chosen folder is shared by every tab so new boards go there with their first edit, and `Ctrl/Cmd+S` saves to Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Rename the board by double-clicking its title; the title becomes the download filename
-- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
+- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap, grid) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 - Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports
@@ -62,23 +68,30 @@ Reactions use a stable local identifier, so no profile is shown.
 
 ## Keyboard shortcuts
 
-| Action                           | Shortcut                          |
-| -------------------------------- | --------------------------------- |
-| Note / select / hand tool        | `N` / `V` / `H`                   |
-| Connection / frame tool          | `L` / `F`                         |
-| Edit note, newline, finish       | `Enter`, `Shift+Enter`, `Esc`     |
-| Duplicate                        | `Ctrl/Cmd+D`, `Alt/Option+drag`   |
-| Duplicate in a direction         | `Alt/Option+arrow`                |
-| Select all                       | `Ctrl/Cmd+A`                      |
-| Group / ungroup                  | `Ctrl/Cmd+G` / `Ctrl/Cmd+Shift+G` |
-| Lock                             | `Ctrl/Cmd+Shift+L`                |
-| Bold / italic / underline        | `Ctrl/Cmd+B` / `I` / `U`          |
-| Move selection (10px with Shift) | Arrow keys                        |
-| Undo / redo                      | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z` |
-| Fit all / fit selected           | `Alt/Option+1` / `2`              |
-| Search                           | `Ctrl/Cmd+F`                      |
-| Open a board file / save         | `Ctrl/Cmd+O` / `Ctrl/Cmd+S`       |
-| Help                             | `F1`, `?`                         |
+| Action                                  | Shortcut                           |
+| --------------------------------------- | ---------------------------------- |
+| Note / select / hand tool               | `N` / `V` / `H`                    |
+| Connection / frame tool                 | `L` / `F`                          |
+| Edit note, newline, finish              | `Enter`, `Shift+Enter`, `Esc`      |
+| Continue in a new note (right / below)  | `Tab` / `Ctrl/Cmd+Enter`           |
+| Duplicate                               | `Ctrl/Cmd+D`, `Alt/Option+drag`    |
+| Duplicate in a direction                | `Alt/Option+arrow`                 |
+| Select all                              | `Ctrl/Cmd+A`                       |
+| Group / ungroup                         | `Ctrl/Cmd+G` / `Ctrl/Cmd+Shift+G`  |
+| Lock                                    | `Ctrl/Cmd+Shift+L`                 |
+| Bold / italic / underline               | `Ctrl/Cmd+B` / `I` / `U`           |
+| Move selection (10px with Shift)        | Arrow keys                         |
+| Align left / horizontal centers / right | `Alt/Option+A` / `H` / `D`         |
+| Align top / vertical centers / bottom   | `Alt/Option+W` / `V` / `S`         |
+| Distribute horizontally / vertically    | `Alt/Option+Shift+H` / `V`         |
+| Copy / paste style                      | `Ctrl/Cmd+Alt/Option+C` / `V`      |
+| Resize: keep proportions / no snapping  | `Shift` / `Ctrl/Cmd` + corner drag |
+| Move without snapping                   | Hold `Ctrl/Cmd` while dragging     |
+| Undo / redo                             | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`  |
+| Fit all / fit selected                  | `Alt/Option+1` / `2`               |
+| Search                                  | `Ctrl/Cmd+F`                       |
+| Open a board file / save                | `Ctrl/Cmd+O` / `Ctrl/Cmd+S`        |
+| Help                                    | `F1`, `?`                          |
 
 ## Getting started
 
@@ -147,7 +160,7 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 
 ### File format
 
-`.stormlet` files are JSON with a `format` and `version` field. The current version is 8 and stores the title, notes, connections, frames and their styles. Files from versions 1–7 can still be opened.
+`.stormlet` files are JSON with a `format` and `version` field. The current version is 9 and stores the title, notes, connections (black lines included), frames and their styles. Files from versions 1–8 can still be opened.
 
 ### Translations
 

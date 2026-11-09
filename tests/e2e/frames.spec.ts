@@ -85,6 +85,10 @@ test('moves and resizes a frame with its contents and attached line; deleting ke
   await expect.poll(async () => (await saved(page)).frames?.[0]).toMatchObject({ x: 190, y: 240 });
   expect(await outside.boundingBox()).toEqual(beforeOutside);
   const handle = await center(page.getByRole('button', { name: '프레임 크기 조절' }));
+  // The handle sits on the frame's bottom-right corner (it shares note handle styles).
+  const box = (await page.locator('.board-frame[data-frame-id="f"]').boundingBox())!;
+  expect(Math.abs(handle.x - (box.x + box.width))).toBeLessThan(12);
+  expect(Math.abs(handle.y - (box.y + box.height))).toBeLessThan(12);
   await drag(page, handle, { x: handle.x + 100, y: handle.y + 60 });
   await expect
     .poll(async () => (await saved(page)).frames?.[0])

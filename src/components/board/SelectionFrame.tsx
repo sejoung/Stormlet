@@ -59,11 +59,14 @@ export function SelectionFrame({
   ids,
   zoom,
   onResizeStart,
+  onKeyResize,
 }: {
   board: Board;
   ids: readonly string[];
   zoom: number;
   onResizeStart(event: PointerEvent, corner: Corner): void;
+  /** Arrow keys on the bottom-right handle grow or shrink the selection by this much. */
+  onKeyResize(width: number, height: number): void;
 }) {
   const t = useT();
   const notes = ids.flatMap((id) => own(board.stickies, id) ?? []);
@@ -86,6 +89,7 @@ export function SelectionFrame({
         label={t('selection.resize')}
         hint={t('note.resizeHint')}
         onStart={onResizeStart}
+        onKey={onKeyResize}
       />
     </div>
   );

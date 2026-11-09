@@ -34,9 +34,16 @@ describe('connection files', () => {
       title: '흐름',
     };
     const content = serializeBoard(board);
-    expect(JSON.parse(content).version).toBe(8);
+    expect(JSON.parse(content).version).toBe(9);
     expect(parseBoard(content)).toStrictEqual(board);
     expect(parseBoard(file(undefined)).connections).toBeUndefined();
+  });
+
+  it('reads black lines saved as version 8, before the version that introduced them', () => {
+    const line = { ...connection('line', { color: 'black' }) };
+    const saved = JSON.parse(serializeBoard(connectedBoard(line)));
+    const board = parseBoard(JSON.stringify({ ...saved, version: 8 }));
+    expect(board.connections?.line.color).toBe('black');
   });
 
   it.each([

@@ -160,6 +160,9 @@ export function useShortcuts(handlers: ShortcutHandlers) {
         if (typingShortcut(latest.current, event, key)) event.preventDefault();
         return;
       }
+      // AltGr reports as Ctrl+Alt on Windows; it types characters (Polish ć, German @), so it
+      // never runs a board shortcut such as Ctrl+Alt+C for copying a style.
+      if (event.getModifierState?.('AltGraph')) return;
       const binding = BINDINGS.find((candidate) => matches(candidate, event, key, mod));
       if (!binding) return;
       binding.run(latest.current, event, key);

@@ -21,7 +21,8 @@ import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-export const FORMAT_VERSION = 8;
+// Version 9 adds black connection lines; older builds refuse such files as newer, not damaged.
+export const FORMAT_VERSION = 9;
 export const FILE_EXTENSION = '.stormlet';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };

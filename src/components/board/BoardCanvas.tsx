@@ -16,7 +16,7 @@ import {
   type Gesture,
 } from './gestures/gestures';
 import { useCanvasListeners } from './gestures/useCanvasListeners';
-import { resizedPlacements, resizeStep } from './gestures/resize';
+import { keyboardResize, resizedPlacements, resizeStep } from './gestures/resize';
 import { SelectionFrame } from './SelectionFrame';
 import { BoardOverlays } from './BoardOverlays';
 import { ConnectionEndpoints, ConnectionLayer } from '../connections/ConnectionLayer';
@@ -72,7 +72,15 @@ export function BoardCanvas(props: Props) {
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
-  const frameDrawing = useFrameDrawing({ board, view, element, tool, frames: props.frames });
+  const snapping = { zoom: view.zoom, grid: props.grid.snap ? GRID_SIZE : null };
+  const frameDrawing = useFrameDrawing({
+    board,
+    view,
+    element,
+    tool,
+    frames: props.frames,
+    snapping,
+  });
   const local = (event: { clientX: number; clientY: number }) =>
     clientToLocal(element.current!, event);
 
@@ -228,7 +236,6 @@ export function BoardCanvas(props: Props) {
     () => new Set(dragging && !dragging.duplicate ? dragging.ids : []),
     [dragging],
   );
-  const snapping = { zoom: view.zoom, grid: props.grid.snap ? GRID_SIZE : null };
   const resizing = gesture?.type === 'resize' ? new Set(gesture.ids) : null;
   const framed = frameDrawing.preview(board);
   const displayed = previewBoard(framed, gesture);
@@ -345,13 +352,20 @@ export function BoardCanvas(props: Props) {
             onCommitText={onCommitText}
           />
         ))}
-        <BoardOverlays board={board} gesture={gesture} view={view} viewport={props.viewport} />
+        <BoardOverlays
+          board={board}
+          gesture={gesture}
+          frameDrawing={frameDrawing}
+          view={view}
+          viewport={props.viewport}
+        />
         {!editing && tool === 'interact' && selection.size > 1 && (
           <SelectionFrame
             board={displayed}
             ids={[...selection]}
             zoom={view.zoom}
             onResizeStart={(event, corner) => beginResize(event, [...selection], corner)}
+            onKeyResize={(x, y) => props.onResize(keyboardResize(board, [...selection], { x, y }))}
           />
         )}
         <ConnectionEndpoints

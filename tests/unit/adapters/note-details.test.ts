@@ -39,7 +39,7 @@ describe('extended note persistence', () => {
       }),
     );
     const json = serializeBoard(board);
-    expect(JSON.parse(json).version).toBe(8);
+    expect(JSON.parse(json).version).toBe(9);
     expect(parseBoard(json)).toStrictEqual(board);
     expect(parseBoard(file({ unknown: '<script>', groupId: null })).stickies.a).not.toHaveProperty(
       'unknown',

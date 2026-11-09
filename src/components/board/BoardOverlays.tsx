@@ -5,6 +5,7 @@ import { rectangle, type Gesture } from './gestures/gestures';
 import { own } from '../../domain/ids';
 import type { Rect } from '../../domain/geometry/bounds';
 import type { Guides } from '../../engine/snapping';
+import type { FrameDrawing } from '../frames/useFrameDrawing';
 import type { Size } from '../common/useElementSize';
 import { useT } from '../common/i18n';
 
@@ -14,17 +15,21 @@ const MARKER_GAP = 6;
 export function BoardOverlays({
   board,
   gesture,
+  frameDrawing,
   view,
   viewport,
 }: {
   board: Board;
   gesture: Gesture | null;
+  /** A frame being moved or resized has guides and size markers of its own. */
+  frameDrawing: Pick<FrameDrawing, 'guides' | 'resizing'>;
   view: View;
   viewport: Size;
 }) {
   const t = useT();
   const dragging = gesture?.type === 'drag' ? gesture : null;
-  const guides = gesture?.type === 'drag' || gesture?.type === 'resize' ? gesture.guides : null;
+  const guides =
+    gesture?.type === 'drag' || gesture?.type === 'resize' ? gesture.guides : frameDrawing.guides;
   return (
     <>
       {dragging?.duplicate &&
@@ -74,6 +79,14 @@ export function BoardOverlays({
           }}
         />
       )}
+      {frameDrawing.resizing && (
+        <SizeMarkers
+          board={board}
+          note={frameDrawing.resizing}
+          guides={frameDrawing.guides}
+          zoom={view.zoom}
+        />
+      )}
       {gesture?.type === 'resize' && (
         <SizeMarkers board={board} note={gesture.frame} guides={gesture.guides} zoom={view.zoom} />
       )}
@@ -120,7 +133,9 @@ function SizeMarkers({
   zoom: number;
 }) {
   const marked = (ids: readonly string[] | undefined) =>
-    ids?.length ? [note, ...ids.flatMap((id) => own(board.stickies, id) ?? [])] : [];
+    ids?.length
+      ? [note, ...ids.flatMap((id) => own(board.stickies, id) ?? own(board.frames ?? {}, id) ?? [])]
+      : [];
   // Markers sit just outside the note in screen pixels, so they read the same at every zoom.
   const gap = MARKER_GAP / zoom;
   return (

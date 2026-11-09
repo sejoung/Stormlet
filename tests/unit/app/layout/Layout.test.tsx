@@ -4,12 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { App } from '../../../../src/app/App';
 import { GRID_KEY, GRID_SNAP_KEY } from '../../../../src/adapters/storage/preferences';
+import { COPIED_STYLE_KEY } from '../../../../src/adapters/storage/style-clipboard';
+import { frame } from '../../../support/frames';
 import { boardBounds, memoryStore, ids } from '../../../support/app';
 import { boardOf, sticky } from '../../../support/boards';
 
 afterEach(() => {
   localStorage.removeItem(GRID_KEY);
   localStorage.removeItem(GRID_SNAP_KEY);
+  localStorage.removeItem(COPIED_STYLE_KEY);
 });
 
 const note = (id: string) =>
@@ -161,5 +164,63 @@ describe('layout conveniences', () => {
     await user.keyboard('{Escape}{Control>}z{/Control}');
     expect(store.board.stickies.s2).toBeUndefined();
     expect(store.board.stickies.s1.text).toBe('');
+  });
+
+  it('snaps a dragged frame to another frame, and Ctrl/Cmd places it freely', () => {
+    const store = memoryStore({
+      ...boardOf(sticky('a', { x: 1000, y: 600 })),
+      frames: {
+        left: frame('left', { width: 300, height: 200 }),
+        right: frame('right', { x: 500, y: 300, width: 300, height: 200, title: '오른쪽' }),
+      },
+    });
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    const edge = screen.getAllByRole('button', { name: '프레임 테두리: 오른쪽 · 위쪽' })[0];
+    fireEvent.pointerDown(edge, { button: 0, clientX: 600, clientY: 380 });
+    fireEvent.pointerMove(board, { clientX: 600, clientY: 83 });
+    expect(document.querySelector('.alignment-guide.guide-horizontal')).not.toBeNull();
+    fireEvent.pointerUp(board, { clientX: 600, clientY: 83 });
+    expect(store.board.frames?.right).toMatchObject({ x: 500, y: 0 });
+    const moved = screen.getAllByRole('button', { name: '프레임 테두리: 오른쪽 · 위쪽' })[0];
+    fireEvent.pointerDown(moved, { button: 0, clientX: 600, clientY: 80 });
+    fireEvent.pointerUp(board, { clientX: 600, clientY: 83, ctrlKey: true });
+    expect(store.board.frames?.right).toMatchObject({ x: 500, y: 3 });
+  });
+
+  it('resizes a whole selection with the arrow keys on its corner handle', () => {
+    const store = memoryStore(boardOf(sticky('a'), sticky('b', { x: 200 })));
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    pick(board, 'a');
+    pick(board, 'b', true);
+    const handle = screen.getByRole('button', { name: '선택한 메모 크기 조절' });
+    fireEvent.keyDown(handle, { key: 'ArrowRight' });
+    // The 360px-wide selection grows by 20px: every note scales by 380/360.
+    expect(store.board.stickies.a).toMatchObject({ x: 0, width: 169 });
+    expect(store.board.stickies.b).toMatchObject({ x: 211, width: 169 });
+    expect(store.board.stickies.a.y).toBe(0);
+  });
+
+  it('keeps a copied style across a reload, and AltGr never runs the shortcut', () => {
+    const source = memoryStore(boardOf(sticky('a', { color: 'blue', italic: true })));
+    const first = render(<App store={source} newId={ids()} />);
+    pick(boardBounds(), 'a');
+    // Polish AltGr+C types "ć" and reports Ctrl+Alt: it is not the copy-style shortcut.
+    fireEvent.keyDown(window, {
+      key: 'ć',
+      code: 'KeyC',
+      ctrlKey: true,
+      altKey: true,
+      modifierAltGraph: true,
+    });
+    expect(localStorage.getItem(COPIED_STYLE_KEY)).toBeNull();
+    fireEvent.keyDown(window, { key: 'ç', code: 'KeyC', ctrlKey: true, altKey: true });
+    first.unmount();
+    const target = memoryStore(boardOf(sticky('b')));
+    render(<App store={target} newId={ids()} />);
+    pick(boardBounds(), 'b');
+    fireEvent.keyDown(window, { key: '√', code: 'KeyV', ctrlKey: true, altKey: true });
+    expect(target.board.stickies.b).toMatchObject({ color: 'blue', italic: true });
   });
 });

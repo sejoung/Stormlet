@@ -15,7 +15,7 @@ describe('frame files', () => {
       frames: { a: frame('a'), b: frame('b', { color: 'blue', locked: true }) },
     };
     const content = serializeBoard(board);
-    expect(JSON.parse(content).version).toBe(8);
+    expect(JSON.parse(content).version).toBe(9);
     expect(parseBoard(content)).toEqual(board);
     const extra = JSON.parse(content);
     extra.frames[0].ignored = 'discard';

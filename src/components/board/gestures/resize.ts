@@ -1,7 +1,7 @@
 import type { Board, Sticky } from '../../../domain/model';
 import { own } from '../../../domain/ids';
 import type { Placement } from '../../../domain/commands';
-import type { Rect } from '../../../domain/geometry/bounds';
+import { boundsOf, rectOf, type Rect } from '../../../domain/geometry/bounds';
 import { MAX_STICKY_SIZE, MIN_STICKY_SIZE, type StickySize } from '../../../domain/sticky-size';
 import { snapResize, type Corner, type Guides, type SnapOptions } from '../../../engine/snapping';
 import type { Point } from '../../../engine/viewport';
@@ -113,4 +113,25 @@ export function resizedPlacements(board: Board, gesture: ResizeGesture): Placeme
     width: Math.round(note.width * scaleX),
     height: Math.round(note.height * scaleY),
   }));
+}
+
+/**
+ * Arrow keys on a resize handle: grow or shrink `ids` by `delta` from the bottom-right
+ * corner, with the same size limits as dragging and no snapping.
+ */
+export function keyboardResize(board: Board, ids: readonly string[], delta: Point): Placement[] {
+  const notes = notesOf(board, ids);
+  const bounds = boundsOf(notes);
+  if (!bounds || notes.some((note) => note.locked)) return [];
+  const original = rectOf(bounds);
+  const start: ResizeGesture = {
+    type: 'resize',
+    ids,
+    corner: 'se',
+    start: { x: 0, y: 0 },
+    original,
+    frame: original,
+  };
+  const keys = { keepRatio: false, free: true };
+  return resizedPlacements(board, resizeStep(board, start, delta, keys, { zoom: 1 }));
 }

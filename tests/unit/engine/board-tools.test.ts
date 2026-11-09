@@ -3,7 +3,12 @@ import { textCells } from '../../../src/engine/paste';
 import { fitBoard, fitView } from '../../../src/engine/fit-view';
 import { frame } from '../../support/frames';
 import { connection } from '../../support/connections';
-import { snapOffset, snapResize } from '../../../src/engine/snapping';
+import {
+  snapFrameOffset,
+  snapFrameResize,
+  snapOffset,
+  snapResize,
+} from '../../../src/engine/snapping';
 import { boardOf, sticky } from '../../support/boards';
 
 describe('board tools', () => {
@@ -128,5 +133,46 @@ describe('board tools', () => {
     expect(snapResize(board, ['a'], frame(173, 200), 'se', { zoom: 1, grid: 20 }).frame.width).toBe(
       180,
     );
+  });
+
+  it('snaps notes to frames, and frames to frames and notes, ignoring what moves along', () => {
+    const board = {
+      ...boardOf(sticky('a', { x: 700, y: 500 }), sticky('inside', { x: 920, y: 320 })),
+      frames: {
+        f1: frame('f1', { width: 300, height: 200 }),
+        f2: frame('f2', { x: 400, width: 300, height: 200 }),
+        f3: frame('f3', { x: 900, y: 300, width: 300, height: 200 }),
+      },
+    };
+    // A note lines up with a frame's edge.
+    expect(snapOffset(board, ['a'], { x: 4, y: 0 }, { zoom: 1 }).guides.x).toBe(700);
+    expect(snapOffset(board, ['a'], { x: 0, y: -103 }, { zoom: 1 })).toMatchObject({
+      offset: { y: -100 },
+      guides: { y: 400 },
+    });
+    // Moving f3 up beside f1 and f2 repeats their 100px gap; its own note is no target.
+    const moved = snapFrameOffset(board, 'f3', { x: -97, y: -300 }, { zoom: 1 });
+    expect(moved.offset).toEqual({ x: -100, y: -300 });
+    expect(moved.guides.gapsX).toHaveLength(2);
+    expect(snapFrameOffset(board, 'f3', { x: 18, y: 0 }, { zoom: 1 }).offset.x).toBe(18);
+    expect(snapFrameOffset(board, 'gone', { x: 1, y: 1 }, { zoom: 1 }).offset).toEqual({
+      x: 1,
+      y: 1,
+    });
+    // A resized frame matches another frame's size, or fits to a note inside it.
+    const resized = snapFrameResize(
+      board,
+      'f3',
+      { x: 900, y: 300, width: 296, height: 260 },
+      {
+        zoom: 1,
+      },
+    );
+    expect(resized.frame).toMatchObject({ width: 300 });
+    expect(resized.guides.sameWidth).toEqual(['f2', 'f1']);
+    expect(
+      snapFrameResize(board, 'f3', { x: 900, y: 300, width: 400, height: 143 }, { zoom: 1 }).frame
+        .height,
+    ).toBe(140);
   });
 });

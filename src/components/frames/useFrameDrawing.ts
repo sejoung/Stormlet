@@ -7,11 +7,26 @@ import { moveFrame } from '../../domain/frames/commands';
 import { clampFrameSize, type Frame, type FrameBounds } from '../../domain/frames/model';
 import type { Point, View } from '../../engine/viewport';
 import type { FrameInteraction } from './types';
+import {
+  snapFrameOffset,
+  snapFrameResize,
+  type Guides,
+  type SnapOptions,
+} from '../../engine/snapping';
+import type { Rect } from '../../domain/geometry/bounds';
 import { clientToBoard } from '../common/points';
 
 type Gesture =
   | { type: 'create'; start: Point; at: Point }
-  | { type: 'move' | 'resize'; id: string; start: Point; at: Point; duplicate: boolean };
+  | {
+      type: 'move' | 'resize';
+      id: string;
+      start: Point;
+      /** Where the pointer is, after snapping: moves and resizes follow this point. */
+      at: Point;
+      duplicate: boolean;
+      guides?: Guides;
+    };
 
 /** Screen pixels a press may travel and still count as a click. */
 const CLICK_THRESHOLD = 3;
@@ -27,6 +42,10 @@ export interface FrameDrawing {
   up(event: PointerEvent): boolean;
   /** `board` with the gesture's temporary frame position or size. */
   preview(board: Board): Board;
+  /** Guides for the frame being moved or resized. */
+  guides: Guides | undefined;
+  /** The frame being resized, for its size markers; `null` otherwise. */
+  resizing: Rect | null;
 }
 
 /** Escape and window blur are handled by the canvas, which cancels every gesture at once. */
@@ -36,12 +55,15 @@ export function useFrameDrawing({
   tool,
   element,
   frames,
+  snapping,
 }: {
   board: Board;
   view: View;
   tool: BoardTool;
   element: RefObject<HTMLDivElement | null>;
   frames: FrameInteraction;
+  /** Zoom and grid for snapping moves and resizes to other frames and notes. */
+  snapping: SnapOptions;
 }): FrameDrawing {
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const cancel = () => setGesture(null);
@@ -71,6 +93,40 @@ export function useFrameDrawing({
   };
   const resized = (frame: Frame, dx: number, dy: number) =>
     clampFrameSize({ width: frame.width + dx, height: frame.height + dy });
+  /**
+   * The gesture with the pointer at `event`: a moved or resized frame snaps to other frames
+   * and notes (Ctrl/Cmd places it freely), and `at` becomes the snapped pointer position.
+   */
+  const advance = (current: Gesture, event: PointerEvent): Gesture => {
+    const raw = point(event);
+    if (current.type === 'create') return { ...current, at: raw };
+    const frame = own(board.frames ?? {}, current.id);
+    if (!frame || event.ctrlKey || event.metaKey) return { ...current, at: raw, guides: {} };
+    const dx = raw.x - current.start.x;
+    const dy = raw.y - current.start.y;
+    if (current.type === 'move') {
+      const { offset, guides } = snapFrameOffset(board, frame.id, { x: dx, y: dy }, snapping);
+      return {
+        ...current,
+        at: { x: current.start.x + offset.x, y: current.start.y + offset.y },
+        guides,
+      };
+    }
+    const size = resized(frame, dx, dy);
+    const snapped = snapFrameResize(board, frame.id, { x: frame.x, y: frame.y, ...size }, snapping);
+    const next = clampFrameSize(snapped.frame);
+    const at = {
+      x: current.start.x + next.width - frame.width,
+      y: current.start.y + next.height - frame.height,
+    };
+    return { ...current, at, guides: snapped.guides };
+  };
+  const resizingRect = (): Rect | null => {
+    if (gesture?.type !== 'resize') return null;
+    const frame = own(board.frames ?? {}, gesture.id);
+    const { dx, dy } = travel(gesture);
+    return frame && !isClick(dx, dy) ? { x: frame.x, y: frame.y, ...resized(frame, dx, dy) } : null;
+  };
   const duplicateOutline = (current: Gesture | null): FrameBounds | null => {
     if (current?.type !== 'move' || !current.duplicate) return null;
     const frame = own(board.frames ?? {}, current.id);
@@ -104,12 +160,12 @@ export function useFrameDrawing({
     },
     move: (event) => {
       if (!gesture) return false;
-      setGesture({ ...gesture, at: point(event) });
+      setGesture(advance(gesture, event));
       return true;
     },
     up: (event) => {
       if (!gesture) return false;
-      const current = { ...gesture, at: point(event) };
+      const current = advance(gesture, event);
       const { dx, dy } = travel(current);
       if (current.type === 'create') frames.onCreate(bounds(current));
       else if (!isClick(dx, dy)) {
@@ -139,5 +195,7 @@ export function useFrameDrawing({
         : current;
     },
     draft: gesture?.type === 'create' ? bounds(gesture) : duplicateOutline(gesture),
+    guides: gesture && gesture.type !== 'create' ? gesture.guides : undefined,
+    resizing: resizingRect(),
   };
 }

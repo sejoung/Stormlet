@@ -28,6 +28,7 @@ import type { Point } from '../engine/viewport';
 import { cellPositions, MAX_PASTE_NOTES, type TextCell } from '../engine/paste';
 import type { Edit, EditWith } from './useBoardSession';
 import { useRef } from 'react';
+import { readCopiedStyle, writeCopiedStyle } from '../adapters/storage/style-clipboard';
 import { useT } from '../components/common/i18n';
 
 /** Formatting toggles that have a keyboard shortcut. */
@@ -75,7 +76,8 @@ interface Options {
 export function useNoteActions(options: Options): NoteActions {
   const t = useT();
   const { board, ids, reactor, newId, edit, editWith, onSelect, onStatus } = options;
-  // Copied style is the editor's own state: it is not on the board and not in its history.
+  // Copied style is kept in the browser, shared by tabs; never on the board or in its history.
+  // The in-memory copy covers browsers that refuse storage.
   const copied = useRef<NoteStyle | null>(null);
   const format = (details: NoteDetails) => edit((current) => updateNotes(current, ids, details));
   /** Run a clone command, select the copies and, when `announce`, say how many were added. */
@@ -149,10 +151,11 @@ export function useNoteActions(options: Options): NoteActions {
       const note = own(board.stickies, ids[0] ?? '');
       if (!note) return;
       copied.current = styleOf(note);
+      writeCopiedStyle(copied.current);
       onStatus(t('noteActions.styleCopied'));
     },
     pasteStyle: () => {
-      const style = copied.current;
+      const style = readCopiedStyle() ?? copied.current;
       if (!style) return onStatus(t('noteActions.noStyle'));
       edit((current) => applyStyle(current, ids, style));
     },

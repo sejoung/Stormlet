@@ -137,7 +137,7 @@ export function FrameItem({
       {selected && !frame.locked && editable && (
         <button
           type="button"
-          className="resize-handle frame-resize"
+          className="resize-handle handle-se frame-resize"
           aria-label={t('frame.resize')}
           onPointerDown={(event) => onDown(event, frame.id, true)}
           onKeyDown={(event) => {
