@@ -45,8 +45,26 @@ test('exports the board as SVG and PNG pictures named after the board', async ({
   expect(svgFile.suggestedFilename()).toBe('E2E 보드.svg');
   const svg = await readFile((await svgFile.path())!, 'utf8');
   expect(svg).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
-  for (const text of ['잘된 점', '해결', 'Reviews', '👍 2']) expect(svg).toContain(text);
+  // Where lines wrap depends on the machine's fonts (CI has different ones), so compare the
+  // drawn text with tags and whitespace removed: every word is there, whatever the breaks.
+  const drawn = svg.replace(/<[^>]+>/g, '').replace(/\s/g, '');
+  for (const text of [
+    '잘된 점',
+    '해결',
+    '배포 자동화로 릴리스가 빨라짐',
+    'Reviews done within a day',
+    '👍 2',
+  ])
+    expect(drawn).toContain(text.replace(/\s/g, ''));
   await expect(page.getByRole('status')).toContainText('E2E 보드.svg');
+  // Each note's text is fitted the way the editor fits it, with this machine's fonts.
+  const exported = [...svg.matchAll(/<g font-size="([\d.]+)"/g)].map((match) => Number(match[1]));
+  for (const [index, id] of ['a', 'b', 'c'].entries()) {
+    const shown = await page
+      .locator(`[data-sticky-id="${id}"] .sticky-text`)
+      .evaluate((text) => parseFloat(getComputedStyle(text).fontSize));
+    expect(Math.abs(exported[index] - shown), `font size of note ${id}`).toBeLessThanOrEqual(1);
+  }
 
   const pngFile = await exportAs(page, 'PNG 이미지로 내보내기');
   expect(pngFile.suggestedFilename()).toBe('E2E 보드.png');
