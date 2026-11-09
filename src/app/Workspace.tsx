@@ -3,6 +3,7 @@ import { useLocale } from '../components/common/i18n';
 import { deleteStickies, editableIds } from '../domain/commands';
 import { boardTitle, renameBoard } from '../domain/board-title';
 import type { BoardLibrary, BoardStore } from '../domain/store';
+import { isEmptyBoard } from '../domain/model';
 import type { LocalePreference } from '../i18n/messages';
 import { reactionIdentity } from '../adapters/storage/web-storage';
 import { BoardCanvas } from '../components/board/BoardCanvas';
@@ -178,7 +179,7 @@ export function Workspace({
     selectFrame,
     selectConnection: selected.selectConnection,
   });
-  const { save, onOpen, replace, newBoard } = useBoardFiles({
+  const { save, onOpen, replace, newBoard, exportImage } = useBoardFiles({
     store,
     edit,
     flushEditor,
@@ -249,6 +250,8 @@ export function Workspace({
                 recent={library !== undefined}
                 onOpenFile={onOpen}
                 onDownload={save}
+                onExport={exportImage}
+                canExport={!isEmptyBoard(board)}
                 keys={keys}
                 clipboard={clipboard}
                 canvas={canvas}

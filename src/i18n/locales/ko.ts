@@ -28,6 +28,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'newBoard.cancel': '취소',
   'newBoard.create': '새 보드 만들기',
   'files.newBoard': '새 보드를 만들었습니다. 실행 취소하면 이전 보드로 돌아갑니다.',
+  'files.exported': '{name}을(를) 내보냈습니다.',
+  'files.exportFailed': '이미지를 만들지 못했습니다. 보드가 너무 크면 SVG로 내보내 보세요.',
   'drive.newBlocked':
     'Drive에 아직 저장하지 못한 변경이 있어 새 보드를 만들지 않았습니다. 다시 연결하거나 충돌을 해결한 뒤 시도하세요.',
   'menu.recentBoards': '최근 보드…',
@@ -57,6 +59,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'menu.fitSelection': '선택 항목 보기',
   'menu.openFile': '열기…',
   'menu.download': '파일로 내려받기',
+  'menu.exportPng': 'PNG 이미지로 내보내기',
+  'menu.exportSvg': 'SVG 이미지로 내보내기',
   'menu.syncNow': '지금 동기화',
   'menu.manual': '사용 설명서',
   'manual.path': 'manual/index.html',

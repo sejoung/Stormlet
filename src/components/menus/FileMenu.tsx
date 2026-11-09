@@ -2,6 +2,9 @@ import type { RefObject } from 'react';
 import { MenuButton, MenuItem, MenuSection } from './MenuButton';
 import { useT } from '../common/i18n';
 
+/** Picture formats a board can be exported as. */
+export type ImageFormat = 'png' | 'svg';
+
 /** What the File menu needs from Google Drive, when this build has it. */
 export interface FileMenuDrive {
   linked: boolean;
@@ -28,6 +31,8 @@ export function FileMenu({
   onRecent,
   onOpenFile,
   onDownload,
+  onExport,
+  canExport,
   drive,
 }: {
   fileInput: RefObject<HTMLInputElement | null>;
@@ -35,6 +40,10 @@ export function FileMenu({
   onRecent?(): void;
   onOpenFile(file: File): void;
   onDownload(): void;
+  /** Save the board as a picture to share elsewhere. */
+  onExport(format: ImageFormat): void;
+  /** False on an empty board, which has nothing to draw. */
+  canExport: boolean;
   drive?: FileMenuDrive;
 }) {
   const t = useT();
@@ -69,6 +78,20 @@ export function FileMenu({
               shortcut={drive?.linked ? undefined : '⌘ / Ctrl+S'}
               close={close}
               onSelect={onDownload}
+            />
+            <MenuItem
+              label={t('menu.exportPng')}
+              icon="image"
+              disabled={!canExport}
+              close={close}
+              onSelect={() => onExport('png')}
+            />
+            <MenuItem
+              label={t('menu.exportSvg')}
+              icon="vector"
+              disabled={!canExport}
+              close={close}
+              onSelect={() => onExport('svg')}
             />
             {drive && (
               <>

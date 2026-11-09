@@ -67,6 +67,8 @@ describe('Google Drive', () => {
       '열기…⌘ / Ctrl+O',
       // ⌘/Ctrl+S saves to Drive while the board is linked there.
       '파일로 내려받기',
+      'PNG 이미지로 내보내기',
+      'SVG 이미지로 내보내기',
       'Drive에서 열기…',
       '다른 폴더에 사본 저장…',
       '지금 동기화⌘ / Ctrl+S',
@@ -128,7 +130,11 @@ describe('Google Drive', () => {
     fireEvent.click(driveButton());
     expect(auth.connect).toHaveBeenCalled();
     await waitFor(() => expect(driveButton()).toHaveTextContent('충돌'));
-    expect(recentLog().map((entry) => entry.event)).toContain('drive.sync-conflict');
+    // The conflict is logged from an effect, which React may run a tick after the button
+    // shows it; asserting right away fails on a slow CI runner.
+    await waitFor(() =>
+      expect(recentLog().map((entry) => entry.event)).toContain('drive.sync-conflict'),
+    );
 
     fireEvent.click(driveButton());
     const dialog = screen.getByRole('dialog', { name: '남길 변경 선택' });

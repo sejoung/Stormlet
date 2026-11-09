@@ -50,7 +50,13 @@ describe('toolbar menus', () => {
     expect(file).toHaveAttribute('aria-expanded', 'true');
     // A build without Drive has only the local file commands.
     const items = screen.getAllByRole('menuitem');
-    expect(items.map(label)).toEqual(['새 보드…', '열기…', '파일로 내려받기']);
+    expect(items.map(label)).toEqual([
+      '새 보드…',
+      '열기…',
+      '파일로 내려받기',
+      'PNG 이미지로 내보내기',
+      'SVG 이미지로 내보내기',
+    ]);
     expect(items[0]).toHaveFocus();
     await user.keyboard('{ArrowDown}');
     expect(items[1]).toHaveFocus();

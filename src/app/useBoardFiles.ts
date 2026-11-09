@@ -3,7 +3,10 @@ import type { BoardStore } from '../domain/store';
 import { diffBoards } from '../domain/patch';
 import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
 import { emptyBoard } from '../domain/model';
-import { downloadText, readFileText } from '../adapters/files/download';
+import { downloadBlob, downloadText, readFileText } from '../adapters/files/download';
+import { canvasTextMeasure, svgToPng } from '../adapters/files/image-export';
+import { boardSvg } from '../components/export/board-svg';
+import type { ImageFormat } from '../components/menus/FileMenu';
 import {
   FILE_EXTENSION,
   MAX_BOARD_FILE_BYTES,
@@ -63,6 +66,22 @@ export function useBoardFiles({
     save: () => {
       flushEditor();
       downloadBoard(store.load());
+    },
+    /** Download the board as a PNG or SVG picture named after its title. */
+    exportImage: async (format: ImageFormat) => {
+      flushEditor();
+      const board = store.load();
+      const name = `${boardFileStem(boardTitle(board))}.${format}`;
+      try {
+        const image = boardSvg(board, canvasTextMeasure());
+        if (!image) return;
+        if (format === 'svg') downloadText(name, image.svg, 'image/svg+xml');
+        else downloadBlob(name, await svgToPng(image.svg, image.width, image.height));
+        onStatus(t('files.exported', { name }));
+      } catch (error) {
+        log.warn('files.export-failed', { format, ...errorDetails(error, false) });
+        onStatus(t('files.exportFailed'));
+      }
     },
     onOpen: async (file: File) => {
       try {

@@ -58,8 +58,9 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 - Undo and redo for every change, including deletions that remove attached lines
 - Autosave in the browser, a board for each tab: a new board opens in a new tab, coming back resumes the last board, and boards of closed tabs stay under File → Recent boards ([ADR 0011](docs/adr/0011-board-per-tab.md))
 - Optional Google Drive sync, the main place for boards once connected: a Drive button in the toolbar connects and saves, the chosen folder is shared by every tab so new boards go there with their first edit, and `Ctrl/Cmd+S` saves to Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
+- Export the whole board from the File menu as a PNG (at 2× resolution) or SVG picture, drawn in the light theme on white so it is ready to post elsewhere
 - Rename the board by double-clicking its title; the title becomes the download filename
-- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap, grid) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
+- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, PNG/SVG export, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap, grid) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 - Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports

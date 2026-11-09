@@ -31,6 +31,8 @@ export const en = {
   'newBoard.cancel': 'Cancel',
   'newBoard.create': 'Create board',
   'files.newBoard': 'Started a new board. Undo returns to the previous one.',
+  'files.exported': 'Exported {name}.',
+  'files.exportFailed': 'The image could not be made. For a very large board, try SVG.',
   'drive.newBlocked':
     'Changes are not saved to Drive yet, so no new board was started. Reconnect or resolve the conflict, then try again.',
   'menu.recentBoards': 'Recent boards…',
@@ -60,6 +62,8 @@ export const en = {
   'menu.fitSelection': 'Show selection',
   'menu.openFile': 'Open…',
   'menu.download': 'Download as file',
+  'menu.exportPng': 'Export as PNG image',
+  'menu.exportSvg': 'Export as SVG image',
   'menu.syncNow': 'Sync now',
   'menu.manual': 'User guide',
   'manual.path': 'manual/en/index.html',

@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { FileMenu } from '../../components/menus/FileMenu';
+import { FileMenu, type ImageFormat } from '../../components/menus/FileMenu';
 import { EditMenu } from '../../components/menus/EditMenu';
 import { SettingsMenu } from '../../components/menus/SettingsMenu';
 import type { LocalePreference } from '../../i18n/messages';
@@ -20,6 +20,8 @@ export function ToolbarMenus({
   recent,
   onOpenFile,
   onDownload,
+  onExport,
+  canExport,
   keys,
   clipboard,
   canvas,
@@ -35,6 +37,8 @@ export function ToolbarMenus({
   recent: boolean;
   onOpenFile(file: File): void;
   onDownload(): void;
+  onExport(format: ImageFormat): void;
+  canExport: boolean;
   /** The commands behind the shortcuts, which the Edit and View menus run too. */
   keys: ShortcutHandlers;
   clipboard: Clipboard;
@@ -55,6 +59,8 @@ export function ToolbarMenus({
         onRecent={recent ? () => onDialog('recent') : undefined}
         onOpenFile={onOpenFile}
         onDownload={onDownload}
+        onExport={(format) => void onExport(format)}
+        canExport={canExport}
         drive={
           drive.available
             ? {
