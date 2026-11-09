@@ -252,6 +252,7 @@ export function Workspace({
                 onDownload={save}
                 onExport={exportImage}
                 canExport={!isEmptyBoard(board)}
+                onMatchSize={actions.matchSize}
                 keys={keys}
                 clipboard={clipboard}
                 canvas={canvas}

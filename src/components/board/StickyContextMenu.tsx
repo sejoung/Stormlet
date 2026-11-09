@@ -10,7 +10,8 @@ import type { Point } from '../../engine/viewport';
 import { useT } from '../common/i18n';
 import type { MessageKey } from '../../i18n/messages';
 import type { Arrangement, SizeMatch } from '../../domain/note-actions';
-import { ARRANGEMENTS, SIZE_MATCHES } from '../selection/arrangements';
+import { ARRANGEMENTS, SIZE_MATCHES, withShortcut } from '../selection/arrangements';
+import { Icon } from '../toolbar/Icon';
 
 interface Props {
   point: Point;
@@ -74,29 +75,31 @@ export function StickyContextMenu(props: Props) {
           <div className="context-separator" role="separator" />
           <span className="context-caption">{t('selection.arrangeHeading')}</span>
           <div className="context-grid">
-            {ARRANGEMENTS.map(([action, label, shortcut]) => (
+            {ARRANGEMENTS.flat().map((item) => (
               <button
-                key={action}
+                key={item.action}
                 type="button"
                 role="menuitem"
-                title={shortcut}
-                onClick={() => run(() => props.onArrange(action))}
+                title={withShortcut(t(item.label), item.shortcut)}
+                onClick={() => run(() => props.onArrange(item.action))}
               >
-                {t(label)}
+                <Icon name={item.icon} size={14} />
+                {t(item.label)}
               </button>
             ))}
           </div>
           <span className="context-caption">{t('selection.matchHeading')}</span>
           <div className="context-grid match-grid">
-            {SIZE_MATCHES.map(([match, label]) => (
+            {SIZE_MATCHES.map((item) => (
               <button
-                key={match}
+                key={item.action}
                 type="button"
                 role="menuitem"
                 title={t('selection.matchHint')}
-                onClick={() => run(() => props.onMatchSize(match))}
+                onClick={() => run(() => props.onMatchSize(item.action))}
               >
-                {t(label)}
+                <Icon name={item.icon} size={14} />
+                {t(item.label)}
               </button>
             ))}
           </div>

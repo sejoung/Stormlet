@@ -29,7 +29,7 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 - While editing, `Tab` carries on in a new note to the right and `Ctrl/Cmd+Enter` in one below, with the same size and style
 - Resize from any corner (Shift keeps the proportions, arrow keys step 20px), presets or an exact width and height; a multi-note selection scales as a whole from its bounding box
 - Guides to notes’ and frames’ edges and centers, equal-spacing snapping and same-size markers while moving or resizing; hold `Ctrl/Cmd` to move freely
-- Align, distribute, match sizes (to the largest) and arrange in a grid from the toolbar, the context menu or `Alt/Option` shortcuts; group and lock
+- Align, distribute, match sizes (to the largest) and arrange in a grid from the icon row shown for a selection, the Arrange menu, the context menu or `Alt/Option` shortcuts; group and lock
 - Copy and paste a note’s style (color and text formatting), kept across reloads and tabs; select all notes of a color
 - Emoji reactions and full-text search
 
@@ -60,7 +60,7 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 - Optional Google Drive sync, the main place for boards once connected: a Drive button in the toolbar connects and saves, the chosen folder is shared by every tab so new boards go there with their first edit, and `Ctrl/Cmd+S` saves to Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Export the whole board from the File menu as a PNG (at 2× resolution) or SVG picture, drawn in the light theme on white so it is ready to post elsewhere
 - Rename the board by double-clicking its title; the title becomes the download filename
-- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, PNG/SVG export, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), View (zoom, fit, minimap, grid) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
+- A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, PNG/SVG export, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), Arrange (align, distribute, grid, match size), View (zoom, fit, minimap, grid) and Settings (language, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
 - English and Korean interface: follows the browser language (English when it is not supported) and can be changed in Settings
 - Built-in diagnostics: a recovery screen instead of a blank page after a crash, a warning when the browser stops saving, a damaged save kept aside rather than overwritten, and a copyable report for bug reports

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { App } from '../../../src/app/App';
@@ -89,7 +89,12 @@ describe('note organization', () => {
     render(<App store={store} newId={ids()} />);
     boardBounds().focus();
     await user.keyboard('{Control>}a{/Control}');
-    await user.click(screen.getByRole('button', { name: '정렬과 배치' }));
+    // Several notes selected: the arrange icons are right under the toolbar.
+    const arrange = screen.getByRole('toolbar', { name: '배치' });
+    expect(within(arrange).getByRole('button', { name: '위쪽 맞춤' })).toHaveAttribute(
+      'title',
+      '위쪽 맞춤 (Alt / Option+W)',
+    );
     await user.click(screen.getByRole('button', { name: '위쪽 맞춤' }));
     expect(Object.values(store.board.stickies).map((s) => s.y)).toEqual([40, 40, 40]);
     await user.click(screen.getByRole('button', { name: '가로 간격 맞춤' }));
@@ -97,6 +102,13 @@ describe('note organization', () => {
     await user.click(screen.getByRole('button', { name: '격자로 정리' }));
     expect(store.board.stickies.c.x).toBe(store.board.stickies.a.x);
     expect(store.board.stickies.c.y).toBeGreaterThan(store.board.stickies.a.y);
+    // The same commands are in the Arrange menu, which needs two notes selected.
+    await user.click(screen.getByRole('button', { name: '정렬' }));
+    await user.click(screen.getByRole('menuitem', { name: /왼쪽 맞춤/ }));
+    expect(new Set(Object.values(store.board.stickies).map((s) => s.x)).size).toBe(1);
+    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('button', { name: '정렬' }));
+    expect(screen.getByRole('menuitem', { name: /너비 같게/ })).toBeDisabled();
   });
 
   it('matches widths from the arrange panel and snaps a resize to a matching size', async () => {
@@ -123,7 +135,6 @@ describe('note organization', () => {
     await user.keyboard('{Control>}z{/Control}');
     fireEvent.pointerDown(note('b'), { button: 0, shiftKey: true });
     fireEvent.pointerUp(board);
-    await user.click(screen.getByRole('button', { name: '정렬과 배치' }));
     await user.click(screen.getByRole('button', { name: '너비 같게' }));
     expect(store.board.stickies.a).toMatchObject({ x: 40, width: 240, height: 120 });
   });

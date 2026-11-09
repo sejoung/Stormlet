@@ -4,6 +4,8 @@ import { EditMenu } from '../../components/menus/EditMenu';
 import { SettingsMenu } from '../../components/menus/SettingsMenu';
 import type { LocalePreference } from '../../i18n/messages';
 import { ViewMenu } from '../../components/menus/ViewMenu';
+import { ArrangeMenu } from '../../components/menus/ArrangeMenu';
+import type { SizeMatch } from '../../domain/note-actions';
 import type { ShortcutHandlers } from '../useShortcuts';
 import type { Clipboard } from '../useClipboard';
 import type { BoardView } from '../view/useBoardView';
@@ -22,6 +24,7 @@ export function ToolbarMenus({
   onDownload,
   onExport,
   canExport,
+  onMatchSize,
   keys,
   clipboard,
   canvas,
@@ -39,6 +42,7 @@ export function ToolbarMenus({
   onDownload(): void;
   onExport(format: ImageFormat): void;
   canExport: boolean;
+  onMatchSize(match: SizeMatch): void;
   /** The commands behind the shortcuts, which the Edit and View menus run too. */
   keys: ShortcutHandlers;
   clipboard: Clipboard;
@@ -88,6 +92,13 @@ export function ToolbarMenus({
           onCut: () => void clipboard.copy(true),
           onCopy: () => void clipboard.copy(),
           onPaste: () => void clipboard.paste(canvas.boardCenter()),
+        }}
+      />
+      <ArrangeMenu
+        commands={{
+          notes: selection.ids.length,
+          onArrange: keys.onArrange,
+          onMatchSize,
         }}
       />
       <ViewMenu

@@ -200,17 +200,27 @@ async function captureLayout(page: Page, lang: Lang) {
   });
   await page.mouse.up();
 
-  // Everything selected, with the align and arrange panel open.
+  // Everything selected: the arrange icons appear under the selection toolbar.
   await page.keyboard.press('Escape');
   await page.locator('.board').focus();
   await page.keyboard.press('ControlOrMeta+a');
-  await page.getByRole('button', { name: m['selection.alignAndArrange'] }).click();
-  const panel = page.locator('.selection-popover');
-  await expect(panel).toBeVisible();
+  const arrange = page.locator('.arrange-toolbar');
+  await expect(arrange).toBeVisible();
   await page.screenshot({
     path: shot(lang, 'layout-arrange'),
-    clip: await around(page, [...notes, page.locator('.selection-toolbar'), panel], 20),
+    clip: await around(page, [...notes, page.locator('.selection-anchor')], 20),
   });
+
+  // The Arrange menu, with the selection still in place so its commands are enabled.
+  const arrangeMenu = page.getByRole('button', { name: m['menu.arrange'], exact: true });
+  await arrangeMenu.click();
+  const list = page.getByRole('menu', { name: m['menu.arrange'] });
+  await expect(list).toBeVisible();
+  await page.screenshot({
+    path: shot(lang, 'menu-arrange'),
+    clip: await around(page, [arrangeMenu, list]),
+  });
+  await page.keyboard.press('Escape');
   await page.keyboard.press('Escape');
 
   // Dragging a colour out of the sticky tool's flyout onto the board.

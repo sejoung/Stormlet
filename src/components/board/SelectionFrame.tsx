@@ -53,6 +53,11 @@ export function ResizeHandles({
   );
 }
 
+/** How far a selected note's outline reaches past its edge, in board pixels (`workspace.css`). */
+const NOTE_OUTLINE = 4;
+/** Screen pixels between the notes' outlines and the selection box. */
+const FRAME_GAP = 6;
+
 /** The bounding box of a multi-note selection, with corners that scale every note in it. */
 export function SelectionFrame({
   board,
@@ -73,7 +78,16 @@ export function SelectionFrame({
   const bounds = boundsOf(notes);
   // Locked notes cannot be resized, so a selection holding one has no handles to offer.
   if (!bounds || notes.some((note) => note.locked)) return null;
-  const rect = rectOf(bounds);
+  // Drawn clear of each note's selection outline (2px out, 2px wide) by a few screen pixels,
+  // so the dashed box never runs along the outlines; resizing still uses the notes' bounds.
+  const pad = NOTE_OUTLINE + FRAME_GAP / zoom;
+  const box = rectOf(bounds);
+  const rect = {
+    x: box.x - pad,
+    y: box.y - pad,
+    width: box.width + pad * 2,
+    height: box.height + pad * 2,
+  };
   return (
     <div
       className="selection-frame"

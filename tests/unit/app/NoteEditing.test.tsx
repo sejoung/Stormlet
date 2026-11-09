@@ -143,7 +143,7 @@ describe('note editing experience', () => {
       fontSize: 32,
     });
     expect(note().querySelector('p')).toHaveStyle({ fontSize: '32px' });
-    await user.click(within(toolbar).getByRole('button', { name: '정렬과 배치' }));
+    await user.click(within(toolbar).getByRole('button', { name: '텍스트 정렬' }));
     await user.click(screen.getByRole('button', { name: '왼쪽' }));
     expect(note().querySelector('p')).toHaveStyle({ textAlign: 'left' });
     await user.click(within(toolbar).getByRole('button', { name: '포스트잇 색 변경' }));

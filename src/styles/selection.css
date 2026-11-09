@@ -176,3 +176,9 @@
 .canvas-area:has(.board.is-transforming) .selection-anchor {
   visibility: hidden;
 }
+/* The arrange icons sit in a second bar right under the selection toolbar. */
+.arrange-toolbar {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 6px;
+}

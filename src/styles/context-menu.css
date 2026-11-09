@@ -175,8 +175,13 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .sticky-context-menu .context-grid button {
-  justify-content: center;
-  padding: 7px 6px;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 7px 8px;
   font-size: 12px;
-  text-align: center;
+  white-space: nowrap;
+}
+.sticky-context-menu .context-grid .app-icon {
+  flex-shrink: 0;
+  color: var(--muted);
 }

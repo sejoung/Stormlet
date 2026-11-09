@@ -13,7 +13,7 @@ import { useLargestFit } from '../common/fitted-fonts';
 import type { Arrangement, SizeMatch } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
-import { ARRANGEMENTS, SIZE_MATCHES } from './arrangements';
+import { ArrangeToolbar } from './ArrangeToolbar';
 import { Icon } from '../toolbar/Icon';
 import { useT } from '../common/i18n';
 import type { MessageKey } from '../../i18n/messages';
@@ -71,7 +71,9 @@ const FONT_SIZES = [8, 10, 12, 14, 16, 18, 24, 32, 48, 64];
 /** Rectangle notes keep their width and take this share of it as height. */
 const RECTANGLE_RATIO = 0.75;
 /** Toolbar footprint and gaps used to keep it on screen above or below the selection. */
-const PANEL = { width: 660, height: 360, margin: 12, above: 60, below: 16, minTop: 64 };
+const PANEL = { width: 660, height: 360, margin: 12, above: 68, below: 24, minTop: 64 };
+/** The arrange bar under the toolbar for a multi-note selection: its height and gap. */
+const ARRANGE_ROW = 56;
 
 /** Screen-space controls stay readable at every board zoom level. */
 export function SelectionToolbar(props: Props) {
@@ -95,6 +97,9 @@ export function SelectionToolbar(props: Props) {
     (a, b) => a - b,
   );
   const toggle = (next: typeof panel) => setPanel(panel === next ? null : next);
+  const arranging = props.notes.length > 1 && !locked;
+  // Above the selection the whole stack (toolbar, then arrange bar) must clear the notes.
+  const above = PANEL.above + (arranging ? ARRANGE_ROW : 0);
   return (
     <div
       className="selection-anchor"
@@ -103,7 +108,7 @@ export function SelectionToolbar(props: Props) {
         top: Math.max(
           PANEL.margin,
           Math.min(
-            top >= PANEL.minTop ? top - PANEL.above : bottom + PANEL.below,
+            top >= PANEL.minTop + above - PANEL.above ? top - above : bottom + PANEL.below,
             props.viewport.height - PANEL.height,
           ),
         ),
@@ -181,7 +186,7 @@ export function SelectionToolbar(props: Props) {
           ))}
         </select>
         <Tool
-          label={t('selection.alignAndArrange')}
+          label={t('selection.textAlign')}
           active={panel === 'align'}
           disabled={locked}
           onClick={() => toggle('align')}
@@ -222,6 +227,7 @@ export function SelectionToolbar(props: Props) {
           <Icon name="more" />
         </Tool>
       </div>
+      {arranging && <ArrangeToolbar onArrange={props.onArrange} onMatchSize={props.onMatchSize} />}
       {panel && (!locked || panel === 'emoji') && (
         <div className={`selection-popover panel-${panel}`}>
           {panel === 'color' && (
@@ -279,38 +285,6 @@ export function SelectionToolbar(props: Props) {
                   </button>
                 ))}
               </div>
-              {props.notes.length > 1 && (
-                <>
-                  <span className="popover-label">{t('selection.arrangeHeading')}</span>
-                  <div className="arrange-options">
-                    {ARRANGEMENTS.map(([action, label, shortcut]) => (
-                      <button
-                        key={action}
-                        type="button"
-                        title={shortcut && `${t(label)} (${shortcut})`}
-                        onClick={() => props.onArrange(action)}
-                      >
-                        {t(label)}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="popover-label" title={t('selection.matchHint')}>
-                    {t('selection.matchHeading')}
-                  </span>
-                  <div className="arrange-options match-options">
-                    {SIZE_MATCHES.map(([match, label]) => (
-                      <button
-                        key={match}
-                        type="button"
-                        title={t('selection.matchHint')}
-                        onClick={() => props.onMatchSize(match)}
-                      >
-                        {t(label)}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
             </>
           )}
           {panel === 'emoji' && (
