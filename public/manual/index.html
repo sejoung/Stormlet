@@ -32,6 +32,7 @@
           <li><a href="#notes">포스트잇</a></li>
           <li><a href="#frames">프레임과 연결선</a></li>
           <li><a href="#organize">선택과 정리</a></li>
+          <li><a href="#layout">배치와 정렬</a></li>
           <li><a href="#menus">메뉴</a></li>
           <li><a href="#saving">보드는 어디에 저장되나</a></li>
           <li><a href="#drive">Google Drive</a></li>
@@ -100,17 +101,33 @@
           <ol class="steps">
             <li>
               왼쪽 포스트잇 도구를 누르거나 <kbd>N</kbd>을 누른 뒤 보드를 클릭하면 그 자리에
-              포스트잇이 생깁니다. 바로 입력하세요.
+              포스트잇이 생깁니다. 바로 입력하세요. 도구 옆 색상 칸을 보드로 <b>끌어다 놓아도</b> 그
+              색의 포스트잇이 생깁니다. 손가락이나 펜으로도 됩니다.
             </li>
             <li>
               <kbd>Enter</kbd>나 더블클릭으로 다시 편집하고, <kbd>Esc</kbd>로 마칩니다. 줄을
               바꾸려면 <kbd>Shift</kbd>+<kbd>Enter</kbd>를 누릅니다.
             </li>
             <li>
+              입력하다 <kbd>Tab</kbd>을 누르면 오른쪽에, <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd>를
+              누르면 아래에 같은 크기·색의 새 포스트잇이 생기고 바로 이어서 입력할 수 있습니다.
+              자리가 차 있으면 그다음 빈자리로 갑니다.
+            </li>
+            <li>
               ‘여러 개 한 번에’에 여러 줄을 붙여 넣으면 줄마다 포스트잇이 생깁니다. 엑셀·구글
               시트에서 복사한 셀도 그대로 붙여 넣을 수 있습니다.
             </li>
           </ol>
+          <figure>
+            <img
+              src="images/ko/palette-drag.png"
+              alt="포스트잇 도구의 색상 패널에서 초록색 칸을 보드 쪽으로 끌고 있는 모습"
+            />
+            <figcaption>
+              색상 칸을 끌면 미리보기가 따라오고, 보드에 놓은 자리에 포스트잇이 생깁니다. 패널 위에
+              놓으면 만들지 않으며, 기본 색도 바뀌지 않습니다.
+            </figcaption>
+          </figure>
           <div class="split">
             <figure>
               <img
@@ -125,14 +142,17 @@
                 글자 크기는 메모 크기와 내용에 맞춰 자동으로 조절됩니다. 직접 고른 크기는 글이
                 들어가는 동안 유지됩니다.
               </li>
-              <li>오른쪽 아래 손잡이를 끌거나 크기 프리셋으로 크기를 바꿉니다.</li>
+              <li>
+                네 모서리 손잡이를 끌거나 크기 프리셋으로 크기를 바꿉니다. 자세한 내용은
+                <a href="#layout">배치와 정렬</a>에 있습니다.
+              </li>
               <li>이모지 반응을 달고, 다시 누르면 취소됩니다.</li>
             </ul>
           </div>
           <figure>
             <img
               src="images/ko/note-menu.png"
-              alt="포스트잇을 우클릭해 연 메뉴: 맨 앞으로, 맨 뒤로, 크기, 텍스트 편집, 복제, 잠금, 삭제"
+              alt="포스트잇을 우클릭해 연 메뉴: 맨 앞으로, 맨 뒤로, 크기, 내용 편집, 스타일 복사, 스타일 붙여넣기, 같은 색 메모 모두 선택, 복제, 잠금, 삭제"
             />
             <figcaption>
               포스트잇·프레임·연결선·빈 캔버스를 우클릭(또는 <kbd>Shift</kbd>+<kbd>F10</kbd>)하면 그
@@ -164,7 +184,15 @@
               <kbd>L</kbd>을 누르거나 포스트잇 주변의 연결점을 끌어 다른 포스트잇·프레임에
               연결합니다. 메모를 옮겨도 연결은 유지됩니다.
             </li>
-            <li>직선·둥근 꺾임선·곡선, 화살표, 색상·두께·점선, 설명 글을 바꿀 수 있습니다.</li>
+            <li>
+              직선·둥근 꺾임선·곡선, 화살표, 색상(검정·회색·파랑·빨강·초록·보라)·두께·점선, 설명
+              글을 바꿀 수 있습니다. 다크 모드에서는 검정 선을 밝게 그려 잘 보이게 합니다.
+            </li>
+            <li>
+              한 선의 색상·두께·점선을 바꾸면 다음에 그리는 선도 같은 모양으로 그려집니다. 연결선
+              도구 막대의 <b>모든 연결선에 이 스타일 적용</b>을 누르면 보드의 모든 선(잠긴 선
+              제외)을 한 번에 맞춥니다.
+            </li>
             <li>끝점을 끌어 다른 대상에 다시 연결합니다.</li>
           </ul>
         </section>
@@ -177,8 +205,12 @@
               모두 선택입니다.
             </li>
             <li>
-              여러 메모를 선택하면 정렬·균등 간격·격자 배치를 쓸 수 있고, 끌 때 정렬 가이드가
-              나타납니다.
+              여러 메모를 선택하면 정렬·간격 맞춤·크기 맞춤·격자 배치를 쓸 수 있습니다.
+              <a href="#layout">배치와 정렬</a>을 보세요.
+            </li>
+            <li>
+              우클릭 메뉴의 <b>같은 색 메모 모두 선택</b>은 그 메모와 색이 같은 메모를 한꺼번에
+              고릅니다. 색으로 분류한 메모를 옮기거나 묶을 때 편합니다.
             </li>
             <li>
               <kbd>Ctrl/Cmd</kbd>+<kbd>G</kbd>로 묶으면 함께 움직입니다.
@@ -193,8 +225,107 @@
           </ul>
         </section>
 
+        <section id="layout">
+          <h2>5. 배치와 정렬</h2>
+          <h3>가이드와 스냅</h3>
+          <figure>
+            <img
+              src="images/ko/layout-spacing.png"
+              alt="세 번째 포스트잇을 끌어 앞의 두 메모 옆에 놓는 중. 윗선을 맞추는 파란 가이드와 같은 간격을 표시하는 분홍 선이 보임"
+            />
+            <figcaption>
+              파란 선은 가장자리·가운데 맞춤, 분홍 표시는 앞의 두 메모와 같은 간격입니다.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              메모를 끌면 다른 메모의 가장자리나 가운데와 화면에서 8px 안으로 가까워질 때 그 선에
+              붙고 파란 가이드가 나타납니다.
+            </li>
+            <li>
+              두 메모 사이 한가운데, 또는 이웃한 메모들 간격을 한 번 더 반복하는 자리에 오면
+              <b>같은 간격</b>에 붙고 분홍 표시가 나타납니다. 가로·세로 모두 됩니다.
+            </li>
+            <li>
+              <kbd>Ctrl/Cmd</kbd>를 누른 채 끌면 가이드 없이 원하는 위치에 놓습니다. Mac에서는
+              <kbd>Ctrl</kbd>+클릭이 우클릭이 되므로 <kbd>Cmd</kbd>를 쓰세요.
+            </li>
+            <li>끄는 동안에는 메모 도구 막대가 잠시 숨어 가이드를 가리지 않습니다.</li>
+          </ul>
+          <h3>크기 조절</h3>
+          <div class="split">
+            <figure>
+              <img
+                src="images/ko/layout-resize.png"
+                alt="분홍 포스트잇의 모서리를 끌어 위 노란 포스트잇과 너비를 맞추는 중. 두 메모 위에 같은 너비 표시와 220 × 166 크기 배지가 보임"
+              />
+              <figcaption>
+                위 메모와 너비가 같아지면 두 메모 위에 표시가 생기고, 현재 크기가 배지로 보입니다.
+              </figcaption>
+            </figure>
+            <ul>
+              <li>
+                메모를 하나 선택하면 네 모서리에 손잡이가 생깁니다. 반대쪽 모서리는 그대로 있습니다.
+              </li>
+              <li>
+                다른 메모와 너비나 높이가 거의 같아지면 그 크기에 붙고, 같은 크기인 메모(가까운
+                4개까지)에 표시가 생깁니다. 가장자리를 다른 메모의 선에 맞출 수도 있습니다.
+              </li>
+              <li>
+                <kbd>Shift</kbd>를 누르면 비율을 유지하고, <kbd>Ctrl/Cmd</kbd>를 누르면 스냅 없이
+                조절합니다. 오른쪽 아래 손잡이에 초점을 두고 방향키를 누르면 20px씩 바뀝니다.
+              </li>
+              <li>
+                여러 메모를 선택하면 전체를 감싸는 점선 상자가 생깁니다. 상자의 모서리를 끌면 모든
+                메모의 위치와 크기가 비율대로 함께 바뀝니다. 잠긴 메모가 섞여 있으면 손잡이가 나오지
+                않습니다.
+              </li>
+            </ul>
+          </div>
+          <h3>정렬과 크기 맞춤</h3>
+          <figure>
+            <img
+              src="images/ko/layout-arrange.png"
+              alt="포스트잇 네 개를 선택하고 정렬과 배치 패널을 연 모습. 텍스트 정렬, 배치, 크기 맞춤 버튼이 있음"
+            />
+            <figcaption>
+              여러 메모를 선택하고 도구 막대의 <b>정렬과 배치</b>를 누른 모습. 같은 명령이 우클릭
+              메뉴에도 있습니다.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>배치</b>: 왼쪽·가로 가운데·오른쪽, 위쪽·세로 가운데·아래쪽 맞춤, 가로·세로 간격
+              맞춤, 격자로 정리. 그룹은 한 덩어리로 움직입니다.
+            </li>
+            <li>
+              <b>크기 맞춤</b>: 너비 같게·높이 같게·크기 같게. 선택한 메모 중 가장 큰 값에 맞추므로
+              글자가 잘리지 않습니다. 각 메모의 왼쪽 위 모서리는 그대로입니다.
+            </li>
+            <li>
+              단축키: <kbd>Alt</kbd>+<kbd>A</kbd>/<kbd>H</kbd>/<kbd>D</kbd>는 왼쪽·가로
+              가운데·오른쪽, <kbd>Alt</kbd>+<kbd>W</kbd>/<kbd>V</kbd>/<kbd>S</kbd>는 위쪽·세로
+              가운데·아래쪽 맞춤, <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd>/<kbd>V</kbd>는
+              가로·세로 간격 맞춤입니다. Mac에서는 <kbd>Option</kbd>을 누릅니다.
+            </li>
+          </ul>
+          <h3>스타일 복사</h3>
+          <p>
+            메모를 선택하고 <kbd>Ctrl/Cmd</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>로 색과 글자 서식(굵게,
+            기울임, 밑줄, 정렬, 글자 크기)을 복사한 뒤, 다른 메모를 선택하고
+            <kbd>Ctrl/Cmd</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd>로 붙여 넣습니다. 크기와 내용은 바뀌지
+            않습니다. 우클릭 메뉴의 <b>스타일 복사</b>·<b>스타일 붙여넣기</b>도 같습니다.
+          </p>
+          <h3>격자</h3>
+          <p>
+            <b>보기 → 격자 보기</b>로 20px 간격 격자를 그리고, <b>보기 → 격자에 맞추기</b>를 켜면
+            옮기거나 크기를 바꿀 때 격자 선에 붙습니다. 가까운 메모가 있으면 메모 맞춤이 먼저입니다.
+            두 설정은 따로 켜고 끄며, 다음에 열어도 유지됩니다.
+          </p>
+        </section>
+
         <section id="menus">
-          <h2>5. 메뉴</h2>
+          <h2>6. 메뉴</h2>
           <p>
             보드 이름 왼쪽의 메뉴에 모든 명령이 단축키와 함께 있습니다. 키보드로는 메뉴 버튼에서
             <kbd>↓</kbd>로 열고 방향키로 고르며, <kbd>Esc</kbd>로 닫습니다.
@@ -217,9 +348,9 @@
             <figure>
               <img
                 src="images/ko/menu-view.png"
-                alt="보기 메뉴: 확대, 축소, 100%로 보기, 모든 메모 보기, 선택 항목 보기, 미니맵"
+                alt="보기 메뉴: 확대, 축소, 100%로 보기, 모든 메모 보기, 선택 항목 보기, 미니맵, 격자 보기, 격자에 맞추기"
               />
-              <figcaption><b>보기</b>: 확대·축소와 미니맵</figcaption>
+              <figcaption><b>보기</b>: 확대·축소, 미니맵, 격자</figcaption>
             </figure>
             <figure>
               <img
@@ -232,7 +363,7 @@
         </section>
 
         <section id="saving">
-          <h2>6. 보드는 어디에 저장되나</h2>
+          <h2>7. 보드는 어디에 저장되나</h2>
           <p>보드 이름 옆 표시가 지금 보드가 어디에 저장되는지 알려 줍니다.</p>
           <figure>
             <img
@@ -261,7 +392,7 @@
         </section>
 
         <section id="drive">
-          <h2>7. Google Drive</h2>
+          <h2>8. Google Drive</h2>
           <h3>연결하고 저장하기</h3>
           <ol class="steps">
             <li>툴바 오른쪽의 <b>Google Drive 연결</b>을 누르고 Google 계정으로 로그인합니다.</li>
@@ -337,7 +468,7 @@
         </section>
 
         <section id="tabs">
-          <h2>8. 탭과 보드</h2>
+          <h2>9. 탭과 보드</h2>
           <p>
             Stormlet은 탭마다 자기 보드를 엽니다. 탭마다 다른 보드, 다른 Drive 파일을 열어 둘 수
             있습니다.
@@ -370,7 +501,7 @@
         </section>
 
         <section id="files">
-          <h2>9. 파일 열기·내려받기</h2>
+          <h2>10. 파일 열기·내려받기</h2>
           <ul>
             <li>
               <b>파일 → 파일로 내려받기</b>는 보드를 <code>.stormlet</code> 파일로 저장합니다. 파일
@@ -386,7 +517,7 @@
         </section>
 
         <section id="shortcuts">
-          <h2>10. 단축키</h2>
+          <h2>11. 단축키</h2>
           <div class="split">
             <figure>
               <img src="images/ko/dialog-help.png" alt="단축키 도움말 대화상자" />
@@ -413,6 +544,10 @@
                   <td><kbd>Enter</kbd>, <kbd>Shift</kbd>+<kbd>Enter</kbd>, <kbd>Esc</kbd></td>
                 </tr>
                 <tr>
+                  <td>다음 메모 이어 쓰기 (오른쪽 / 아래)</td>
+                  <td><kbd>Tab</kbd> / <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd></td>
+                </tr>
+                <tr>
                   <td>복제 / 방향에 맞춰 복제</td>
                   <td><kbd>Ctrl/Cmd</kbd>+<kbd>D</kbd> / <kbd>Alt</kbd>+방향키</td>
                 </tr>
@@ -423,6 +558,30 @@
                       >G</kbd
                     >
                   </td>
+                </tr>
+                <tr>
+                  <td>왼쪽 / 가로 가운데 / 오른쪽 맞춤</td>
+                  <td><kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>H</kbd> / <kbd>D</kbd></td>
+                </tr>
+                <tr>
+                  <td>위쪽 / 세로 가운데 / 아래쪽 맞춤</td>
+                  <td><kbd>Alt</kbd>+<kbd>W</kbd> / <kbd>V</kbd> / <kbd>S</kbd></td>
+                </tr>
+                <tr>
+                  <td>가로 / 세로 간격 맞춤</td>
+                  <td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> / <kbd>V</kbd></td>
+                </tr>
+                <tr>
+                  <td>스타일 복사 / 붙여넣기</td>
+                  <td><kbd>Ctrl/Cmd</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td>
+                </tr>
+                <tr>
+                  <td>크기 조절: 비율 유지 / 스냅 없이</td>
+                  <td><kbd>Shift</kbd> / <kbd>Ctrl/Cmd</kbd> + 모서리 드래그</td>
+                </tr>
+                <tr>
+                  <td>스냅 없이 옮기기</td>
+                  <td><kbd>Ctrl/Cmd</kbd> 누른 채 드래그</td>
                 </tr>
                 <tr>
                   <td>잠금</td>
@@ -454,7 +613,7 @@
         </section>
 
         <section id="faq">
-          <h2>11. 자주 묻는 질문</h2>
+          <h2>12. 자주 묻는 질문</h2>
           <details>
             <summary>보드 이름 옆에 ‘저장되지 않음’이 떠요.</summary>
             <p>
@@ -474,6 +633,20 @@
             <p>
               보드를 Google Drive에 저장한 뒤, 다른 기기에서 <b>파일 → Drive에서 열기…</b>로 같은
               파일을 엽니다. 두 곳에서 고친 내용은 저장할 때 합쳐집니다.
+            </p>
+          </details>
+          <details>
+            <summary>메모가 자꾸 다른 메모 옆에 붙어요.</summary>
+            <p>
+              맞춤 가이드와 같은 간격 스냅 때문입니다. <kbd>Ctrl/Cmd</kbd>를 누른 채 끌면 붙지 않고
+              원하는 자리에 놓입니다. <b>보기 → 격자에 맞추기</b>가 켜져 있다면 꺼 보세요.
+            </p>
+          </details>
+          <details>
+            <summary>Mac에서 <kbd>Option</kbd>+<kbd>A</kbd>를 누르면 ‘å’가 입력돼요.</summary>
+            <p>
+              메모를 편집하는 중이라 글자가 입력된 것입니다. <kbd>Esc</kbd>로 편집을 마치고 메모가
+              선택된 상태에서 누르면 정렬됩니다.
             </p>
           </details>
           <details>

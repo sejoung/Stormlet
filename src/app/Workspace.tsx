@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLocale } from '../components/common/i18n';
 import { deleteStickies, editableIds } from '../domain/commands';
-import { isEmptyBoard } from '../domain/model';
 import { boardTitle, renameBoard } from '../domain/board-title';
 import type { BoardLibrary, BoardStore } from '../domain/store';
 import type { LocalePreference } from '../i18n/messages';
@@ -10,8 +9,6 @@ import { BoardCanvas } from '../components/board/BoardCanvas';
 import type { BoardTool } from '../components/board/kinds';
 import { Toolbar } from '../components/toolbar/Toolbar';
 import { CreationToolbar } from '../components/toolbar/CreationToolbar';
-import { BoardSearch } from '../components/toolbar/BoardSearch';
-import { BoardChrome } from '../components/board/BoardChrome';
 import { DraftProvider, useDraftRegistry } from '../components/common/drafts';
 import { FitProvider, useFitRegistry } from '../components/common/fitted-fonts';
 import { useBoardFiles } from './useBoardFiles';
@@ -33,7 +30,8 @@ import { useStatus } from './panels/useStatus';
 import { useBoardView } from './view/useBoardView';
 import { useNoteEditing } from './notes/useNoteEditing';
 import { useMinimap } from './view/useMinimap';
-import { Minimap } from '../components/minimap/Minimap';
+import { useGrid } from './view/useGrid';
+import { CanvasPanels } from './panels/CanvasPanels';
 import { diagnostics } from './diagnostics/diagnostics';
 import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
@@ -68,6 +66,7 @@ export function Workspace({
   const canvas = useBoardView();
   const { view, viewport } = canvas;
   const minimap = useMinimap();
+  const grid = useGrid();
   const [tool, setTool] = useState<BoardTool>('interact');
   const finishTool = () => setTool('interact');
   const [reactor] = useState(reactionIdentity);
@@ -216,6 +215,9 @@ export function Workspace({
     onHelp: () => setDialog('help'),
     onSave: drive.saveOr(save),
     onOpenFile: () => fileInput.current?.click(),
+    onArrange: actions.arrange,
+    onCopyStyle: actions.copyStyle,
+    onPasteStyle: actions.pasteStyle,
     onEscape: () => {
       selected.clear();
       finishTool();
@@ -251,6 +253,7 @@ export function Workspace({
                 clipboard={clipboard}
                 canvas={canvas}
                 minimap={minimap}
+                grid={grid}
                 history={{ canUndo, canRedo }}
                 selection={{ ids: activeIds, object: selected.frameId ?? selected.connectionId }}
                 drive={drive}
@@ -267,6 +270,10 @@ export function Workspace({
               frames={frames}
               defaults={defaults}
               onStickyColor={defaults.onStickyColor}
+              onDropSticky={(color, client) => {
+                const at = canvas.boardPointAt(client);
+                if (at) notes.add(at, color);
+              }}
               onConnectionStyle={defaults.onConnection}
               tool={tool}
               onTool={chooseTool}
@@ -290,10 +297,11 @@ export function Workspace({
                 matches={search.matches}
                 element={canvas.element}
                 tool={tool}
+                grid={grid}
                 onViewChange={canvas.setView}
                 onSelect={selected.selectNotes}
                 onMove={notes.move}
-                onResize={notes.resize}
+                onResize={notes.place}
                 onContextMenu={menus.onNote}
                 onCanvasMenu={menus.onCanvas}
                 onAdd={notes.add}
@@ -329,34 +337,17 @@ export function Workspace({
                   }}
                 />
               )}
-              {search.open && (
-                <BoardSearch
-                  query={search.query}
-                  notes={search.notes}
-                  onQuery={search.setQuery}
-                  onSelect={(id) => {
-                    selected.selectNotes([id]);
-                    fit([id]);
-                  }}
-                  onClose={search.close}
-                />
-              )}
-              {minimap.open && (
-                <Minimap
-                  board={board}
-                  view={view}
-                  viewport={viewport}
-                  onViewChange={canvas.setView}
-                />
-              )}
-              <BoardChrome
-                empty={isEmptyBoard(board)}
+              <CanvasPanels
+                board={board}
+                canvas={canvas}
+                search={search}
+                minimap={minimap}
                 tool={tool}
-                zoom={view.zoom}
-                minimap={minimap.open}
-                onZoom={canvas.zoomTo}
+                onFound={(id) => {
+                  selected.selectNotes([id]);
+                  fit([id]);
+                }}
                 onFit={() => fit()}
-                onMinimap={minimap.toggle}
                 onHelp={() => setDialog('help')}
               />
             </div>
@@ -374,6 +365,7 @@ export function Workspace({
             onClose={menus.close}
             onEdit={notes.startEdit}
             onDuplicate={actions.duplicate}
+            actions={actions}
             onAdd={notes.add}
             onSelectAll={selectAll}
             onFit={() => fit()}

@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import type { View } from '../../engine/viewport';
-import { BoardContextMenu } from '../../components/board/BoardContextMenu';
+import { BoardContextMenu, type NoteMenuActions } from '../../components/board/BoardContextMenu';
 import { CanvasContextMenu } from '../../components/menus/CanvasContextMenu';
 import { clientToBoard } from '../../components/common/points';
 import type { Edit } from '../useBoardSession';
@@ -18,6 +18,7 @@ export function BoardMenus({
   onClose,
   onEdit,
   onDuplicate,
+  actions,
   ...context
 }: Omit<CanvasMenuContext, 'at' | 'target'> & {
   menu: Menu | null;
@@ -27,6 +28,7 @@ export function BoardMenus({
   onClose(): void;
   onEdit(id: string): void;
   onDuplicate(ids: readonly string[]): void;
+  actions: NoteMenuActions;
 }) {
   const t = useT();
   if (menu?.kind === 'notes')
@@ -38,6 +40,7 @@ export function BoardMenus({
         onClose={onClose}
         onEdit={onEdit}
         onDuplicate={onDuplicate}
+        actions={actions}
       />
     );
   if (menu?.kind !== 'canvas') return null;

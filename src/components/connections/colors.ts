@@ -1,7 +1,11 @@
 import type { ConnectionColor, ConnectionPath } from '../../domain/connections/model';
 import type { MessageKey } from '../../i18n/messages';
 
+/** Black lines are drawn light on a dark theme; `connections.css` swaps this exact value. */
+export const BLACK_LINE = '#1f2128';
+
 export const LINE_COLORS: Record<ConnectionColor, { color: string; label: MessageKey }> = {
+  black: { color: BLACK_LINE, label: 'lineColor.black' },
   slate: { color: '#697389', label: 'lineColor.slate' },
   blue: { color: '#4262ff', label: 'lineColor.blue' },
   red: { color: '#da5360', label: 'lineColor.red' },

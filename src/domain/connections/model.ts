@@ -1,4 +1,4 @@
-export const CONNECTION_COLORS = ['slate', 'blue', 'red', 'green', 'purple'] as const;
+export const CONNECTION_COLORS = ['black', 'slate', 'blue', 'red', 'green', 'purple'] as const;
 export type ConnectionColor = (typeof CONNECTION_COLORS)[number];
 export const CONNECTION_PATHS = ['straight', 'elbow', 'curve'] as const;
 export type ConnectionPath = (typeof CONNECTION_PATHS)[number];

@@ -5,6 +5,7 @@ import { isTyping } from '../components/common/keyboard';
 import { DRAFT_FIELD, draftKind } from '../components/common/drafts';
 import { useLatest } from '../components/common/useStableCallback';
 import type { FormatToggle } from './useNoteActions';
+import type { Arrangement } from '../domain/note-actions';
 
 export interface ShortcutHandlers {
   onUndo(): void;
@@ -23,6 +24,9 @@ export interface ShortcutHandlers {
   onHelp(): void;
   onSave(): void;
   onOpenFile(): void;
+  onArrange(action: Arrangement): void;
+  onCopyStyle(): void;
+  onPasteStyle(): void;
 }
 
 const FORMAT_KEYS: Readonly<Record<string, FormatToggle>> = {
@@ -38,6 +42,22 @@ const ARROWS: Readonly<Record<string, Point>> = {
 };
 /** Shift+arrow nudges by this many pixels instead of one. */
 const NUDGE_FAST = 10;
+/**
+ * Alignment keys, by physical key: with Option on a Mac `event.key` is a symbol (Option+A
+ * types "å"), so these match `event.code`. The letters follow the common design-tool layout.
+ */
+const ALIGN_CODES: Readonly<Record<string, Arrangement>> = {
+  KeyA: 'left',
+  KeyD: 'right',
+  KeyW: 'top',
+  KeyS: 'bottom',
+  KeyH: 'center',
+  KeyV: 'middle',
+};
+const DISTRIBUTE_CODES: Readonly<Record<string, Arrangement>> = {
+  KeyH: 'horizontal',
+  KeyV: 'vertical',
+};
 const TOOL_KEYS: Readonly<Record<string, BoardTool>> = {
   v: 'interact',
   h: 'hand',
@@ -52,6 +72,8 @@ const TOOL_KEYS: Readonly<Record<string, BoardTool>> = {
  */
 interface Binding {
   keys: readonly string[];
+  /** Physical keys (`event.code`) to match instead of `keys`. */
+  codes?: readonly string[];
   mod?: boolean;
   shift?: boolean;
   alt?: boolean;
@@ -59,6 +81,9 @@ interface Binding {
 }
 
 const BINDINGS: readonly Binding[] = [
+  // Before Cmd/Ctrl+C and V: with Option/Alt held these copy and paste a note's style.
+  { mod: true, alt: true, keys: [], codes: ['KeyC'], run: (h) => h.onCopyStyle() },
+  { mod: true, alt: true, keys: [], codes: ['KeyV'], run: (h) => h.onPasteStyle() },
   { mod: true, keys: ['z'], run: (h, e) => (e.shiftKey ? h.onRedo() : h.onUndo()) },
   { mod: true, keys: ['y'], run: (h) => h.onRedo() },
   { mod: true, keys: ['d'], run: (h) => h.onDuplicate() },
@@ -69,6 +94,22 @@ const BINDINGS: readonly Binding[] = [
   { mod: true, keys: ['f'], run: (h) => h.onSearch() },
   { mod: true, keys: ['s'], run: (h) => h.onSave() },
   { mod: true, keys: ['o'], run: (h) => h.onOpenFile() },
+  {
+    mod: false,
+    alt: true,
+    shift: true,
+    keys: [],
+    codes: Object.keys(DISTRIBUTE_CODES),
+    run: (h, e) => h.onArrange(DISTRIBUTE_CODES[e.code]),
+  },
+  {
+    mod: false,
+    alt: true,
+    shift: false,
+    keys: [],
+    codes: Object.keys(ALIGN_CODES),
+    run: (h, e) => h.onArrange(ALIGN_CODES[e.code]),
+  },
   { alt: true, keys: ['1', '2'], run: (h, _, key) => h.onFit(key === '2') },
   {
     mod: false,
@@ -88,7 +129,7 @@ const BINDINGS: readonly Binding[] = [
 ];
 
 const matches = (binding: Binding, event: KeyboardEvent, key: string, mod: boolean) =>
-  binding.keys.includes(key) &&
+  (binding.codes ? binding.codes.includes(event.code) : binding.keys.includes(key)) &&
   (binding.mod === undefined || binding.mod === mod) &&
   (binding.shift === undefined || binding.shift === event.shiftKey) &&
   (binding.alt === undefined || binding.alt === event.altKey);

@@ -7,10 +7,10 @@ async function checkGuide(guide: Page, contents: string) {
     .getByRole('navigation', { name: contents })
     .getByRole('link')
     .evaluateAll((links) => links.map((link) => link.getAttribute('href')!));
-  expect(targets).toHaveLength(11);
+  expect(targets).toHaveLength(12);
   for (const target of targets) await expect(guide.locator(target)).toHaveCount(1);
   const images = guide.locator('main img');
-  expect(await images.count()).toBe(14);
+  expect(await images.count()).toBe(18);
   for (const image of await images.all()) {
     await image.scrollIntoViewIfNeeded();
     await expect(image).toHaveAttribute('alt', /.+/);

@@ -70,11 +70,25 @@
 .resize-handle {
   width: 9px;
   height: 9px;
-  right: -6px;
-  bottom: -6px;
   border-radius: 1px;
   background: var(--surface);
   z-index: 2;
+}
+.handle-nw,
+.handle-ne {
+  top: -6px;
+}
+.handle-sw,
+.handle-se {
+  bottom: -6px;
+}
+.handle-nw,
+.handle-sw {
+  left: -6px;
+}
+.handle-ne,
+.handle-se {
+  right: -6px;
 }
 .note-reactions {
   position: absolute;
@@ -281,4 +295,26 @@
   white-space: nowrap;
   pointer-events: none;
   transform-origin: 0 0;
+}
+/* Equal-spacing markers: a bracketed line across each gap the moved notes now repeat. */
+.spacing-guide {
+  position: absolute;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  pointer-events: none;
+  border: 0 none #e5487a;
+}
+.gap-x {
+  height: 6px;
+  border-right-style: solid;
+  border-left-style: solid;
+  transform: translateY(-50%);
+  background: linear-gradient(#e5487a, #e5487a) center / 100% 1px no-repeat;
+}
+.gap-y {
+  width: 6px;
+  border-top-style: solid;
+  border-bottom-style: solid;
+  transform: translateX(-50%);
+  background: linear-gradient(#e5487a, #e5487a) center / 1px 100% no-repeat;
 }

@@ -98,3 +98,33 @@ export function otherBoard(lang: Lang): Board {
 }
 
 export const sampleText = (lang: Lang) => words[lang].notes[1][1];
+
+const layoutWords = {
+  ko: {
+    title: '아이디어 정리',
+    notes: ['온보딩 체크리스트', '주간 데모 데이', '사내 위키 정비', '페어 프로그래밍 시간'],
+  },
+  en: {
+    title: 'Idea sorting',
+    notes: ['Onboarding checklist', 'Weekly demo day', 'Tidy the wiki', 'Pair programming hour'],
+  },
+};
+
+/**
+ * A loose board for the layout screenshots: two notes in a row with a gap that a third,
+ * dragged up beside them, can repeat, and a narrower note to resize to the same width.
+ */
+export function layoutBoard(lang: Lang): Board {
+  const [first, second, third, fourth] = layoutWords[lang].notes;
+  return {
+    title: layoutWords[lang].title,
+    stickies: {
+      l0: note('l0', first, 0, 0, 'yellow'),
+      l1: note('l1', second, 300, 0, 'yellow'),
+      l2: note('l2', third, 660, 240, 'sky'),
+      l3: { ...note('l3', fourth, 0, 240, 'pink'), width: 170 },
+    },
+  };
+}
+
+export const layoutText = (lang: Lang, index: number) => layoutWords[lang].notes[index];

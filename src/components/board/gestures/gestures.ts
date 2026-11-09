@@ -2,21 +2,14 @@ import type { Board } from '../../../domain/model';
 import { own } from '../../../domain/ids';
 import { groupSelection } from '../../../domain/note-actions';
 import type { Rect } from '../../../domain/geometry/bounds';
-import type { StickySize } from '../../../domain/sticky-size';
 import type { Point } from '../../../engine/viewport';
 import type { Guides } from '../../../engine/snapping';
+import { resizedPlacements, type ResizeGesture } from './resize';
 
 export type Gesture =
   | { type: 'pan'; last: Point }
   | { type: 'place'; start: Point }
-  | {
-      type: 'resize';
-      id: string;
-      start: Point;
-      original: StickySize;
-      size: StickySize;
-      guides?: Guides;
-    }
+  | ResizeGesture
   | {
       type: 'drag';
       ids: string[];
@@ -61,10 +54,10 @@ export const intersects = (note: Rect, box: ReturnType<typeof rectangle>): boole
  */
 export function previewBoard(board: Board, gesture: Gesture | null): Board {
   if (gesture?.type === 'resize') {
-    const note = own(board.stickies, gesture.id);
-    return note
-      ? { ...board, stickies: { ...board.stickies, [note.id]: { ...note, ...gesture.size } } }
-      : board;
+    const stickies = { ...board.stickies };
+    for (const { id, ...rect } of resizedPlacements(board, gesture))
+      stickies[id] = { ...stickies[id], ...rect };
+    return { ...board, stickies };
   }
   if (gesture?.type !== 'drag' || gesture.duplicate) return board;
   const { offset } = gesture;

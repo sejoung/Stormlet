@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react';
-import { addSticky, moveStickies, resizeStickies, setText, type Move } from '../../domain/commands';
+import { nextNotePosition, styleOf, type NextNote } from '../../domain/note-actions';
+import {
+  addSticky,
+  moveStickies,
+  placeStickies,
+  resizeStickies,
+  setText,
+  type Move,
+  type Placement,
+} from '../../domain/commands';
 import { own } from '../../domain/ids';
 import {
   DEFAULT_STICKY_APPEARANCE,
@@ -25,12 +34,14 @@ export interface NoteEditing {
   activeNotes: readonly Sticky[];
   startEdit(id: string | null, seed?: string): void;
   stopEdit(): void;
-  /** Add a note centered at `at`, select it and start editing it. */
-  /** Place a note centred at `at`, in `color` or the default colour. */
+  /** Add a note centred at `at` in `color` (else the default), select it and edit it. */
   add(at: Point, color?: StickyColor): void;
   move(moves: Move[]): void;
   resize(ids: readonly string[], size: StickySize): void;
-  commitText(id: string, text: string): void;
+  /** Move and resize notes at once, as dragging a corner does. */
+  place(placements: readonly Placement[]): void;
+  /** Save edited text; with `next`, continue in a new note to the right or below. */
+  commitText(id: string, text: string, next?: NextNote): void;
 }
 
 interface Options {
@@ -84,9 +95,26 @@ export function useNoteEditing(options: Options): NoteEditing {
     },
     move: (moves) => edit((current) => moveStickies(current, moves)),
     resize: (ids, size) => edit((current) => resizeStickies(current, ids, size)),
-    commitText: (id, text) => {
+    place: (placements) => edit((current) => placeStickies(current, placements)),
+    commitText: (id, text, next) => {
       setEditing(null);
-      edit((current) => setText(current, id, text));
+      const source = own(board.stickies, id);
+      if (!next || !source) return edit((current) => setText(current, id, text));
+      const created = options.newId();
+      // One edit, so a single undo removes the new note and restores the old text together.
+      edit((current) => [
+        ...setText(current, id, text),
+        ...addSticky(current, {
+          ...styleOf(source),
+          id: created,
+          kind: source.kind,
+          width: source.width,
+          height: source.height,
+          ...nextNotePosition(current, source, next),
+        }),
+      ]);
+      options.onSelect([created]);
+      startEdit(created);
     },
   };
 }

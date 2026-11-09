@@ -165,3 +165,18 @@
 .toolbar-menu button:disabled:hover {
   background: transparent;
 }
+/* Compact two- or three-column rows of short commands, such as align and match size. */
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+}
+.context-grid.match-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.sticky-context-menu .context-grid button {
+  justify-content: center;
+  padding: 7px 6px;
+  font-size: 12px;
+  text-align: center;
+}

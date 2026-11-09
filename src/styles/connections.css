@@ -199,3 +199,15 @@
   background: var(--selected);
   color: var(--accent);
 }
+/* A black line would vanish on the dark board, so it is drawn in the light ink instead. */
+@media (prefers-color-scheme: dark) {
+  [stroke='#1f2128'] {
+    stroke: #e4e5ee;
+  }
+  [fill='#1f2128'] {
+    fill: #e4e5ee;
+  }
+  [data-line-color='black'] {
+    background: #e4e5ee !important;
+  }
+}

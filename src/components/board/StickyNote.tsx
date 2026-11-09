@@ -1,13 +1,17 @@
 import { memo, type MouseEvent, type PointerEvent } from 'react';
 import type { Sticky } from '../../domain/model';
-import type { StickySize } from '../../domain/sticky-size';
+import type { Placement } from '../../domain/commands';
+import type { NextNote } from '../../domain/note-actions';
+import type { Rect } from '../../domain/geometry/bounds';
+import type { Corner } from '../../engine/snapping';
 import type { Point } from '../../engine/viewport';
 import { COLOR_STYLES, KIND_LABELS } from './kinds';
 import { StickyText, StickyEditor } from './NoteContent';
 import { Icon } from '../toolbar/Icon';
 import { ConnectionPorts } from '../connections/ConnectionPorts';
 import type { ConnectionSide } from '../../domain/connections/model';
-import { ARROW_DELTAS, isMenuKey } from '../common/keyboard';
+import { isMenuKey } from '../common/keyboard';
+import { ResizeHandles } from './SelectionFrame';
 import { clientCenter } from '../common/points';
 import { cx } from '../common/cx';
 import { useT } from '../common/i18n';
@@ -24,13 +28,16 @@ interface Props {
   reactor: string;
   zIndex: number;
   offset: Point | null;
-  resized: StickySize | null;
+  /** Position and size while a resize previews; `null` otherwise. */
+  resized: Rect | null;
+  /** The only selected note shows corner handles; a larger selection resizes as a whole. */
+  resizable: boolean;
   onPointerDown(event: PointerEvent, id: string): void;
-  onResizeStart(event: PointerEvent, id: string): void;
-  onResize(ids: string[], size: StickySize): void;
+  onResizeStart(event: PointerEvent, id: string, corner: Corner): void;
+  onResize(placements: readonly Placement[]): void;
   onContextMenu(id: string, point: Point): void;
   onStartEdit(id: string, seed?: string): void;
-  onCommitText(id: string, text: string): void;
+  onCommitText(id: string, text: string, next?: NextNote): void;
   onReact(id: string, emoji: string): void;
 }
 
@@ -66,8 +73,8 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       aria-haspopup="menu"
       data-sticky-id={sticky.id}
       style={{
-        left: sticky.x + (offset?.x ?? 0),
-        top: sticky.y + (offset?.y ?? 0),
+        left: size.x + (offset?.x ?? 0),
+        top: size.y + (offset?.y ?? 0),
         width: size.width,
         height: size.height,
         zIndex: props.zIndex,
@@ -109,7 +116,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
           note={sticky}
           initial={props.seed ?? sticky.text}
           size={size}
-          onDone={(text) => props.onCommitText(sticky.id, text)}
+          onDone={(text, next) => props.onCommitText(sticky.id, text, next)}
         />
       ) : (
         <StickyText note={sticky} size={size} />
@@ -149,24 +156,22 @@ export const StickyNote = memo(function StickyNote(props: Props) {
           ))}
         </div>
       )}
-      {selected && !editing && !sticky.locked && !sticky.groupId && (
-        <button
-          type="button"
-          className="resize-handle"
-          aria-label={t('note.resize')}
-          title={t('note.resizeHint')}
-          onPointerDown={(event) => props.onResizeStart(event, sticky.id)}
-          onDoubleClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => {
-            const delta = ARROW_DELTAS[event.key];
-            if (!delta) return;
-            event.preventDefault();
-            event.stopPropagation();
-            props.onResize([sticky.id], {
-              width: size.width + delta[0],
-              height: size.height + delta[1],
-            });
-          }}
+      {props.resizable && !editing && !sticky.locked && (
+        <ResizeHandles
+          label={t('note.resize')}
+          hint={t('note.resizeHint')}
+          onStart={(event, corner) => props.onResizeStart(event, sticky.id, corner)}
+          onKey={(width, height) =>
+            props.onResize([
+              {
+                id: sticky.id,
+                x: size.x,
+                y: size.y,
+                width: size.width + width,
+                height: size.height + height,
+              },
+            ])
+          }
         />
       )}
     </div>

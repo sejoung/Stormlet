@@ -25,7 +25,6 @@ export function BoardOverlays({
   const t = useT();
   const dragging = gesture?.type === 'drag' ? gesture : null;
   const guides = gesture?.type === 'drag' || gesture?.type === 'resize' ? gesture.guides : null;
-  const resizing = gesture?.type === 'resize' ? own(board.stickies, gesture.id) : null;
   return (
     <>
       {dragging?.duplicate &&
@@ -75,14 +74,35 @@ export function BoardOverlays({
           }}
         />
       )}
-      {resizing && gesture?.type === 'resize' && (
-        <SizeMarkers
-          board={board}
-          note={{ ...resizing, ...gesture.size }}
-          guides={gesture.guides}
-          zoom={view.zoom}
-        />
+      {gesture?.type === 'resize' && (
+        <SizeMarkers board={board} note={gesture.frame} guides={gesture.guides} zoom={view.zoom} />
       )}
+      {guides?.gapsX?.map((gap, index) => (
+        <div
+          key={`gx-${index}`}
+          className="spacing-guide gap-x"
+          aria-hidden="true"
+          style={{
+            left: gap.from,
+            top: gap.at,
+            width: gap.to - gap.from,
+            borderWidth: 1 / view.zoom,
+          }}
+        />
+      ))}
+      {guides?.gapsY?.map((gap, index) => (
+        <div
+          key={`gy-${index}`}
+          className="spacing-guide gap-y"
+          aria-hidden="true"
+          style={{
+            top: gap.from,
+            left: gap.at,
+            height: gap.to - gap.from,
+            borderWidth: 1 / view.zoom,
+          }}
+        />
+      ))}
     </>
   );
 }
@@ -129,7 +149,7 @@ function SizeMarkers({
           transform: `translate(${gap}px, ${gap}px) scale(${1 / zoom})`,
         }}
       >
-        {note.width} × {note.height}
+        {Math.round(note.width)} × {Math.round(note.height)}
       </output>
     </>
   );

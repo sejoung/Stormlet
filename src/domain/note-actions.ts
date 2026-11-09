@@ -217,3 +217,67 @@ export function matchSizes(board: Board, ids: readonly string[], match: SizeMatc
       .map((note): Patch => ({ op: 'set', id: note.id, field, value: largest }));
   });
 }
+
+/** The look one note can hand to others: colour and text formatting, not size or content. */
+export const STYLE_FIELDS = [
+  'color',
+  'bold',
+  'italic',
+  'underline',
+  'textAlign',
+  'autoFont',
+  'fontSize',
+] as const;
+export type NoteStyle = Pick<Sticky, (typeof STYLE_FIELDS)[number]>;
+
+export const styleOf = (note: Sticky): NoteStyle =>
+  Object.fromEntries(STYLE_FIELDS.map((field) => [field, note[field]])) as NoteStyle;
+
+/** Gives unlocked notes `style`; a field the source never set is removed, as on the source. */
+export function applyStyle(board: Board, ids: readonly string[], style: NoteStyle): Patch[] {
+  return ids.flatMap((id) => {
+    const note = own(board.stickies, id);
+    if (!note || note.locked) return [];
+    return STYLE_FIELDS.filter((field) => note[field] !== style[field]).map(
+      (field) => ({ op: 'set', id, field, value: style[field] }) as SetPatch,
+    );
+  });
+}
+
+/** Unlocked notes with the same colour as any note in `ids`, in stacking order. */
+export function sameColorIds(board: Board, ids: readonly string[]): string[] {
+  const colors = new Set(ids.flatMap((id) => own(board.stickies, id)?.color ?? []));
+  return Object.values(board.stickies)
+    .filter((note) => colors.has(note.color) && !note.locked)
+    .sort(byStackOrder)
+    .map((note) => note.id);
+}
+
+/** Where the next note goes when typing runs on from one note to another. */
+export type NextNote = 'right' | 'below';
+
+/**
+ * The spot one gap to the right of (or below) `note` for a note of the same size, stepping
+ * further along while another note already covers it.
+ */
+export function nextNotePosition(board: Board, note: Sticky, direction: NextNote) {
+  const step =
+    direction === 'right'
+      ? { x: note.width + NOTE_GAP, y: 0 }
+      : { x: 0, y: note.height + NOTE_GAP };
+  const notes = Object.values(board.stickies);
+  const covered = (x: number, y: number) =>
+    notes.some(
+      (other) =>
+        other.x < x + note.width &&
+        other.x + other.width > x &&
+        other.y < y + note.height &&
+        other.y + other.height > y,
+    );
+  let at = { x: note.x + step.x, y: note.y + step.y };
+  // A bounded walk: a board packed solid in one direction still gets a note, just overlapping.
+  for (let tries = 0; tries < MAX_NEXT_STEPS && covered(at.x, at.y); tries++)
+    at = { x: at.x + step.x, y: at.y + step.y };
+  return at;
+}
+const MAX_NEXT_STEPS = 50;

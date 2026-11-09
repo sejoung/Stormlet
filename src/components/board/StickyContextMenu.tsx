@@ -9,6 +9,8 @@ import {
 import type { Point } from '../../engine/viewport';
 import { useT } from '../common/i18n';
 import type { MessageKey } from '../../i18n/messages';
+import type { Arrangement, SizeMatch } from '../../domain/note-actions';
+import { ARRANGEMENTS, SIZE_MATCHES } from '../selection/arrangements';
 
 interface Props {
   point: Point;
@@ -23,6 +25,11 @@ interface Props {
   locked: boolean;
   onDuplicate(): void;
   onLock(): void;
+  onArrange(action: Arrangement): void;
+  onMatchSize(match: SizeMatch): void;
+  onCopyStyle(): void;
+  onPasteStyle(): void;
+  onSelectSameColor(): void;
 }
 
 const PRESETS: { label: MessageKey; width: number; height: number }[] = [
@@ -62,6 +69,39 @@ export function StickyContextMenu(props: Props) {
       >
         {t('noteMenu.back')}
       </button>
+      {props.count > 1 && !props.locked && (
+        <>
+          <div className="context-separator" role="separator" />
+          <span className="context-caption">{t('selection.arrangeHeading')}</span>
+          <div className="context-grid">
+            {ARRANGEMENTS.map(([action, label, shortcut]) => (
+              <button
+                key={action}
+                type="button"
+                role="menuitem"
+                title={shortcut}
+                onClick={() => run(() => props.onArrange(action))}
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
+          <span className="context-caption">{t('selection.matchHeading')}</span>
+          <div className="context-grid match-grid">
+            {SIZE_MATCHES.map(([match, label]) => (
+              <button
+                key={match}
+                type="button"
+                role="menuitem"
+                title={t('selection.matchHint')}
+                onClick={() => run(() => props.onMatchSize(match))}
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       <div className="context-separator" role="separator" />
       <span className="context-caption">{t('noteMenu.size')}</span>
       <div className="size-presets">
@@ -135,6 +175,21 @@ export function StickyContextMenu(props: Props) {
           {t('noteMenu.edit')}
         </button>
       )}
+      <button type="button" role="menuitem" onClick={() => run(props.onCopyStyle)}>
+        {t('noteMenu.copyStyle')} <span>⌘ / Ctrl+Alt+C</span>
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={props.locked}
+        onClick={() => run(props.onPasteStyle)}
+      >
+        {t('noteMenu.pasteStyle')} <span>⌘ / Ctrl+Alt+V</span>
+      </button>
+      <button type="button" role="menuitem" onClick={() => run(props.onSelectSameColor)}>
+        {t('noteMenu.selectSameColor')}
+      </button>
+      <div className="context-separator" role="separator" />
       <button type="button" role="menuitem" onClick={() => run(props.onDuplicate)}>
         {t('noteMenu.duplicate')} <span>⌘ / Ctrl+D</span>
       </button>

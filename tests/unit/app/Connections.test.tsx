@@ -251,6 +251,9 @@ describe('flow connections', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: '연결선 두께' }), '4');
     await user.click(screen.getByRole('button', { name: '초록색 연결선' }));
     expect(store.board.connections?.other).toMatchObject({ width: 2, color: 'slate' });
+    await user.click(screen.getByRole('button', { name: '검정색 연결선' }));
+    expect(store.board.connections?.line.color).toBe('black');
+    await user.click(screen.getByRole('button', { name: '초록색 연결선' }));
     await user.click(screen.getByRole('button', { name: '모든 연결선에 이 스타일 적용' }));
     expect(store.board.connections?.other).toMatchObject({ width: 4, color: 'green' });
     expect(screen.getByText('연결선 1개에 스타일을 적용했습니다.')).toBeInTheDocument();

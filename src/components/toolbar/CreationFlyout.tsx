@@ -1,4 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { useSwatchDrag } from './useSwatchDrag';
 import { ALL_ARROW_KEYS, moveFocus } from '../common/keyboard';
 import { STICKY_COLORS, type StickyColor } from '../../domain/model';
 import {
@@ -6,7 +7,8 @@ import {
   CONNECTION_WIDTHS,
   type ConnectionStyle,
 } from '../../domain/connections/model';
-import { COLOR_STYLES, STICKY_DRAG_TYPE } from '../board/kinds';
+import { COLOR_STYLES } from '../board/kinds';
+import type { Point } from '../../engine/viewport';
 import { LINE_COLORS } from '../connections/colors';
 import type { CreationDefaults } from '../../domain/creation-defaults';
 import { Icon } from './Icon';
@@ -26,17 +28,21 @@ export function CreationFlyout({
   kind,
   defaults,
   onStickyColor,
+  onDropSticky,
   onConnectionStyle,
   onClose,
 }: {
   kind: 'sticky' | 'connect';
   defaults: CreationDefaults;
   onStickyColor(color: StickyColor): void;
+  /** A colour was dragged out of the flyout and released at `client` (viewport pixels). */
+  onDropSticky(color: StickyColor, client: Point): void;
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   onClose(): void;
 }) {
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
+  const swatch = useSwatchDrag(onDropSticky);
   useEffect(() => {
     (
       ref.current?.querySelector<HTMLButtonElement>(`${CHOICE}[aria-pressed="true"]`) ??
@@ -79,15 +85,24 @@ export function CreationFlyout({
                 title={t(COLOR_STYLES[color].label)}
                 aria-pressed={defaults.stickyColor === color}
                 style={{ background: COLOR_STYLES[color].paper }}
-                onClick={() => onStickyColor(color)}
-                draggable
-                onDragStart={(event) => {
-                  event.dataTransfer.setData(STICKY_DRAG_TYPE, color);
-                  event.dataTransfer.effectAllowed = 'copy';
+                {...swatch.handlers(color)}
+                onClick={() => {
+                  if (!swatch.wasDragged()) onStickyColor(color);
                 }}
               />
             ))}
           </div>
+          {swatch.ghost && (
+            <div
+              className="swatch-ghost"
+              aria-hidden="true"
+              style={{
+                left: swatch.ghost.x,
+                top: swatch.ghost.y,
+                background: COLOR_STYLES[swatch.ghost.color].paper,
+              }}
+            />
+          )}
           <p className="creation-flyout-hint">{t('creation.stickyFlyoutHint')}</p>
         </>
       ) : (
@@ -129,6 +144,7 @@ export function CreationFlyout({
                 type="button"
                 aria-label={t('creation.lineColor', { color: t(LINE_COLORS[color].label) })}
                 aria-pressed={defaults.connection.color === color}
+                data-line-color={color}
                 style={{ background: LINE_COLORS[color].color }}
                 onClick={() => onConnectionStyle({ color })}
               />

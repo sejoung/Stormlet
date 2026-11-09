@@ -83,6 +83,32 @@ export function resizeStickies(board: Board, ids: readonly string[], size: Stick
   ]);
 }
 
+/** A note's new position and size, as a resize from any corner or of a whole selection sets. */
+export interface Placement extends Move, StickySize {}
+
+/** Moves and resizes notes in one edit; sizes are clamped and unchanged fields are skipped. */
+export function placeStickies(board: Board, placements: readonly Placement[]): Patch[] {
+  const editable = new Set(
+    editableIds(
+      board,
+      placements.map(({ id }) => id),
+    ),
+  );
+  return placements.flatMap((placement): Patch[] => {
+    const note = own(board.stickies, placement.id);
+    const { width, height } = placement;
+    if (!note || !editable.has(note.id) || ![width, height].every(Number.isFinite)) return [];
+    const next = {
+      x: Math.round(placement.x),
+      y: Math.round(placement.y),
+      ...clampStickySize({ width, height }),
+    };
+    return (['x', 'y', 'width', 'height'] as const)
+      .filter((field) => note[field] !== next[field])
+      .map((field) => ({ op: 'set', id: note.id, field, value: next[field] }));
+  });
+}
+
 /** Notes in `ids` that can be restacked, bottom to top, and the full stack they live in. */
 function restackable(board: Board, ids: readonly string[]) {
   const picked = new Set(ids);

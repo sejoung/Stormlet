@@ -103,16 +103,54 @@
 }
 .resize-handle {
   position: absolute;
-  right: -5px;
-  bottom: -5px;
   width: 14px;
   height: 14px;
   padding: 0;
   border: 2px solid var(--focus);
   border-radius: 3px;
   background: var(--surface);
-  cursor: nwse-resize;
   touch-action: none;
+}
+.handle-nw {
+  left: -5px;
+  top: -5px;
+  cursor: nwse-resize;
+}
+.handle-ne {
+  right: -5px;
+  top: -5px;
+  cursor: nesw-resize;
+}
+.handle-sw {
+  left: -5px;
+  bottom: -5px;
+  cursor: nesw-resize;
+}
+.handle-se {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+}
+/* A multi-note selection's bounding box; only its corner handles take the pointer. */
+.selection-frame {
+  position: absolute;
+  z-index: 2147483645;
+  box-sizing: border-box;
+  border: 1px dashed var(--focus);
+  pointer-events: none;
+}
+.selection-frame .resize-handle {
+  pointer-events: auto;
+}
+/*
+ * The snapping grid: lines one grid step apart, following pan and zoom (BoardCanvas sets
+ * their size and offset). It covers the workspace's decorative dots, which do not line up.
+ */
+.board.show-grid {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
 }
 .sticky-preview {
   z-index: 2147483647;

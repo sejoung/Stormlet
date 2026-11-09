@@ -7,6 +7,7 @@ import { ViewMenu } from '../../components/menus/ViewMenu';
 import type { ShortcutHandlers } from '../useShortcuts';
 import type { Clipboard } from '../useClipboard';
 import type { BoardView } from '../view/useBoardView';
+import type { Grid } from '../view/useGrid';
 import { DriveButton } from '../../components/drive/DriveButton';
 import { needsAttention } from '../../components/drive/drive-status';
 import type { Drive } from '../drive/useDrive';
@@ -23,6 +24,7 @@ export function ToolbarMenus({
   clipboard,
   canvas,
   minimap,
+  grid,
   history,
   selection,
   drive,
@@ -38,6 +40,7 @@ export function ToolbarMenus({
   clipboard: Clipboard;
   canvas: BoardView;
   minimap: { open: boolean; toggle(): void };
+  grid: Grid;
   history: { canUndo: boolean; canRedo: boolean };
   /** The selected notes, and the selected frame or connection. */
   selection: { ids: readonly string[]; object: string | null | undefined };
@@ -89,6 +92,10 @@ export function ToolbarMenus({
           onZoom: canvas.zoomTo,
           onFit: keys.onFit,
           onMinimap: minimap.toggle,
+          grid: grid.visible,
+          gridSnap: grid.snap,
+          onGrid: grid.toggleVisible,
+          onGridSnap: grid.toggleSnap,
         }}
       />
     </>

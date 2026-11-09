@@ -8,7 +8,7 @@ import {
   type View,
 } from '../../engine/viewport';
 import { fitBoard, type FitSelection } from '../../engine/fit-view';
-import { elementCenter } from '../../components/common/points';
+import { clientToBoard, elementCenter } from '../../components/common/points';
 import { useElementSize, type Size } from '../../components/common/useElementSize';
 
 /** The canvas element and the pan and zoom it shows the board at. */
@@ -24,6 +24,8 @@ export interface BoardView {
   boardCenter(): Point;
   /** Show all of `board`, or only `only`; keeps the view when there is nothing to fit. */
   fit(board: Board, only?: FitSelection): void;
+  /** The board point under `client` (viewport pixels), or `null` when the canvas is not there. */
+  boardPointAt(client: Point): Point | null;
   /** Zoom around the canvas center. */
   zoomTo(zoom: number): void;
 }
@@ -44,6 +46,13 @@ export function useBoardView(): BoardView {
       setView(
         (current) => fitBoard(board, element.current!.getBoundingClientRect(), only) ?? current,
       ),
+    boardPointAt: (client) => {
+      const node = element.current;
+      // Toolbars and panels float over the canvas; a drop on one of them is not on the board.
+      const hit = document.elementFromPoint?.(client.x, client.y);
+      if (!node || !hit || !node.contains(hit)) return null;
+      return clientToBoard(node, view, { clientX: client.x, clientY: client.y });
+    },
     zoomTo: (zoom) => setView(zoomAround(view, zoom, viewportCenter())),
   };
 }

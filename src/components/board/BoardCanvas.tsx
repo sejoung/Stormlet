@@ -1,13 +1,13 @@
 import { useMemo, useState, type PointerEvent, type RefObject } from 'react';
 import { own } from '../../domain/ids';
 import { byStackOrder, type Board, type StickyColor } from '../../domain/model';
-import type { Move } from '../../domain/commands';
-import { clampStickySize, type StickySize } from '../../domain/sticky-size';
-import { groupSelection } from '../../domain/note-actions';
+import type { Move, Placement } from '../../domain/commands';
+import { groupSelection, type NextNote } from '../../domain/note-actions';
+import { boundsOf, rectOf } from '../../domain/geometry/bounds';
 import type { ConnectionSide } from '../../domain/connections/model';
-import { snapOffset, snapSize } from '../../engine/snapping';
+import { GRID_SIZE, snapOffset, type Corner } from '../../engine/snapping';
 import { panBy, toBoardPoint, type Point, type View } from '../../engine/viewport';
-import { draggedColor, STICKY_DRAG_TYPE, type BoardTool } from './kinds';
+import type { BoardTool } from './kinds';
 import {
   rectangle,
   intersects,
@@ -16,6 +16,8 @@ import {
   type Gesture,
 } from './gestures/gestures';
 import { useCanvasListeners } from './gestures/useCanvasListeners';
+import { resizedPlacements, resizeStep } from './gestures/resize';
+import { SelectionFrame } from './SelectionFrame';
 import { BoardOverlays } from './BoardOverlays';
 import { ConnectionEndpoints, ConnectionLayer } from '../connections/ConnectionLayer';
 import { useConnectionDrawing } from '../connections/useConnectionDrawing';
@@ -48,17 +50,22 @@ interface Props {
   onViewChange(view: View): void;
   onSelect(ids: string[]): void;
   onMove(moves: Move[]): void;
-  onResize(ids: string[], size: StickySize): void;
+  /** Commit a resize: new positions and sizes for the notes. */
+  onResize(placements: readonly Placement[]): void;
+  /** Whether the grid is drawn, and whether moves and resizes snap to it. */
+  grid: { visible: boolean; snap: boolean };
   onContextMenu(id: string, point: Point): void;
   onCanvasMenu(point: Point, target: CanvasTarget): void;
   onAdd(at: Point, color?: StickyColor): void;
   onStartEdit(id: string | null, seed?: string): void;
-  onCommitText(id: string, text: string): void;
+  onCommitText(id: string, text: string, next?: NextNote): void;
   onDuplicate(ids: string[], offset: Point): void;
   onReact(id: string, emoji: string): void;
 }
 
 const DRAG_THRESHOLD = 3;
+/** Grid spacing on screen below which the dots would turn into a grey wash, so none are drawn. */
+const MIN_GRID_PIXELS = 8;
 
 export function BoardCanvas(props: Props) {
   const t = useT();
@@ -137,12 +144,12 @@ export function BoardCanvas(props: Props) {
         return setGesture({ ...gesture, point: at });
       }
       case 'resize': {
-        const raw = clampStickySize({
-          width: gesture.original.width + (point.x - gesture.start.x) / view.zoom,
-          height: gesture.original.height + (point.y - gesture.start.y) / view.zoom,
-        });
-        const { size, guides } = snapSize(board, gesture.id, raw, view.zoom);
-        return setGesture({ ...gesture, size: clampStickySize(size), guides });
+        const delta = {
+          x: (point.x - gesture.start.x) / view.zoom,
+          y: (point.y - gesture.start.y) / view.zoom,
+        };
+        const keys = { keepRatio: event.shiftKey, free: event.ctrlKey || event.metaKey };
+        return setGesture(resizeStep(board, gesture, delta, keys, snapping));
       }
       case 'drag': {
         const dx = point.x - gesture.start.x;
@@ -150,27 +157,28 @@ export function BoardCanvas(props: Props) {
         const started = gesture.offset.x || gesture.offset.y;
         if (!started && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
         const offset = { x: dx / view.zoom, y: dy / view.zoom };
-        return setGesture({ ...gesture, ...snapOffset(board, gesture.ids, offset, view.zoom) });
+        // Holding Ctrl/Cmd places notes freely, without guides or the grid.
+        if (event.ctrlKey || event.metaKey) return setGesture({ ...gesture, offset, guides: {} });
+        return setGesture({ ...gesture, ...snapOffset(board, gesture.ids, offset, snapping) });
       }
     }
   };
 
-  const onResizeStart = useStableCallback((event: PointerEvent, id: string) => {
+  /** Start resizing `ids` from `corner`: one note, or a selection scaled as a whole. */
+  const beginResize = (event: PointerEvent, ids: readonly string[], corner: Corner) => {
     if (event.button !== 0) return;
-    const sticky = own(board.stickies, id);
-    if (!sticky || sticky.locked) return;
+    const picked = ids.flatMap((id) => own(board.stickies, id) ?? []);
+    const bounds = boundsOf(picked);
+    if (!bounds || picked.some((note) => note.locked)) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
+    const original = rectOf(bounds);
+    setGesture({ type: 'resize', ids, corner, start: local(event), original, frame: original });
+  };
+  const onResizeStart = useStableCallback((event: PointerEvent, id: string, corner: Corner) => {
     onSelect([id]);
-    const { width, height } = sticky;
-    setGesture({
-      type: 'resize',
-      id,
-      start: local(event),
-      original: { width, height },
-      size: { width, height },
-    });
+    beginResize(event, [id], corner);
   });
 
   const finishGesture = (event: PointerEvent, current: Gesture) => {
@@ -178,7 +186,7 @@ export function BoardCanvas(props: Props) {
       const at = local(event);
       if (Math.hypot(at.x - current.start.x, at.y - current.start.y) < DRAG_THRESHOLD)
         props.onAdd(toBoardPoint(view, at));
-    } else if (current.type === 'resize') props.onResize([current.id], current.size);
+    } else if (current.type === 'resize') props.onResize(resizedPlacements(board, current));
     else if (current.type === 'drag' && (current.offset.x || current.offset.y)) {
       if (current.duplicate) return props.onDuplicate(current.ids, current.offset);
       props.onMove(
@@ -220,6 +228,8 @@ export function BoardCanvas(props: Props) {
     () => new Set(dragging && !dragging.duplicate ? dragging.ids : []),
     [dragging],
   );
+  const snapping = { zoom: view.zoom, grid: props.grid.snap ? GRID_SIZE : null };
+  const resizing = gesture?.type === 'resize' ? new Set(gesture.ids) : null;
   const framed = frameDrawing.preview(board);
   const displayed = previewBoard(framed, gesture);
   const notes = useMemo(() => Object.values(framed.stickies).sort(byStackOrder), [framed.stickies]);
@@ -234,7 +244,15 @@ export function BoardCanvas(props: Props) {
         'board',
         `tool-${space ? 'hand' : tool}`,
         gesture?.type === 'pan' && 'is-panning',
+        // Toolbars step aside while notes move or resize, so they do not cover the guides.
+        (gesture?.type === 'resize' || !!(dragging?.offset.x || dragging?.offset.y)) &&
+          'is-transforming',
+        props.grid.visible && view.zoom * GRID_SIZE >= MIN_GRID_PIXELS && 'show-grid',
       )}
+      style={{
+        backgroundSize: `${GRID_SIZE * view.zoom}px ${GRID_SIZE * view.zoom}px`,
+        backgroundPosition: `${view.x}px ${view.y}px`,
+      }}
       role="application"
       aria-label={t('chrome.canvas')}
       tabIndex={0}
@@ -264,18 +282,6 @@ export function BoardCanvas(props: Props) {
             ? { x: event.clientX, y: event.clientY }
             : clientCenter(element.current!);
         openMenu(point, canvasTarget(event.target));
-      }}
-      onDragOver={(event) => {
-        // Accept only a colour swatch from the sticky flyout, not files or text.
-        if (!event.dataTransfer.types.includes(STICKY_DRAG_TYPE)) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
-      }}
-      onDrop={(event) => {
-        const color = draggedColor(event.dataTransfer);
-        if (!color) return;
-        event.preventDefault();
-        props.onAdd(toBoardPoint(view, local(event)), color);
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -314,7 +320,8 @@ export function BoardCanvas(props: Props) {
             key={sticky.id}
             sticky={sticky}
             zIndex={index + 1}
-            resized={gesture?.type === 'resize' && gesture.id === sticky.id ? gesture.size : null}
+            resized={resizing?.has(sticky.id) ? displayed.stickies[sticky.id] : null}
+            resizable={selection.size === 1 && selection.has(sticky.id)}
             onResize={onResize}
             onContextMenu={onNoteMenu}
             onResizeStart={onResizeStart}
@@ -339,6 +346,14 @@ export function BoardCanvas(props: Props) {
           />
         ))}
         <BoardOverlays board={board} gesture={gesture} view={view} viewport={props.viewport} />
+        {!editing && tool === 'interact' && selection.size > 1 && (
+          <SelectionFrame
+            board={displayed}
+            ids={[...selection]}
+            zoom={view.zoom}
+            onResizeStart={(event, corner) => beginResize(event, [...selection], corner)}
+          />
+        )}
         <ConnectionEndpoints
           board={displayed}
           zoom={view.zoom}

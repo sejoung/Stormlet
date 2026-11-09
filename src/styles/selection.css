@@ -128,6 +128,9 @@
 .match-options {
   grid-template-columns: repeat(3, 1fr);
 }
+.arrange-options + .popover-label {
+  margin-top: 14px;
+}
 .primary-button {
   padding: 10px 16px;
   border: 1px solid #4262e8;
@@ -169,4 +172,7 @@
   .selection-divider {
     margin: 0 1px;
   }
+}
+.canvas-area:has(.board.is-transforming) .selection-anchor {
+  visibility: hidden;
 }

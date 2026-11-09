@@ -6,6 +6,7 @@ import { noteTextStyle, useFittedText } from './useFittedText';
 import { DRAFT_FIELD, useDraft } from '../common/drafts';
 import { isComposing } from '../common/keyboard';
 import { useT } from '../common/i18n';
+import type { NextNote } from '../../domain/note-actions';
 
 export function StickyText({ note, size }: { note: Sticky; size: StickySize }) {
   const { ref, fontSize } = useFittedText(note.id, note.text, size, note);
@@ -34,25 +35,37 @@ export function StickyEditor({
   note: Sticky;
   initial: string;
   size: StickySize;
-  onDone(text: string): void;
+  /** Editing finished; `next` asks for a new note to the right or below to type on in. */
+  onDone(text: string, next?: NextNote): void;
 }) {
   const t = useT();
   const [text, setText] = useState(initial);
   const composing = useRef(false);
   const completed = useRef(false);
   const { ref, fontSize } = useFittedText(note.id, text, size, note);
-  const finish = () => {
+  const finish = (next?: NextNote) => {
     if (completed.current) return;
     completed.current = true;
-    onDone(text.trim());
+    onDone(text.trim(), next);
   };
-  useDraft(finish);
+  useDraft(() => finish());
   const onKeyDown = (event: KeyboardEvent) => {
     // Formatting keys belong to the note toolbar, native editing keys stay in the textarea.
     if ((event.ctrlKey || event.metaKey) && ['b', 'i', 'u', 's'].includes(event.key.toLowerCase()))
       return;
     event.stopPropagation();
     if (composing.current || isComposing(event)) return;
+    // Tab continues to the right, Cmd/Ctrl+Enter below: brainstorming without the mouse.
+    const next: NextNote | null =
+      event.key === 'Tab' && !event.shiftKey
+        ? 'right'
+        : event.key === 'Enter' && (event.ctrlKey || event.metaKey)
+          ? 'below'
+          : null;
+    if (next) {
+      event.preventDefault();
+      return finish(next);
+    }
     if (event.key === 'Escape' || (event.key === 'Enter' && !event.shiftKey)) {
       event.preventDefault();
       finish();
@@ -82,7 +95,7 @@ export function StickyEditor({
           maxLength={MAX_NOTE_LENGTH}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={onKeyDown}
-          onBlur={finish}
+          onBlur={() => finish()}
           onCompositionStart={() => {
             composing.current = true;
           }}

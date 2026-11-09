@@ -4,6 +4,10 @@ import {
   cloneNotes,
   groupSelection,
   matchSizes,
+  applyStyle,
+  styleOf,
+  sameColorIds,
+  nextNotePosition,
   reactToNotes,
   updateNotes,
   type Arrangement,
@@ -14,6 +18,7 @@ import {
   sendToBack,
   moveStickies,
   resizeStickies,
+  placeStickies,
   setColor,
   setText,
 } from '../../../src/domain/commands';
@@ -174,5 +179,56 @@ describe('note actions', () => {
     expect(applied.board.stickies.locked).toEqual(board.stickies.locked);
     expect(applyPatches(applied.board, applied.inverse).board).toStrictEqual(board);
     expect(matchSizes(board, ['a', 'locked'], match)).toEqual([]);
+  });
+
+  it('places notes in one edit, clamping sizes and skipping locked notes and unchanged fields', () => {
+    const board = frozen(boardOf(sticky('a'), sticky('locked', { locked: true })));
+    const patches = placeStickies(board, [
+      { id: 'a', x: -10.4, y: 0, width: 5000, height: 120 },
+      { id: 'locked', x: 50, y: 50, width: 200, height: 200 },
+      { id: 'gone', x: 0, y: 0, width: 100, height: 100 },
+      { id: 'a', x: 0, y: 0, width: Number.NaN, height: 100 },
+    ]);
+    expect(patches).toEqual([
+      { op: 'set', id: 'a', field: 'x', value: -10 },
+      { op: 'set', id: 'a', field: 'width', value: 1280 },
+    ]);
+    const applied = applyPatches(board, patches);
+    expect(applyPatches(applied.board, applied.inverse).board).toStrictEqual(board);
+  });
+
+  it('copies one note style onto others, removing fields the source never set', () => {
+    const board = frozen(
+      boardOf(
+        sticky('source', { color: 'blue', bold: true, textAlign: 'left' }),
+        sticky('target', { color: 'pink', italic: true, width: 300 }),
+        sticky('locked', { locked: true }),
+      ),
+    );
+    const style = styleOf(board.stickies.source);
+    const applied = applyPatches(board, applyStyle(board, ['target', 'locked', 'gone'], style));
+    expect(applied.board.stickies.target).toMatchObject({ color: 'blue', bold: true, width: 300 });
+    expect(applied.board.stickies.target).not.toHaveProperty('italic');
+    expect(applied.board.stickies.locked).toEqual(board.stickies.locked);
+    expect(applyPatches(applied.board, applied.inverse).board).toStrictEqual(board);
+  });
+
+  it('finds every unlocked note sharing a colour with the given notes', () => {
+    const board = boardOf(
+      sticky('a', { color: 'blue' }),
+      sticky('b', { color: 'pink' }),
+      sticky('c', { color: 'blue', z: 5 }),
+      sticky('d', { color: 'blue', locked: true }),
+      sticky('e', { color: 'pink' }),
+    );
+    expect(sameColorIds(board, ['a'])).toEqual(['a', 'c']);
+    expect(sameColorIds(board, ['a', 'b'])).toEqual(['a', 'b', 'e', 'c']);
+    expect(sameColorIds(board, ['gone'])).toEqual([]);
+  });
+
+  it('places a continuing note one gap along, past notes already in the way', () => {
+    const board = boardOf(sticky('a'), sticky('taken', { x: 184 }));
+    expect(nextNotePosition(board, board.stickies.a, 'below')).toEqual({ x: 0, y: 144 });
+    expect(nextNotePosition(board, board.stickies.a, 'right')).toEqual({ x: 368, y: 0 });
   });
 });

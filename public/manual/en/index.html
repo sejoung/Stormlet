@@ -35,6 +35,7 @@
           <li><a href="#notes">Sticky notes</a></li>
           <li><a href="#frames">Frames and connectors</a></li>
           <li><a href="#organize">Selecting and arranging</a></li>
+          <li><a href="#layout">Layout and alignment</a></li>
           <li><a href="#menus">Menus</a></li>
           <li><a href="#saving">Where a board is kept</a></li>
           <li><a href="#drive">Google Drive</a></li>
@@ -105,17 +106,33 @@
           <ol class="steps">
             <li>
               Choose the sticky note tool or press <kbd>N</kbd>, then click the board: a note
-              appears there. Start typing.
+              appears there. Start typing. You can also <b>drag a color</b> from the tool’s panel
+              onto the board to place a note of that color, with a mouse, pen or finger.
             </li>
             <li>
               Press <kbd>Enter</kbd> or double-click to edit again, and <kbd>Esc</kbd> to finish.
               <kbd>Shift</kbd>+<kbd>Enter</kbd> starts a new line.
             </li>
             <li>
+              While typing, <kbd>Tab</kbd> carries on in a new note to the right and
+              <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd> in one below, with the same size and color. If
+              the spot is taken, the note goes to the next free one.
+            </li>
+            <li>
               Paste several lines into “Add several at once” to get a note for each line. Cells
               copied from Excel or Google Sheets paste as notes too.
             </li>
           </ol>
+          <figure>
+            <img
+              src="../images/en/palette-drag.png"
+              alt="Dragging the green swatch from the sticky note tool’s color panel toward the board"
+            />
+            <figcaption>
+              A preview follows the dragged color, and the note appears where you drop it. Dropping
+              on the panel places nothing, and the default color stays as it was.
+            </figcaption>
+          </figure>
           <div class="split">
             <figure>
               <img
@@ -130,14 +147,17 @@
                 The text size follows the note’s size and text. A size you pick stays while the text
                 fits.
               </li>
-              <li>Drag the handle at the bottom right, or pick a size preset.</li>
+              <li>
+                Drag any of the four corner handles, or pick a size preset. See
+                <a href="#layout">Layout and alignment</a>.
+              </li>
               <li>Add emoji reactions; choosing one again takes it back.</li>
             </ul>
           </div>
           <figure>
             <img
               src="../images/en/note-menu.png"
-              alt="The menu of a note opened with a right-click: bring to front, send to back, size, edit text, duplicate, lock, delete"
+              alt="The menu of a note opened with a right-click: bring to front, send to back, size, edit text, copy style, paste style, select all notes of this color, duplicate, lock, delete"
             />
             <figcaption>
               Right-click a note, frame, connector or the empty canvas (or press
@@ -168,7 +188,14 @@
               frames. Connectors follow when notes move.
             </li>
             <li>
-              Straight, rounded elbow or curved lines, arrows, color, width, dashes and labels.
+              Straight, rounded elbow or curved lines, arrows, color (black, gray, blue, red, green,
+              purple), width, dashes and labels. In dark mode black lines are drawn light so they
+              stay visible.
+            </li>
+            <li>
+              Changing a line’s color, width or dashes makes the next line you draw look the same.
+              <b>Apply this style to all lines</b> in the connector toolbar matches every line on
+              the board at once (locked lines are skipped).
             </li>
             <li>Drag an end to connect it to something else.</li>
           </ul>
@@ -182,8 +209,12 @@
               selects all.
             </li>
             <li>
-              With several notes selected, align them, space them evenly or lay them out in a grid;
-              guides show while you drag.
+              With several notes selected, align them, space them evenly, match their sizes or lay
+              them out in a grid. See <a href="#layout">Layout and alignment</a>.
+            </li>
+            <li>
+              <b>Select all notes of this color</b> in a note’s menu picks every note sharing its
+              color, handy for moving or grouping notes sorted by color.
             </li>
             <li>
               <kbd>Ctrl/Cmd</kbd>+<kbd>G</kbd> groups notes so they move together.
@@ -198,8 +229,112 @@
           </ul>
         </section>
 
+        <section id="layout">
+          <h2>5. Layout and alignment</h2>
+          <h3>Guides and snapping</h3>
+          <figure>
+            <img
+              src="../images/en/layout-spacing.png"
+              alt="Dragging a third note up beside two others: a blue guide lines up the tops and pink marks show equal gaps"
+            />
+            <figcaption>
+              Blue lines align edges and centers; pink marks show a gap equal to the one between the
+              first two notes.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              While you drag, a note snaps to another note’s edges or center once it is within 8
+              screen pixels, and a blue guide shows.
+            </li>
+            <li>
+              Centered between two notes, or one step on that repeats the gap its neighbours already
+              have, it snaps to <b>equal spacing</b> and pink marks show. This works across and
+              down.
+            </li>
+            <li>
+              Hold <kbd>Ctrl/Cmd</kbd> while dragging to place a note freely. On a Mac use
+              <kbd>Cmd</kbd>, as <kbd>Ctrl</kbd>+click opens the context menu.
+            </li>
+            <li>The note toolbar steps aside while you drag, so it does not hide the guides.</li>
+          </ul>
+          <h3>Resizing</h3>
+          <div class="split">
+            <figure>
+              <img
+                src="../images/en/layout-resize.png"
+                alt="Dragging the pink note’s corner to the yellow note’s width: same-width marks above both notes and a 220 × 166 size badge"
+              />
+              <figcaption>
+                Once the width matches the note above, both get a mark, and a badge shows the size.
+              </figcaption>
+            </figure>
+            <ul>
+              <li>
+                A single selected note has handles on all four corners; the opposite corner stays
+                put.
+              </li>
+              <li>
+                A width or height close to another note’s snaps to it, and notes of that size (up to
+                the four nearest) are marked. Edges also snap to other notes’ lines.
+              </li>
+              <li>
+                <kbd>Shift</kbd> keeps the proportions; <kbd>Ctrl/Cmd</kbd> turns snapping off. With
+                the bottom-right handle focused, arrow keys resize by 20px.
+              </li>
+              <li>
+                With several notes selected, a dashed box surrounds them. Dragging its corners
+                scales every note’s position and size together. A selection with a locked note has
+                no handles.
+              </li>
+            </ul>
+          </div>
+          <h3>Aligning and matching sizes</h3>
+          <figure>
+            <img
+              src="../images/en/layout-arrange.png"
+              alt="Four notes selected with the Align and arrange panel open: text alignment, arrange and match size buttons"
+            />
+            <figcaption>
+              Several notes selected, with <b>Align and arrange</b> open in the toolbar. The same
+              commands are in the right-click menu.
+            </figcaption>
+          </figure>
+          <ul>
+            <li>
+              <b>Arrange</b>: align left, horizontal centers, right, top, vertical centers or
+              bottom; distribute horizontally or vertically; arrange in a grid. Groups move as one.
+            </li>
+            <li>
+              <b>Match size</b>: same width, same height or same size. Notes take the largest value
+              in the selection so no text gets cut off; each keeps its top-left corner.
+            </li>
+            <li>
+              Shortcuts: <kbd>Alt</kbd>+<kbd>A</kbd>/<kbd>H</kbd>/<kbd>D</kbd> align left,
+              horizontal centers or right; <kbd>Alt</kbd>+<kbd>W</kbd>/<kbd>V</kbd>/<kbd>S</kbd>
+              align top, vertical centers or bottom;
+              <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd>/<kbd>V</kbd> distribute. On a Mac, hold
+              <kbd>Option</kbd>.
+            </li>
+          </ul>
+          <h3>Copying a style</h3>
+          <p>
+            Select a note and press <kbd>Ctrl/Cmd</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> to copy its
+            color and text formatting (bold, italic, underline, alignment, text size), then select
+            other notes and press <kbd>Ctrl/Cmd</kbd>+<kbd>Alt</kbd>+<kbd>V</kbd>. Size and text
+            stay as they are. <b>Copy style</b> and <b>Paste style</b> in the right-click menu do
+            the same.
+          </p>
+          <h3>The grid</h3>
+          <p>
+            <b>View → Show grid</b> draws a grid 20px apart, and <b>View → Snap to grid</b> makes
+            moves and resizes land on it. A nearby note still wins over the grid. Each setting turns
+            on and off on its own and is remembered next time.
+          </p>
+        </section>
+
         <section id="menus">
-          <h2>5. Menus</h2>
+          <h2>6. Menus</h2>
           <p>
             The menus left of the board name hold every command, with its shortcut. From the
             keyboard, press <kbd>↓</kbd> on a menu button to open it, the arrow keys to choose and
@@ -223,9 +358,9 @@
             <figure>
               <img
                 src="../images/en/menu-view.png"
-                alt="The View menu: zoom in, zoom out, zoom to 100%, show all notes, show selection, minimap"
+                alt="The View menu: zoom in, zoom out, zoom to 100%, show all notes, show selection, minimap, show grid, snap to grid"
               />
-              <figcaption><b>View</b>: zoom and the minimap</figcaption>
+              <figcaption><b>View</b>: zoom, the minimap and the grid</figcaption>
             </figure>
             <figure>
               <img
@@ -238,7 +373,7 @@
         </section>
 
         <section id="saving">
-          <h2>6. Where a board is kept</h2>
+          <h2>7. Where a board is kept</h2>
           <p>The label next to the board name says where the board is saved.</p>
           <figure>
             <img
@@ -268,7 +403,7 @@
         </section>
 
         <section id="drive">
-          <h2>7. Google Drive</h2>
+          <h2>8. Google Drive</h2>
           <h3>Connecting and saving</h3>
           <ol class="steps">
             <li>
@@ -347,7 +482,7 @@
         </section>
 
         <section id="tabs">
-          <h2>8. Tabs and boards</h2>
+          <h2>9. Tabs and boards</h2>
           <p>
             Each tab shows a board of its own, so tabs can hold different boards and different Drive
             files.
@@ -380,7 +515,7 @@
         </section>
 
         <section id="files">
-          <h2>9. Opening and downloading files</h2>
+          <h2>10. Opening and downloading files</h2>
           <ul>
             <li>
               <b>File → Download as file</b> saves the board as a <code>.stormlet</code> file named
@@ -395,7 +530,7 @@
         </section>
 
         <section id="shortcuts">
-          <h2>10. Keyboard shortcuts</h2>
+          <h2>11. Keyboard shortcuts</h2>
           <div class="split">
             <figure>
               <img src="../images/en/dialog-help.png" alt="The keyboard shortcuts dialog" />
@@ -422,6 +557,10 @@
                   <td><kbd>Enter</kbd>, <kbd>Shift</kbd>+<kbd>Enter</kbd>, <kbd>Esc</kbd></td>
                 </tr>
                 <tr>
+                  <td>Continue in a new note (right / below)</td>
+                  <td><kbd>Tab</kbd> / <kbd>Ctrl/Cmd</kbd>+<kbd>Enter</kbd></td>
+                </tr>
+                <tr>
                   <td>Duplicate / in a direction</td>
                   <td><kbd>Ctrl/Cmd</kbd>+<kbd>D</kbd> / <kbd>Alt</kbd>+arrow</td>
                 </tr>
@@ -432,6 +571,30 @@
                       >G</kbd
                     >
                   </td>
+                </tr>
+                <tr>
+                  <td>Align left / horizontal centers / right</td>
+                  <td><kbd>Alt</kbd>+<kbd>A</kbd> / <kbd>H</kbd> / <kbd>D</kbd></td>
+                </tr>
+                <tr>
+                  <td>Align top / vertical centers / bottom</td>
+                  <td><kbd>Alt</kbd>+<kbd>W</kbd> / <kbd>V</kbd> / <kbd>S</kbd></td>
+                </tr>
+                <tr>
+                  <td>Distribute horizontally / vertically</td>
+                  <td><kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd> / <kbd>V</kbd></td>
+                </tr>
+                <tr>
+                  <td>Copy / paste style</td>
+                  <td><kbd>Ctrl/Cmd</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> / <kbd>V</kbd></td>
+                </tr>
+                <tr>
+                  <td>Resize: keep proportions / no snapping</td>
+                  <td><kbd>Shift</kbd> / <kbd>Ctrl/Cmd</kbd> + corner drag</td>
+                </tr>
+                <tr>
+                  <td>Move without snapping</td>
+                  <td>Hold <kbd>Ctrl/Cmd</kbd> while dragging</td>
                 </tr>
                 <tr>
                   <td>Lock</td>
@@ -463,7 +626,7 @@
         </section>
 
         <section id="faq">
-          <h2>11. Questions</h2>
+          <h2>12. Questions</h2>
           <details>
             <summary>“Not saved” shows next to the board name.</summary>
             <p>
@@ -483,6 +646,20 @@
             <p>
               Save it to Google Drive, then on the other device use <b>File → Open from Drive…</b>
               and choose the same file. Changes made in both places are merged when saving.
+            </p>
+          </details>
+          <details>
+            <summary>Notes keep snapping next to other notes.</summary>
+            <p>
+              That is the alignment and equal-spacing snapping. Hold <kbd>Ctrl/Cmd</kbd> while
+              dragging to place a note freely, and turn off <b>View → Snap to grid</b> if it is on.
+            </p>
+          </details>
+          <details>
+            <summary>On a Mac, <kbd>Option</kbd>+<kbd>A</kbd> types “å”.</summary>
+            <p>
+              The note was still being edited, so the key typed a character. Press <kbd>Esc</kbd> to
+              finish editing, then press it with the note selected to align.
             </p>
           </details>
           <details>

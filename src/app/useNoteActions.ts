@@ -3,11 +3,15 @@ import {
   cloneNotes,
   arrangeNotes,
   matchSizes,
+  applyStyle,
+  sameColorIds,
+  styleOf,
   reactToNotes,
   updateNotes,
   NOTE_GAP,
   type Arrangement,
   type SizeMatch,
+  type NoteStyle,
 } from '../domain/note-actions';
 import { addStickies } from '../domain/commands';
 import {
@@ -23,6 +27,7 @@ import type { NoteDetails } from '../domain/note-details';
 import type { Point } from '../engine/viewport';
 import { cellPositions, MAX_PASTE_NOTES, type TextCell } from '../engine/paste';
 import type { Edit, EditWith } from './useBoardSession';
+import { useRef } from 'react';
 import { useT } from '../components/common/i18n';
 
 /** Formatting toggles that have a keyboard shortcut. */
@@ -46,6 +51,12 @@ export interface NoteActions {
   react(emoji: string, target?: readonly string[]): void;
   lock(): void;
   toggleFormat(field: FormatToggle): void;
+  /** Remember the first active note's colour and formatting… */
+  copyStyle(): void;
+  /** …and give it to the active notes. */
+  pasteStyle(): void;
+  /** Select every unlocked note that shares a colour with the active notes. */
+  selectSameColor(): void;
 }
 
 interface Options {
@@ -64,6 +75,8 @@ interface Options {
 export function useNoteActions(options: Options): NoteActions {
   const t = useT();
   const { board, ids, reactor, newId, edit, editWith, onSelect, onStatus } = options;
+  // Copied style is the editor's own state: it is not on the board and not in its history.
+  const copied = useRef<NoteStyle | null>(null);
   const format = (details: NoteDetails) => edit((current) => updateNotes(current, ids, details));
   /** Run a clone command, select the copies and, when `announce`, say how many were added. */
   const copyNotes = (
@@ -132,6 +145,18 @@ export function useNoteActions(options: Options): NoteActions {
     react: (emoji, target = ids) =>
       edit((current) => reactToNotes(current, target, emoji, reactor)),
     lock: () => format({ locked: !ids.some((id) => own(board.stickies, id)?.locked) }),
+    copyStyle: () => {
+      const note = own(board.stickies, ids[0] ?? '');
+      if (!note) return;
+      copied.current = styleOf(note);
+      onStatus(t('noteActions.styleCopied'));
+    },
+    pasteStyle: () => {
+      const style = copied.current;
+      if (!style) return onStatus(t('noteActions.noStyle'));
+      edit((current) => applyStyle(current, ids, style));
+    },
+    selectSameColor: () => onSelect(sameColorIds(board, ids)),
     toggleFormat: (field) => format({ [field]: !own(board.stickies, ids[0] ?? '')?.[field] }),
   };
 }

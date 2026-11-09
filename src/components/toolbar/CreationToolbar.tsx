@@ -2,6 +2,7 @@ import type { BoardTool } from '../board/kinds';
 import { Icon } from './Icon';
 import { useEffect, useRef, useState } from 'react';
 import type { StickyColor } from '../../domain/model';
+import type { Point } from '../../engine/viewport';
 import type { ConnectionStyle } from '../../domain/connections/model';
 import { COLOR_STYLES } from '../board/kinds';
 import { CreationFlyout } from './CreationFlyout';
@@ -24,6 +25,7 @@ export function CreationToolbar({
   onBulk,
   defaults,
   onStickyColor,
+  onDropSticky,
   onConnectionStyle,
   frames,
 }: {
@@ -33,6 +35,7 @@ export function CreationToolbar({
   onBulk(): void;
   defaults: CreationDefaults;
   onStickyColor(color: StickyColor): void;
+  onDropSticky(color: StickyColor, client: Point): void;
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   frames: FrameInteraction;
 }) {
@@ -163,6 +166,7 @@ export function CreationToolbar({
           kind={open}
           defaults={defaults}
           onStickyColor={onStickyColor}
+          onDropSticky={onDropSticky}
           onConnectionStyle={onConnectionStyle}
           onClose={close}
         />

@@ -4,7 +4,7 @@ import { ko } from '../../src/i18n/locales/ko';
 import { serializeBoard } from '../../src/adapters/files/stormlet-format';
 import type { Board } from '../../src/domain/model';
 import { mockDrive, mockGoogleScripts } from '../e2e/drive/google';
-import { otherBoard, sampleBoard, sampleText } from './sample';
+import { layoutBoard, layoutText, otherBoard, sampleBoard, sampleText } from './sample';
 
 type Lang = 'ko' | 'en';
 const shot = (lang: Lang, name: string) => `public/manual/images/${lang}/${name}.png`;
@@ -153,4 +153,90 @@ test('captures the user guide', async ({ page, context }, info) => {
   await expect(status).toHaveText(m['drive.short.conflict'], { timeout: 15_000 });
   await status.click();
   await dialog(m['drive.conflict.title']).screenshot({ path: shot(lang, 'dialog-conflict') });
+
+  await captureLayout(await context.newPage(), lang);
 });
+
+/** Placing, resizing and arranging notes, on a board of its own in a new tab. */
+async function captureLayout(page: Page, lang: Lang) {
+  const m = lang === 'ko' ? ko : en;
+  await page.goto('/');
+  await openFile(page, layoutBoard(lang), 'ideas.stormlet');
+  const notes = [0, 1, 2, 3].map((index) => page.getByText(layoutText(lang, index)));
+  await expect(notes[0]).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: m['menu.view'], exact: true }).click();
+  await page.getByRole('menuitem', { name: m['chrome.fit'], exact: true }).click();
+  await expect(page.getByRole('status')).toHaveCount(0, { timeout: 8000 });
+  const box = async (index: number) =>
+    (await notes[index].locator('xpath=ancestor::*[@data-sticky-id]').boundingBox())!;
+
+  // Dragging the third note up beside the first two: equal-gap and edge guides appear.
+  const [a, b, c] = [await box(0), await box(1), await box(2)];
+  const gap = b.x - a.x - a.width;
+  await page.mouse.move(c.x + 20, c.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(c.x + 60, c.y - 40, { steps: 4 });
+  await page.mouse.move(b.x + b.width + gap + 22, a.y + 21, { steps: 6 });
+  await page.waitForTimeout(150);
+  await page.screenshot({
+    path: shot(lang, 'layout-spacing'),
+    clip: await around(page, notes.slice(0, 3), 32),
+  });
+  await page.mouse.up();
+
+  // Resizing the narrow note: it snaps to its neighbour's width and both get a marker.
+  await notes[3].click();
+  const handle = page.locator('.sticky.is-selected .handle-se');
+  const start = (await handle.boundingBox())!;
+  const target = (await box(0)).x + (await box(0)).width;
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target - 3, start.y + 20, { steps: 6 });
+  await page.waitForTimeout(150);
+  await page.screenshot({
+    path: shot(lang, 'layout-resize'),
+    clip: await around(page, [notes[0], notes[3], page.locator('.size-badge')], 28),
+  });
+  await page.mouse.up();
+
+  // Everything selected, with the align and arrange panel open.
+  await page.keyboard.press('Escape');
+  await page.locator('.board').focus();
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.getByRole('button', { name: m['selection.alignAndArrange'] }).click();
+  const panel = page.locator('.selection-popover');
+  await expect(panel).toBeVisible();
+  await page.screenshot({
+    path: shot(lang, 'layout-arrange'),
+    clip: await around(page, [...notes, page.locator('.selection-toolbar'), panel], 20),
+  });
+  await page.keyboard.press('Escape');
+
+  // Dragging a colour out of the sticky tool's flyout onto the board.
+  await page.getByRole('button', { name: m['creation.sticky'] }).click();
+  const flyout = page.getByRole('dialog', { name: m['creation.stickyDefaults'] });
+  const swatch = flyout.getByRole('button', {
+    name: m['creation.stickyColor'].replace('{color}', m['noteColor.green']),
+  });
+  const from = (await swatch.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 180, from.y + 90, { steps: 8 });
+  await page.waitForTimeout(150);
+  await page.screenshot({
+    path: shot(lang, 'palette-drag'),
+    // The header and swatches only: the hint below scrolls inside the flyout at this height.
+    clip: await around(
+      page,
+      [
+        flyout.locator('header'),
+        flyout.locator('.default-color-grid'),
+        page.locator('.swatch-ghost'),
+      ],
+      24,
+    ),
+  });
+  await page.mouse.up();
+  await page.close();
+}

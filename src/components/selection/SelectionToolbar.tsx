@@ -13,6 +13,7 @@ import { useLargestFit } from '../common/fitted-fonts';
 import type { Arrangement, SizeMatch } from '../../domain/note-actions';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
+import { ARRANGEMENTS, SIZE_MATCHES } from './arrangements';
 import { Icon } from '../toolbar/Icon';
 import { useT } from '../common/i18n';
 import type { MessageKey } from '../../i18n/messages';
@@ -60,24 +61,6 @@ function Tool({
     </button>
   );
 }
-
-const ARRANGEMENTS: [Arrangement, MessageKey][] = [
-  ['left', 'selection.arrangeLeft'],
-  ['center', 'selection.arrangeCenter'],
-  ['right', 'selection.arrangeRight'],
-  ['top', 'selection.arrangeTop'],
-  ['middle', 'selection.arrangeMiddle'],
-  ['bottom', 'selection.arrangeBottom'],
-  ['horizontal', 'selection.arrangeHorizontal'],
-  ['vertical', 'selection.arrangeVertical'],
-  ['grid', 'selection.arrangeGrid'],
-];
-
-const SIZE_MATCHES: [SizeMatch, MessageKey][] = [
-  ['width', 'selection.matchWidth'],
-  ['height', 'selection.matchHeight'],
-  ['size', 'selection.matchSize'],
-];
 
 const ALIGN_LABELS: Record<TextAlign, MessageKey> = {
   left: 'selection.alignLeft',
@@ -300,8 +283,13 @@ export function SelectionToolbar(props: Props) {
                 <>
                   <span className="popover-label">{t('selection.arrangeHeading')}</span>
                   <div className="arrange-options">
-                    {ARRANGEMENTS.map(([action, label]) => (
-                      <button key={action} type="button" onClick={() => props.onArrange(action)}>
+                    {ARRANGEMENTS.map(([action, label, shortcut]) => (
+                      <button
+                        key={action}
+                        type="button"
+                        title={shortcut && `${t(label)} (${shortcut})`}
+                        onClick={() => props.onArrange(action)}
+                      >
                         {t(label)}
                       </button>
                     ))}

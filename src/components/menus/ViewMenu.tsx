@@ -10,6 +10,10 @@ export interface ViewCommands {
   onZoom(zoom: number): void;
   onFit(selected: boolean): void;
   onMinimap(): void;
+  grid: boolean;
+  gridSnap: boolean;
+  onGrid(): void;
+  onGridSnap(): void;
 }
 
 /** Zoom, fitting the view and the minimap, as on the on-screen controls. */
@@ -63,6 +67,20 @@ export function ViewMenu({ commands: c }: { commands: ViewCommands }) {
             kind="checkbox"
             close={close}
             onSelect={c.onMinimap}
+          />
+          <MenuItem
+            label={t('menu.grid')}
+            checked={c.grid}
+            kind="checkbox"
+            close={close}
+            onSelect={c.onGrid}
+          />
+          <MenuItem
+            label={t('menu.gridSnap')}
+            checked={c.gridSnap}
+            kind="checkbox"
+            close={close}
+            onSelect={c.onGridSnap}
           />
         </>
       )}

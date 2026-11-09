@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createEvent, fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { App } from '../../../src/app/App';
@@ -7,7 +7,11 @@ import { CREATION_DEFAULTS_KEY } from '../../../src/adapters/storage/creation-de
 import { memoryStore, ids, boardBounds } from '../../support/app';
 import { boardOf, sticky } from '../../support/boards';
 
-afterEach(() => localStorage.removeItem(CREATION_DEFAULTS_KEY));
+const elementFromPoint = document.elementFromPoint;
+afterEach(() => {
+  localStorage.removeItem(CREATION_DEFAULTS_KEY);
+  document.elementFromPoint = elementFromPoint;
+});
 const note = (id: string) => screen.getByRole('button', { name: `도메인 이벤트: ${id}` });
 
 describe('tool default flyouts', () => {
@@ -174,38 +178,47 @@ describe('tool default flyouts', () => {
     );
   });
 
-  it('places a note in a color dragged from the flyout onto the board', async () => {
+  it('places a note in a color dragged from the flyout onto the board, by mouse or touch', async () => {
     const user = userEvent.setup();
     const store = memoryStore();
     render(<App store={store} newId={ids()} />);
     const board = boardBounds();
     await user.click(screen.getByRole('button', { name: '포스트잇 도구' }));
-    const swatch = screen.getByRole('button', { name: '초록색 기본 색상' });
-    const data = new Map<string, string>();
-    const dataTransfer = {
-      setData: (type: string, value: string) => data.set(type, value),
-      getData: (type: string) => data.get(type) ?? '',
-      get types() {
-        return [...data.keys()];
-      },
-      dropEffect: 'none',
-      effectAllowed: 'all',
+    const swatch = () => screen.getByRole('button', { name: '초록색 기본 색상' });
+    // jsdom does no hit testing: report the board, or the flyout, under the release point.
+    let under: Element = board;
+    document.elementFromPoint = () => under;
+    const dragOut = (to: { clientX: number; clientY: number }) => {
+      // Held from the press on, like the browser's pointer target.
+      const button = swatch();
+      fireEvent.pointerDown(button, {
+        button: 0,
+        clientX: 100,
+        clientY: 150,
+        pointerType: 'touch',
+      });
+      fireEvent.pointerMove(button, to);
+      expect(document.querySelector('.swatch-ghost')).not.toBeNull();
+      fireEvent.pointerUp(button, to);
+      // The click that follows a drag must not also pick the colour.
+      fireEvent.click(button);
     };
-    fireEvent.dragStart(swatch, { dataTransfer });
-    fireEvent.dragOver(board, { dataTransfer, clientX: 600, clientY: 400 });
-    // jsdom has no DragEvent, so the drop's pointer position is set by hand.
-    const drop = createEvent.drop(board, { dataTransfer });
-    Object.defineProperties(drop, { clientX: { value: 600 }, clientY: { value: 400 } });
-    fireEvent(board, drop);
+    dragOut({ clientX: 600, clientY: 400 });
+    expect(document.querySelector('.swatch-ghost')).toBeNull();
     expect(store.board.stickies.s1).toMatchObject({ color: 'green', x: 320, y: 240 });
-    // The default colour is unchanged; only the dragged note takes the dragged colour.
     await user.click(screen.getByRole('button', { name: '포스트잇 도구' }));
     expect(screen.getByRole('button', { name: '노란색 기본 색상' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    // Other drops, such as files or text, do not create notes.
-    fireEvent.drop(board, { dataTransfer: { getData: () => 'text', types: ['text/plain'] } });
+    // Released over a panel instead of the board: nothing is placed.
+    under = screen.getByRole('dialog', { name: '포스트잇 기본 설정' });
+    dragOut({ clientX: 120, clientY: 160 });
     expect(Object.keys(store.board.stickies)).toEqual(['s1']);
+    // A plain press and release is still a click that picks the default colour.
+    fireEvent.pointerDown(swatch(), { button: 0, clientX: 100, clientY: 150 });
+    fireEvent.pointerUp(swatch(), { clientX: 100, clientY: 150 });
+    fireEvent.click(swatch());
+    expect(swatch()).toHaveAttribute('aria-pressed', 'true');
   });
 });

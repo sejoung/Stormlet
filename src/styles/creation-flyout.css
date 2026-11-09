@@ -198,3 +198,18 @@
     max-height: calc(100dvh - 150px);
   }
 }
+.default-color-grid button {
+  touch-action: none;
+}
+/* The note-to-be that follows the pointer while a colour is dragged to the board. */
+.swatch-ghost {
+  position: fixed;
+  z-index: 2147483647;
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgb(0 0 0 / 18%);
+  box-shadow: var(--shadow);
+  opacity: 0.85;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}

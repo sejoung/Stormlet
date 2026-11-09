@@ -166,6 +166,7 @@ export function ConnectionToolbar({
             aria-label={t('connection.colorOption', { color: t(LINE_COLORS[color].label) })}
             aria-pressed={line.color === color}
             disabled={line.locked}
+            data-line-color={color}
             style={{ background: LINE_COLORS[color].color }}
             onClick={() => onChange({ color })}
           />

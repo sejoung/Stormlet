@@ -5,6 +5,15 @@ import { bringToFront, sendToBack, resizeStickies, deleteStickies } from '../../
 import { updateNotes } from '../../domain/note-actions';
 import type { Point } from '../../engine/viewport';
 import { StickyContextMenu } from './StickyContextMenu';
+import type { Arrangement, SizeMatch } from '../../domain/note-actions';
+
+export interface NoteMenuActions {
+  arrange(action: Arrangement): void;
+  matchSize(match: SizeMatch): void;
+  copyStyle(): void;
+  pasteStyle(): void;
+  selectSameColor(): void;
+}
 
 const anyLocked = (board: Board, ids: readonly string[]) =>
   ids.some((id) => own(board.stickies, id)?.locked);
@@ -16,6 +25,7 @@ export function BoardContextMenu({
   onClose,
   onEdit,
   onDuplicate,
+  actions,
 }: {
   board: Board;
   menu: { ids: readonly string[]; point: Point } | null;
@@ -23,6 +33,8 @@ export function BoardContextMenu({
   onClose(): void;
   onEdit(id: string): void;
   onDuplicate(ids: readonly string[]): void;
+  /** Commands on the active notes; opening the menu made its notes the active ones. */
+  actions: NoteMenuActions;
 }) {
   const ids = menu?.ids.filter((id) => own(board.stickies, id)) ?? [];
   if (!menu || !ids.length) return null;
@@ -40,6 +52,11 @@ export function BoardContextMenu({
       onEdit={() => onEdit(ids[0])}
       onDelete={() => edit((current) => deleteStickies(current, ids))}
       onDuplicate={() => onDuplicate(ids)}
+      onArrange={actions.arrange}
+      onMatchSize={actions.matchSize}
+      onCopyStyle={actions.copyStyle}
+      onPasteStyle={actions.pasteStyle}
+      onSelectSameColor={actions.selectSameColor}
       onLock={() =>
         edit((current) => updateNotes(current, ids, { locked: !anyLocked(current, ids) }))
       }
