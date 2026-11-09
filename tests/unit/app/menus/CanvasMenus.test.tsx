@@ -61,6 +61,8 @@ describe('canvas context menus', () => {
     const menu = screen.getByRole('menu', { name: '캔버스 메뉴' });
     expect(within(menu).getByRole('menuitem', { name: '포스트잇 추가 N' })).toHaveFocus();
     await user.keyboard('{ArrowDown}');
+    expect(within(menu).getByRole('menuitem', { name: '텍스트 추가 T' })).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
     expect(within(menu).getByRole('menuitem', { name: '프레임 추가 F' })).toHaveFocus();
     await user.keyboard('n');
     expect(screen.getByRole('button', { name: '포스트잇 도구' })).toHaveAttribute(

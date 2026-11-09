@@ -5,6 +5,7 @@ import {
   type NoteDetails,
   type Reaction,
 } from '../../domain/note-details';
+import { isTextColor } from '../../domain/text/model';
 
 /** Validate optional v4 fields without retaining unknown imported properties. */
 export function readDetails(item: Record<string, unknown>): NoteDetails {
@@ -17,6 +18,7 @@ export function readDetails(item: Record<string, unknown>): NoteDetails {
   for (const key of ['bold', 'italic', 'underline', 'autoFont', 'locked'] as const)
     accept(key, (v) => typeof v === 'boolean');
   accept('textAlign', (v) => (TEXT_ALIGNS as readonly unknown[]).includes(v));
+  accept('textColor', isTextColor);
   accept(
     'fontSize',
     (v) => typeof v === 'number' && Number.isFinite(v) && v >= MIN_NOTE_FONT && v <= MAX_NOTE_FONT,

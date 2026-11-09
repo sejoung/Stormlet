@@ -1,6 +1,7 @@
 import type { Board } from '../../domain/model';
 import type { View } from '../../engine/viewport';
 import { COLOR_STYLES } from './kinds';
+import { textInk } from '../text/colors';
 import { rectangle, type Gesture } from './gestures/gestures';
 import { own } from '../../domain/ids';
 import type { Rect } from '../../domain/geometry/bounds';
@@ -39,15 +40,23 @@ export function BoardOverlays({
           return (
             <div
               key={`copy-${id}`}
-              className="sticky sticky-preview"
+              className={
+                note.objectType === 'text'
+                  ? 'sticky sticky-preview is-text'
+                  : 'sticky sticky-preview'
+              }
               aria-hidden="true"
               style={{
                 left: note.x + dragging.offset.x,
                 top: note.y + dragging.offset.y,
                 width: note.width,
                 height: note.height,
-                background: COLOR_STYLES[note.color].paper,
-                color: COLOR_STYLES[note.color].ink,
+                background:
+                  note.objectType === 'text' ? 'transparent' : COLOR_STYLES[note.color].paper,
+                color:
+                  note.objectType === 'text'
+                    ? textInk(note.textColor)
+                    : COLOR_STYLES[note.color].ink,
               }}
             >
               {note.text || t('note.copyPreview')}

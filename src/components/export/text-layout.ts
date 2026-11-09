@@ -1,4 +1,4 @@
-import { fitNoteFont, NOTE_LINE_HEIGHT, NOTE_PADDING } from '../../engine/text-fit';
+import { fitNoteFont, NOTE_LINE_HEIGHT, contentPadding } from '../../engine/text-fit';
 import { DEFAULT_NOTE_FONT } from '../../domain/note-details';
 import type { Sticky } from '../../domain/model';
 
@@ -75,8 +75,9 @@ export function scaledMeasure(measure: MeasureText) {
 
 /** A note's text as drawn: the fitted (or chosen) font size and the wrapped lines. */
 export function layoutNote(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>) {
-  const width = note.width - NOTE_PADDING * 2;
-  const height = note.height - NOTE_PADDING * 2;
+  const padding = contentPadding(note);
+  const width = note.width - padding * 2;
+  const height = note.height - padding * 2;
   const fits = (size: number) => {
     const measure = measureAt(note, size);
     const lines = wrapText(note.text, width, measure);
@@ -85,7 +86,7 @@ export function layoutNote(note: Sticky, measureAt: ReturnType<typeof scaledMeas
       lines.every((line) => measure(line) <= width + 0.5)
     );
   };
-  const fitted = fitNoteFont(note.text, note, fits);
+  const fitted = fitNoteFont(note.text, note, fits, padding);
   const chosen = note.autoFont === false ? (note.fontSize ?? DEFAULT_NOTE_FONT) : null;
   const size = chosen === null ? fitted : Math.min(chosen, fitted);
   return { size, lines: wrapText(note.text, width, measureAt(note, size)) };

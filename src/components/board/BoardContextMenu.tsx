@@ -44,6 +44,7 @@ export function BoardContextMenu({
       point={menu.point}
       count={ids.length}
       size={board.stickies[ids[0]]}
+      textOnly={ids.every((id) => board.stickies[id].objectType === 'text')}
       locked={anyLocked(board, ids)}
       onClose={onClose}
       onFront={() => edit((current) => bringToFront(current, ids))}

@@ -21,6 +21,7 @@ export interface CanvasMenuContext {
   links: Pick<ConnectionSession, 'duplicate' | 'onChange' | 'remove'>;
   clipboard: Clipboard;
   onAdd(at: Point): void;
+  onAddText(at: Point): void;
   onSelectAll(): void;
   onFit(): void;
   onUndo(): void;
@@ -92,6 +93,7 @@ export function canvasMenuItems(context: CanvasMenuContext, t: Translate): MenuA
   if (items.length) items.push(SEPARATOR);
   items.push(
     { label: t('contextMenu.addNote'), shortcut: 'N', run: () => context.onAdd(at) },
+    { label: t('text.add'), shortcut: 'T', run: () => context.onAddText(at) },
     {
       label: t('contextMenu.addFrame'),
       shortcut: 'F',

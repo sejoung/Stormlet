@@ -1,5 +1,8 @@
 import { memo, type MouseEvent, type PointerEvent } from 'react';
 import type { Sticky } from '../../domain/model';
+import type { StickySize } from '../../domain/sticky-size';
+import { isText, TEXT_PADDING } from '../../domain/text/model';
+import { textInk } from '../text/colors';
 import type { Placement } from '../../domain/commands';
 import type { NextNote } from '../../domain/note-actions';
 import type { Rect } from '../../domain/geometry/bounds';
@@ -37,7 +40,7 @@ interface Props {
   onResize(placements: readonly Placement[]): void;
   onContextMenu(id: string, point: Point): void;
   onStartEdit(id: string, seed?: string): void;
-  onCommitText(id: string, text: string, next?: NextNote): void;
+  onCommitText(id: string, text: string, next?: NextNote, size?: StickySize): void;
   onReact(id: string, emoji: string): void;
 }
 
@@ -46,6 +49,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
   const t = useT();
   const { sticky, selected, editing, offset } = props;
   const size = props.resized ?? sticky;
+  const text = isText(sticky);
   const style = COLOR_STYLES[sticky.color];
   const label = sticky.kind
     ? t(KIND_LABELS[sticky.kind])
@@ -60,6 +64,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
     <div
       className={cx(
         'sticky',
+        text && 'is-text',
         selected && 'is-selected',
         offset && 'is-dragging',
         editing && 'is-editing',
@@ -68,7 +73,11 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       )}
       role="button"
       tabIndex={0}
-      aria-label={t('note.label', { label, text: sticky.text || t('note.empty') })}
+      aria-label={
+        text
+          ? t('text.label', { text: sticky.text || t('text.empty') })
+          : t('note.label', { label, text: sticky.text || t('note.empty') })
+      }
       aria-pressed={selected}
       aria-haspopup="menu"
       data-sticky-id={sticky.id}
@@ -77,9 +86,10 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         top: size.y + (offset?.y ?? 0),
         width: size.width,
         height: size.height,
+        padding: text ? TEXT_PADDING : undefined,
         zIndex: props.zIndex,
-        background: style.paper,
-        color: style.ink,
+        background: text ? 'transparent' : style.paper,
+        color: text ? textInk(sticky.textColor) : style.ink,
         fontWeight: sticky.bold ? 700 : 400,
         fontStyle: sticky.italic ? 'italic' : 'normal',
       }}
@@ -116,7 +126,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
           note={sticky}
           initial={props.seed ?? sticky.text}
           size={size}
-          onDone={(text, next) => props.onCommitText(sticky.id, text, next)}
+          onDone={(text, next, size) => props.onCommitText(sticky.id, text, next, size)}
         />
       ) : (
         <StickyText note={sticky} size={size} />
@@ -158,7 +168,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       )}
       {props.resizable && !editing && !sticky.locked && (
         <ResizeHandles
-          label={t('note.resize')}
+          label={t(text ? 'text.resize' : 'note.resize')}
           hint={t('note.resizeHint')}
           onStart={(event, corner) => props.onResizeStart(event, sticky.id, corner)}
           onKey={(width, height) =>

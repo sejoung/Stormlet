@@ -13,7 +13,8 @@
 .board.tool-interact {
   cursor: grab;
 }
-.board.tool-sticky {
+.board.tool-sticky,
+.board.tool-text {
   cursor: crosshair;
 }
 .board.is-panning {
@@ -52,6 +53,24 @@
 .sticky.is-dragging {
   cursor: grabbing;
   opacity: 0.9;
+}
+.sticky.is-text {
+  box-shadow: none;
+}
+.sticky.is-text::after {
+  content: none;
+}
+.sticky.is-text.is-selected,
+.sticky.is-text:focus-visible,
+.sticky.is-text.is-editing {
+  box-shadow: none;
+}
+.sticky.is-text .sticky-text {
+  margin: 0;
+}
+.sticky.is-text .sticky-text::after {
+  /* Keep a final empty line in the displayed paragraph, just as the editor measures it. */
+  content: '\200b';
 }
 .sticky-content {
   position: relative;

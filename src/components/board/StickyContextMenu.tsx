@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { ContextMenu } from '../menus/ContextMenu';
-import {
-  isStickySize,
-  MIN_STICKY_SIZE,
-  MAX_STICKY_SIZE,
-  type StickySize,
-} from '../../domain/sticky-size';
+import { isStickySize, sizeLimits, type StickySize } from '../../domain/sticky-size';
 import type { Point } from '../../engine/viewport';
 import { useT } from '../common/i18n';
 import type { MessageKey } from '../../i18n/messages';
@@ -17,6 +12,7 @@ interface Props {
   point: Point;
   size: StickySize;
   count: number;
+  textOnly?: boolean;
   onFront(): void;
   onBack(): void;
   onResize(size: StickySize): void;
@@ -45,14 +41,22 @@ export function StickyContextMenu(props: Props) {
   const [width, setWidth] = useState(String(props.size.width));
   const [height, setHeight] = useState(String(props.size.height));
   const { onClose } = props;
+  const objectType = props.textOnly ? 'text' : undefined;
+  const { min, max } = sizeLimits(objectType);
   const run = (action: () => void) => {
     action();
     onClose();
   };
   return (
-    <ContextMenu point={props.point} label={t('noteMenu.label')} onClose={onClose}>
+    <ContextMenu
+      point={props.point}
+      label={t(props.textOnly ? 'text.menu' : 'noteMenu.label')}
+      onClose={onClose}
+    >
       <span className="context-caption">
-        {props.count > 1 ? t('noteMenu.count', { count: props.count }) : t('noteMenu.single')}
+        {props.count > 1
+          ? t(props.textOnly ? 'selection.count' : 'noteMenu.count', { count: props.count })
+          : t(props.textOnly ? 'text.single' : 'noteMenu.single')}
       </span>
       <button
         type="button"
@@ -107,43 +111,45 @@ export function StickyContextMenu(props: Props) {
       )}
       <div className="context-separator" role="separator" />
       <span className="context-caption">{t('noteMenu.size')}</span>
-      <div className="size-presets">
-        {PRESETS.map((size) => (
-          <button
-            key={size.label}
-            type="button"
-            role="menuitem"
-            aria-label={t('noteMenu.preset', {
-              size: t(size.label),
-              width: size.width,
-              height: size.height,
-            })}
-            disabled={props.locked}
-            onClick={() => run(() => props.onResize(size))}
-          >
-            {t(size.label)}
-            <span>
-              {size.width} × {size.height}
-            </span>
-          </button>
-        ))}
-      </div>
+      {!props.textOnly && (
+        <div className="size-presets">
+          {PRESETS.map((size) => (
+            <button
+              key={size.label}
+              type="button"
+              role="menuitem"
+              aria-label={t('noteMenu.preset', {
+                size: t(size.label),
+                width: size.width,
+                height: size.height,
+              })}
+              disabled={props.locked}
+              onClick={() => run(() => props.onResize(size))}
+            >
+              {t(size.label)}
+              <span>
+                {size.width} × {size.height}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       <form
         className="custom-size"
         onSubmit={(event) => {
           event.preventDefault();
           const size = { width: Number(width), height: Number(height) };
-          if (isStickySize(size)) run(() => props.onResize(size));
+          if (isStickySize(size, objectType)) run(() => props.onResize(size));
         }}
       >
         <label>
           {t('noteMenu.width')}
           <input
-            aria-label={t('noteMenu.widthField')}
+            aria-label={t(props.textOnly ? 'text.widthField' : 'noteMenu.widthField')}
             type="number"
             value={width}
-            min={MIN_STICKY_SIZE.width}
-            max={MAX_STICKY_SIZE.width}
+            min={min.width}
+            max={max.width}
             required
             disabled={props.locked}
             onChange={(event) => setWidth(event.target.value)}
@@ -153,11 +159,11 @@ export function StickyContextMenu(props: Props) {
         <label>
           {t('noteMenu.height')}
           <input
-            aria-label={t('noteMenu.heightField')}
+            aria-label={t(props.textOnly ? 'text.heightField' : 'noteMenu.heightField')}
             type="number"
             value={height}
-            min={MIN_STICKY_SIZE.height}
-            max={MAX_STICKY_SIZE.height}
+            min={min.height}
+            max={max.height}
             required
             disabled={props.locked}
             onChange={(event) => setHeight(event.target.value)}
@@ -175,7 +181,7 @@ export function StickyContextMenu(props: Props) {
           disabled={props.locked}
           onClick={() => run(props.onEdit)}
         >
-          {t('noteMenu.edit')}
+          {t(props.textOnly ? 'text.edit' : 'noteMenu.edit')}
         </button>
       )}
       <button type="button" role="menuitem" onClick={() => run(props.onCopyStyle)}>

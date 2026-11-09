@@ -1,3 +1,5 @@
+import type { TextColor } from './text/model';
+
 export const MAX_NOTE_LENGTH = 3000;
 export const MIN_NOTE_FONT = 8;
 export const MAX_NOTE_FONT = 144;
@@ -17,6 +19,7 @@ export interface NoteDetails {
   italic?: boolean;
   underline?: boolean;
   textAlign?: TextAlign;
+  textColor?: TextColor;
   autoFont?: boolean;
   fontSize?: number;
   groupId?: string | null;

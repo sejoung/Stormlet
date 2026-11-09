@@ -309,6 +309,7 @@ export function Workspace({
                 onContextMenu={menus.onNote}
                 onCanvasMenu={menus.onCanvas}
                 onAdd={notes.add}
+                onAddText={notes.addText}
                 onStartEdit={notes.startEdit}
                 onCommitText={notes.commitText}
                 onDuplicate={actions.duplicate}
@@ -371,6 +372,7 @@ export function Workspace({
             onDuplicate={actions.duplicate}
             actions={actions}
             onAdd={notes.add}
+            onAddText={notes.addText}
             onSelectAll={selectAll}
             onFit={() => fit()}
             onUndo={undo}

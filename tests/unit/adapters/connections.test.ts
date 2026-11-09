@@ -34,7 +34,7 @@ describe('connection files', () => {
       title: '흐름',
     };
     const content = serializeBoard(board);
-    expect(JSON.parse(content).version).toBe(9);
+    expect(JSON.parse(content).version).toBe(10);
     expect(parseBoard(content)).toStrictEqual(board);
     expect(parseBoard(file(undefined)).connections).toBeUndefined();
   });

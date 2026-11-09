@@ -77,6 +77,8 @@ test('opens a keyboard context menu and keeps native text editing separate', asy
   const menu = page.getByRole('menu', { name: '캔버스 메뉴' });
   await expect(menu.getByRole('menuitem', { name: '포스트잇 추가 N', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: '텍스트 추가 T', exact: true })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
   await expect(menu.getByRole('menuitem', { name: '프레임 추가 F', exact: true })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);

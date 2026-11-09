@@ -6,6 +6,7 @@ import {
   placeStickies,
   resizeStickies,
   setText,
+  deleteStickies,
   type Move,
   type Placement,
 } from '../../domain/commands';
@@ -17,6 +18,8 @@ import {
   type StickyColor,
 } from '../../domain/model';
 import type { StickySize } from '../../domain/sticky-size';
+import { DEFAULT_TEXT_SIZE, isText } from '../../domain/text/model';
+import { setTextAndFit } from '../../domain/text/commands';
 import { centeredAt } from '../../engine/sticky-metrics';
 import type { Point } from '../../engine/viewport';
 import type { Edit } from '../useBoardSession';
@@ -36,12 +39,13 @@ export interface NoteEditing {
   stopEdit(): void;
   /** Add a note centred at `at` in `color` (else the default), select it and edit it. */
   add(at: Point, color?: StickyColor): void;
+  addText(at: Point): void;
   move(moves: Move[]): void;
   resize(ids: readonly string[], size: StickySize): void;
   /** Move and resize notes at once, as dragging a corner does. */
   place(placements: readonly Placement[]): void;
   /** Save edited text; with `next`, continue in a new note to the right or below. */
-  commitText(id: string, text: string, next?: NextNote): void;
+  commitText(id: string, text: string, next?: NextNote, size?: StickySize): void;
 }
 
 interface Options {
@@ -93,13 +97,35 @@ export function useNoteEditing(options: Options): NoteEditing {
       startEdit(id);
       options.onAdded();
     },
+    addText: (at) => {
+      const id = options.newId();
+      edit((current) =>
+        addSticky(current, {
+          id,
+          ...DEFAULT_STICKY_APPEARANCE,
+          ...DEFAULT_TEXT_SIZE,
+          objectType: 'text',
+          x: Math.round(at.x),
+          y: Math.round(at.y),
+          autoFont: true,
+          textAlign: 'left',
+        }),
+      );
+      options.onSelect([id]);
+      startEdit(id);
+      options.onAdded();
+    },
     move: (moves) => edit((current) => moveStickies(current, moves)),
     resize: (ids, size) => edit((current) => resizeStickies(current, ids, size)),
     place: (placements) => edit((current) => placeStickies(current, placements)),
-    commitText: (id, text, next) => {
+    commitText: (id, text, next, size) => {
       setEditing(null);
       const source = own(board.stickies, id);
-      if (!next || !source) return edit((current) => setText(current, id, text));
+      if (source && isText(source) && !text.trim()) {
+        edit((current) => deleteStickies(current, [id]));
+        return;
+      }
+      if (!next || !source) return edit((current) => setTextAndFit(current, id, text, size));
       const created = options.newId();
       // One edit, so a single undo removes the new note and restores the old text together.
       edit((current) => [

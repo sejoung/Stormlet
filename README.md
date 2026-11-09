@@ -33,6 +33,13 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 - Copy and paste a note’s style (color and text formatting), kept across reloads and tabs; select all notes of a color
 - Emoji reactions and full-text search
 
+**Text**
+
+- Add background-free text with the text tool, `T`, or the canvas context menu; double-click or press Enter on a selection to edit
+- Enter adds a newline; `Ctrl/Cmd+Enter`, Escape or clicking outside finishes (Korean IME supported)
+- Whole-box bold, italic, underline, size, alignment and text color; font size defaults to Auto to fit the resizable box, with a theme-aware default color
+- Move, resize, copy, group, lock and undo just like notes; included in autosave, `.stormlet` files, Google Drive and PNG/SVG exports
+
 **Connections**
 
 - Connect notes and frames with `L` or by dragging a side port; lines follow moves and resizing
@@ -69,30 +76,31 @@ Reactions use a stable local identifier, so no profile is shown.
 
 ## Keyboard shortcuts
 
-| Action                                  | Shortcut                           |
-| --------------------------------------- | ---------------------------------- |
-| Note / select / hand tool               | `N` / `V` / `H`                    |
-| Connection / frame tool                 | `L` / `F`                          |
-| Edit note, newline, finish              | `Enter`, `Shift+Enter`, `Esc`      |
-| Continue in a new note (right / below)  | `Tab` / `Ctrl/Cmd+Enter`           |
-| Duplicate                               | `Ctrl/Cmd+D`, `Alt/Option+drag`    |
-| Duplicate in a direction                | `Alt/Option+arrow`                 |
-| Select all                              | `Ctrl/Cmd+A`                       |
-| Group / ungroup                         | `Ctrl/Cmd+G` / `Ctrl/Cmd+Shift+G`  |
-| Lock                                    | `Ctrl/Cmd+Shift+L`                 |
-| Bold / italic / underline               | `Ctrl/Cmd+B` / `I` / `U`           |
-| Move selection (10px with Shift)        | Arrow keys                         |
-| Align left / horizontal centers / right | `Alt/Option+A` / `H` / `D`         |
-| Align top / vertical centers / bottom   | `Alt/Option+W` / `V` / `S`         |
-| Distribute horizontally / vertically    | `Alt/Option+Shift+H` / `V`         |
-| Copy / paste style                      | `Ctrl/Cmd+Alt/Option+C` / `V`      |
-| Resize: keep proportions / no snapping  | `Shift` / `Ctrl/Cmd` + corner drag |
-| Move without snapping                   | Hold `Ctrl/Cmd` while dragging     |
-| Undo / redo                             | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`  |
-| Fit all / fit selected                  | `Alt/Option+1` / `2`               |
-| Search                                  | `Ctrl/Cmd+F`                       |
-| Open a board file / save                | `Ctrl/Cmd+O` / `Ctrl/Cmd+S`        |
-| Help                                    | `F1`, `?`                          |
+| Action                                  | Shortcut                                |
+| --------------------------------------- | --------------------------------------- |
+| Note / select / hand tool               | `N` / `V` / `H`                         |
+| Connection / frame tool                 | `L` / `F`                               |
+| Text tool / newline / finish            | `T` / `Enter` / `Ctrl/Cmd+Enter`, `Esc` |
+| Edit note, newline, finish              | `Enter`, `Shift+Enter`, `Esc`           |
+| Continue in a new note (right / below)  | `Tab` / `Ctrl/Cmd+Enter`                |
+| Duplicate                               | `Ctrl/Cmd+D`, `Alt/Option+drag`         |
+| Duplicate in a direction                | `Alt/Option+arrow`                      |
+| Select all                              | `Ctrl/Cmd+A`                            |
+| Group / ungroup                         | `Ctrl/Cmd+G` / `Ctrl/Cmd+Shift+G`       |
+| Lock                                    | `Ctrl/Cmd+Shift+L`                      |
+| Bold / italic / underline               | `Ctrl/Cmd+B` / `I` / `U`                |
+| Move selection (10px with Shift)        | Arrow keys                              |
+| Align left / horizontal centers / right | `Alt/Option+A` / `H` / `D`              |
+| Align top / vertical centers / bottom   | `Alt/Option+W` / `V` / `S`              |
+| Distribute horizontally / vertically    | `Alt/Option+Shift+H` / `V`              |
+| Copy / paste style                      | `Ctrl/Cmd+Alt/Option+C` / `V`           |
+| Resize: keep proportions / no snapping  | `Shift` / `Ctrl/Cmd` + corner drag      |
+| Move without snapping                   | Hold `Ctrl/Cmd` while dragging          |
+| Undo / redo                             | `Ctrl/Cmd+Z` / `Ctrl/Cmd+Shift+Z`       |
+| Fit all / fit selected                  | `Alt/Option+1` / `2`                    |
+| Search                                  | `Ctrl/Cmd+F`                            |
+| Open a board file / save                | `Ctrl/Cmd+O` / `Ctrl/Cmd+S`             |
+| Help                                    | `F1`, `?`                               |
 
 ## Getting started
 
@@ -164,7 +172,7 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 
 ### File format
 
-`.stormlet` files are JSON with a `format` and `version` field. The current version is 9 and stores the title, notes, connections (black lines included), frames and their styles. Files from versions 1–8 can still be opened.
+`.stormlet` files are JSON with a `format` and `version` field. The current version is 10 and stores the title, notes, standalone text, connections, frames and their styles. Files from versions 1–9 can still be opened.
 
 ### Translations
 

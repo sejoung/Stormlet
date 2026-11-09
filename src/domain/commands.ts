@@ -11,6 +11,7 @@ import { touchesStickies } from './connections/model';
  */
 export interface NewSticky extends StickyAppearance, NoteDetails, Partial<StickySize> {
   id: string;
+  objectType?: 'text';
   x: number;
   y: number;
   text?: string;
@@ -76,11 +77,13 @@ export function deleteStickies(board: Board, ids: readonly string[]): Patch[] {
 
 export function resizeStickies(board: Board, ids: readonly string[], size: StickySize): Patch[] {
   if (!Number.isFinite(size.width) || !Number.isFinite(size.height)) return [];
-  const next = clampStickySize(size);
-  return editableIds(board, ids).flatMap((id): Patch[] => [
-    { op: 'set', id, field: 'width', value: next.width },
-    { op: 'set', id, field: 'height', value: next.height },
-  ]);
+  return editableIds(board, ids).flatMap((id): Patch[] => {
+    const next = clampStickySize(size, board.stickies[id].objectType);
+    return [
+      { op: 'set', id, field: 'width', value: next.width },
+      { op: 'set', id, field: 'height', value: next.height },
+    ];
+  });
 }
 
 /** A note's new position and size, as a resize from any corner or of a whole selection sets. */
@@ -101,7 +104,7 @@ export function placeStickies(board: Board, placements: readonly Placement[]): P
     const next = {
       x: Math.round(placement.x),
       y: Math.round(placement.y),
-      ...clampStickySize({ width, height }),
+      ...clampStickySize({ width, height }, note.objectType),
     };
     return (['x', 'y', 'width', 'height'] as const)
       .filter((field) => note[field] !== next[field])

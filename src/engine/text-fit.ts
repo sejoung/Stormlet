@@ -1,9 +1,12 @@
 import type { StickySize } from '../domain/sticky-size';
 import { MAX_NOTE_FONT, MIN_NOTE_FONT } from '../domain/note-details';
+import { TEXT_PADDING } from '../domain/text/model';
 
 export { MAX_NOTE_FONT, MIN_NOTE_FONT };
 export const NOTE_PADDING = 12;
 export const NOTE_LINE_HEIGHT = 1.15;
+export const contentPadding = (item: { objectType?: 'text' }): number =>
+  item.objectType === 'text' ? TEXT_PADDING : NOTE_PADDING;
 
 /** Conservative layout before the browser can measure the actual font. */
 function estimatedFit(text: string, font: number, width: number, height: number): boolean {
@@ -64,9 +67,10 @@ export function fitNoteFont(
   text: string,
   size: StickySize,
   fits?: (font: number) => boolean,
+  padding = NOTE_PADDING,
 ): number {
-  const width = size.width - NOTE_PADDING * 2;
-  const height = size.height - NOTE_PADDING * 2;
+  const width = size.width - padding * 2;
+  const height = size.height - padding * 2;
   const high = Math.min(MAX_NOTE_FONT, Math.floor(height / NOTE_LINE_HEIGHT));
   const canFit = fits ?? ((font: number) => estimatedFit(text, font, width, height));
   return (

@@ -6,6 +6,7 @@ import { connectionGeometry } from '../../engine/connections/geometry';
 import { centerOn, minimapArea, minimapToBoard, visibleRect } from '../../engine/minimap';
 import type { Point, View } from '../../engine/viewport';
 import { COLOR_STYLES } from '../board/kinds';
+import { textInk } from '../text/colors';
 import { FRAME_STYLES } from '../frames/colors';
 import { LINE_COLORS } from '../connections/colors';
 import { ARROW_DELTAS } from '../common/keyboard';
@@ -151,7 +152,9 @@ const MinimapShapes = memo(function MinimapShapes({ board }: { board: Board }) {
           y={note.y}
           width={note.width}
           height={note.height}
-          fill={COLOR_STYLES[note.color].paper}
+          fill={
+            note.objectType === 'text' ? textInk(note.textColor) : COLOR_STYLES[note.color].paper
+          }
           vectorEffect="non-scaling-stroke"
         />
       ))}

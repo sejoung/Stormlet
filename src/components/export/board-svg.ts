@@ -2,9 +2,11 @@ import { byStackOrder, type Board, type Sticky } from '../../domain/model';
 import { byAreaDescending, type Frame } from '../../domain/frames/model';
 import { CONNECTION_COLORS, type Connection } from '../../domain/connections/model';
 import type { Rect } from '../../domain/geometry/bounds';
-import { NOTE_LINE_HEIGHT, NOTE_PADDING } from '../../engine/text-fit';
+import { NOTE_LINE_HEIGHT, contentPadding } from '../../engine/text-fit';
 import { connectionGeometry } from '../../engine/connections/geometry';
 import { COLOR_STYLES } from '../board/kinds';
+import { isText } from '../../domain/text/model';
+import { textInk } from '../text/colors';
 import { LINE_COLORS } from '../connections/colors';
 import { FRAME_STYLES } from '../frames/colors';
 import { FONT_FAMILY, layoutNote, scaledMeasure, type MeasureText } from './text-layout';
@@ -84,17 +86,24 @@ function connectionSvg(board: Board, line: Connection) {
 
 function noteSvg(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>, measure: MeasureText) {
   const style = COLOR_STYLES[note.color];
+  const freeText = isText(note);
+  const padding = contentPadding(note);
+  const ink = freeText
+    ? note.textColor && note.textColor !== 'default'
+      ? textInk(note.textColor)
+      : THEME.text
+    : style.ink;
   const { size, lines } = layoutNote(note, measureAt);
   const lineHeight = size * NOTE_LINE_HEIGHT;
   // Text is centred vertically in the padded box, as `margin: auto 0` does on screen.
   const top =
-    note.y + NOTE_PADDING + (note.height - NOTE_PADDING * 2 - lines.length * lineHeight) / 2;
-  const align = note.textAlign ?? 'center';
+    note.y + padding + (freeText ? 0 : (note.height - padding * 2 - lines.length * lineHeight) / 2);
+  const align = note.textAlign ?? (freeText ? 'left' : 'center');
   const x =
     align === 'left'
-      ? note.x + NOTE_PADDING
+      ? note.x + padding
       : align === 'right'
-        ? note.x + note.width - NOTE_PADDING
+        ? note.x + note.width - padding
         : note.x + note.width / 2;
   const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle';
   const text = lines
@@ -104,8 +113,12 @@ function noteSvg(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>, meas
     )
     .join('');
   const parts = [
-    `<rect x="${n(note.x)}" y="${n(note.y)}" width="${n(note.width)}" height="${n(note.height)}" rx="2" fill="${style.paper}" filter="url(#note-shadow)"/>`,
-    `<g font-size="${n(size)}" fill="${style.ink}" text-anchor="${anchor}"`,
+    ...(freeText
+      ? []
+      : [
+          `<rect x="${n(note.x)}" y="${n(note.y)}" width="${n(note.width)}" height="${n(note.height)}" rx="2" fill="${style.paper}" filter="url(#note-shadow)"/>`,
+        ]),
+    `<g font-size="${n(size)}" fill="${ink}" text-anchor="${anchor}"`,
     note.bold ? ' font-weight="700"' : '',
     note.italic ? ' font-style="italic"' : '',
     note.underline ? ' text-decoration="underline"' : '',

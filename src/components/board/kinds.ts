@@ -1,7 +1,7 @@
 import type { StickyColor, StickyKind } from '../../domain/model';
 import type { MessageKey } from '../../i18n/messages';
 
-export type BoardTool = 'interact' | 'sticky' | 'hand' | 'connect' | 'frame';
+export type BoardTool = 'interact' | 'sticky' | 'text' | 'hand' | 'connect' | 'frame';
 
 export const COLOR_STYLES: Record<StickyColor, { label: MessageKey; paper: string; ink: string }> =
   {

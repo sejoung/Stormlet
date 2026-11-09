@@ -7,6 +7,7 @@ import type { MessageKey } from '../../i18n/messages';
 const TOOL_HINTS: Record<BoardTool, MessageKey> = {
   frame: 'chrome.hintFrame',
   sticky: 'chrome.hintSticky',
+  text: 'text.canvasHint',
   connect: 'chrome.hintConnect',
   interact: 'chrome.hintSelect',
   hand: 'chrome.hintSelect',

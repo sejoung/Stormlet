@@ -225,6 +225,7 @@ export const STYLE_FIELDS = [
   'italic',
   'underline',
   'textAlign',
+  'textColor',
   'autoFont',
   'fontSize',
 ] as const;
@@ -246,9 +247,16 @@ export function applyStyle(board: Board, ids: readonly string[], style: NoteStyl
 
 /** Unlocked notes with the same colour as any note in `ids`, in stacking order. */
 export function sameColorIds(board: Board, ids: readonly string[]): string[] {
-  const colors = new Set(ids.flatMap((id) => own(board.stickies, id)?.color ?? []));
+  const colorOf = (note: Sticky) =>
+    note.objectType === 'text' ? `text:${note.textColor ?? 'default'}` : note.color;
+  const colors = new Set(
+    ids.flatMap((id) => {
+      const note = own(board.stickies, id);
+      return note ? [colorOf(note)] : [];
+    }),
+  );
   return Object.values(board.stickies)
-    .filter((note) => colors.has(note.color) && !note.locked)
+    .filter((note) => colors.has(colorOf(note)) && !note.locked)
     .sort(byStackOrder)
     .map((note) => note.id);
 }

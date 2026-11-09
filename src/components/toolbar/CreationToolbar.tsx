@@ -114,6 +114,16 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
+          aria-label={t('text.tool')}
+          aria-pressed={tool === 'text'}
+          title={t('text.toolHint')}
+          onClick={() => onTool('text')}
+        >
+          <Icon name="text" />
+        </button>
+        <button
+          type="button"
+          className="creation-tool"
           aria-label={t('creation.connect')}
           data-creation-tool="connect"
           aria-haspopup="dialog"

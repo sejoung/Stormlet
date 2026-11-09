@@ -10,6 +10,32 @@ const measure = (text: string, font: string) =>
   [...text].length * Number(/(\d+(?:\.\d+)?)px/.exec(font)![1]) * 0.5;
 const tenPx = (text: string) => [...text].length * 10;
 
+describe('standalone text export', () => {
+  it('draws escaped, top-aligned text in its ink color, without a paper rectangle or shadow', () => {
+    const board = boardOf(
+      sticky('text', {
+        objectType: 'text',
+        text: '<hello>\nworld',
+        textColor: 'blue',
+        fontSize: 24,
+        autoFont: false,
+        width: 320,
+        height: 200,
+        x: 100,
+        y: 200,
+        bold: true,
+      }),
+    );
+    const result = boardSvg(board, measure)!;
+    expect(result.svg).toContain('&lt;hello&gt;');
+    expect(result.svg).not.toContain('<hello>');
+    expect(result.svg).toContain('fill="#4262e8" text-anchor="start" font-weight="700"');
+    expect(result.svg).not.toContain('filter="url(#note-shadow)"');
+    expect(result.svg.match(/<rect /g)).toHaveLength(1);
+    expect(result.svg).toContain('<text x="104" y="226.2">');
+  });
+});
+
 describe('note text layout', () => {
   it('wraps at spaces, between CJK characters, and inside a word only when it must', () => {
     expect(wrapText('one two three', 70, tenPx)).toEqual(['one two', 'three']);

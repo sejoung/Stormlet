@@ -16,6 +16,9 @@ import { COLOR_STYLES } from '../board/kinds';
 import { ArrangeToolbar } from './ArrangeToolbar';
 import { Icon } from '../toolbar/Icon';
 import { useT } from '../common/i18n';
+import { isText } from '../../domain/text/model';
+import { TextColorPicker } from '../text/TextColorPicker';
+import { textInk } from '../text/colors';
 import type { MessageKey } from '../../i18n/messages';
 
 interface Props {
@@ -80,6 +83,8 @@ export function SelectionToolbar(props: Props) {
   const t = useT();
   const [panel, setPanel] = useState<'color' | 'align' | 'emoji' | null>(null);
   const note = props.notes[0];
+  const onlyText = props.notes.every(isText);
+  const textNotes = props.notes.filter(isText);
   const locked = props.notes.some((s) => s.locked);
   const grouped = props.notes.some((s) => s.groupId);
   const bounds = boundsOf(props.notes)!;
@@ -117,7 +122,7 @@ export function SelectionToolbar(props: Props) {
       <div
         className="selection-toolbar"
         role="toolbar"
-        aria-label={t('selection.toolbar')}
+        aria-label={t(onlyText ? 'text.toolbar' : 'selection.toolbar')}
         onKeyDown={(event) => {
           if (event.target instanceof HTMLButtonElement)
             moveFocus(event, event.currentTarget, 'button:not(:disabled)', HORIZONTAL_KEYS);
@@ -131,15 +136,20 @@ export function SelectionToolbar(props: Props) {
         <span className="selection-count">
           {props.notes.length > 1
             ? t('selection.count', { count: props.notes.length })
-            : t('selection.single')}
+            : t(onlyText ? 'text.single' : 'selection.single')}
         </span>
         <Tool
-          label={t('selection.color')}
+          label={t(onlyText ? 'text.color' : 'selection.color')}
           disabled={locked}
           active={panel === 'color'}
           onClick={() => toggle('color')}
         >
-          <span className="color-preview" style={{ background: COLOR_STYLES[note.color].paper }} />
+          <span
+            className="color-preview"
+            style={{
+              background: onlyText ? textInk(note.textColor) : COLOR_STYLES[note.color].paper,
+            }}
+          />
         </Tool>
         <span className="selection-divider" />
         <Tool
@@ -193,15 +203,20 @@ export function SelectionToolbar(props: Props) {
         >
           <Icon name="align" />
         </Tool>
-        <Tool
-          label={t('selection.react')}
-          active={panel === 'emoji'}
-          onClick={() => toggle('emoji')}
-        >
-          <Icon name="emoji" />
-        </Tool>
+        {!onlyText && (
+          <Tool
+            label={t('selection.react')}
+            active={panel === 'emoji'}
+            onClick={() => toggle('emoji')}
+          >
+            <Icon name="emoji" />
+          </Tool>
+        )}
         <span className="selection-divider" />
-        <Tool label={t('selection.duplicate')} onClick={props.onDuplicate}>
+        <Tool
+          label={t(onlyText ? 'text.duplicate' : 'selection.duplicate')}
+          onClick={props.onDuplicate}
+        >
           <Icon name="duplicate" />
         </Tool>
         <Tool label={t('selection.frame')} onClick={props.onFrame}>
@@ -217,7 +232,7 @@ export function SelectionToolbar(props: Props) {
           </Tool>
         )}
         <Tool
-          label={locked ? t('selection.unlock') : t('selection.lock')}
+          label={locked ? t('selection.unlock') : t(onlyText ? 'text.lock' : 'selection.lock')}
           active={locked}
           onClick={() => props.onFormat({ locked: !locked })}
         >
@@ -232,42 +247,57 @@ export function SelectionToolbar(props: Props) {
         <div className={`selection-popover panel-${panel}`}>
           {panel === 'color' && (
             <>
-              <span className="popover-label">{t('selection.colorHeading')}</span>
-              <div className="color-grid">
-                {STICKY_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    aria-label={t('selection.colorOption', { color: t(COLOR_STYLES[color].label) })}
-                    aria-pressed={props.notes.every((s) => s.color === color)}
-                    style={{ background: COLOR_STYLES[color].paper }}
-                    onClick={() => {
-                      props.onColor(color);
-                      setPanel(null);
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="popover-label">{t('selection.shapeHeading')}</span>
-              <div className="shape-options">
-                <button
-                  type="button"
-                  onClick={() => props.onResize({ width: note.width, height: note.width })}
-                >
-                  {t('selection.square')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    props.onResize({
-                      width: note.width,
-                      height: Math.round(note.width * RECTANGLE_RATIO),
-                    })
-                  }
-                >
-                  {t('selection.rectangle')}
-                </button>
-              </div>
+              {!!textNotes.length && (
+                <TextColorPicker
+                  colors={textNotes.map((s) => s.textColor)}
+                  onChange={(textColor) => {
+                    props.onFormat({ textColor });
+                    setPanel(null);
+                  }}
+                />
+              )}
+              {!onlyText && (
+                <>
+                  <span className="popover-label">{t('selection.colorHeading')}</span>
+                  <div className="color-grid">
+                    {STICKY_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        aria-label={t('selection.colorOption', {
+                          color: t(COLOR_STYLES[color].label),
+                        })}
+                        aria-pressed={props.notes.every((s) => s.color === color)}
+                        style={{ background: COLOR_STYLES[color].paper }}
+                        onClick={() => {
+                          props.onColor(color);
+                          setPanel(null);
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <span className="popover-label">{t('selection.shapeHeading')}</span>
+                  <div className="shape-options">
+                    <button
+                      type="button"
+                      onClick={() => props.onResize({ width: note.width, height: note.width })}
+                    >
+                      {t('selection.square')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        props.onResize({
+                          width: note.width,
+                          height: Math.round(note.width * RECTANGLE_RATIO),
+                        })
+                      }
+                    >
+                      {t('selection.rectangle')}
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
           {panel === 'align' && (
@@ -278,7 +308,7 @@ export function SelectionToolbar(props: Props) {
                   <button
                     key={align}
                     type="button"
-                    aria-pressed={(note.textAlign ?? 'center') === align}
+                    aria-pressed={(note.textAlign ?? (isText(note) ? 'left' : 'center')) === align}
                     onClick={() => props.onFormat({ textAlign: align })}
                   >
                     {t(ALIGN_LABELS[align])}

@@ -2,7 +2,7 @@ import type { Board, Sticky } from '../../../domain/model';
 import { own } from '../../../domain/ids';
 import type { Placement } from '../../../domain/commands';
 import { boundsOf, rectOf, type Rect } from '../../../domain/geometry/bounds';
-import { MAX_STICKY_SIZE, MIN_STICKY_SIZE, type StickySize } from '../../../domain/sticky-size';
+import { sizeLimits, type StickySize } from '../../../domain/sticky-size';
 import { snapResize, type Corner, type Guides, type SnapOptions } from '../../../engine/snapping';
 import type { Point } from '../../../engine/viewport';
 
@@ -44,21 +44,19 @@ function anchored(original: Rect, corner: Corner, width: number, height: number)
  * selection stops when its smallest note reaches the minimum or its largest the maximum.
  */
 function frameLimits(notes: readonly Sticky[], original: Rect) {
-  const sizes = (pick: (values: number[]) => number): StickySize => ({
-    width: pick(notes.map((note) => note.width)),
-    height: pick(notes.map((note) => note.height)),
+  const scaled = (limit: 'min' | 'max', pick: (values: number[]) => number): StickySize => ({
+    width: pick(
+      notes.map((note) => (original.width * sizeLimits(note.objectType)[limit].width) / note.width),
+    ),
+    height: pick(
+      notes.map(
+        (note) => (original.height * sizeLimits(note.objectType)[limit].height) / note.height,
+      ),
+    ),
   });
-  const smallest = sizes((values) => Math.min(...values));
-  const largest = sizes((values) => Math.max(...values));
   return {
-    min: {
-      width: (original.width * MIN_STICKY_SIZE.width) / smallest.width,
-      height: (original.height * MIN_STICKY_SIZE.height) / smallest.height,
-    },
-    max: {
-      width: (original.width * MAX_STICKY_SIZE.width) / largest.width,
-      height: (original.height * MAX_STICKY_SIZE.height) / largest.height,
-    },
+    min: scaled('min', (values) => Math.max(...values)),
+    max: scaled('max', (values) => Math.min(...values)),
   };
 }
 

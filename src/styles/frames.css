@@ -101,6 +101,7 @@
   cursor: default;
 }
 .board.tool-sticky .board-frame *,
+.board.tool-text .board-frame *,
 .board.tool-frame .board-frame * {
   pointer-events: none;
 }

@@ -65,6 +65,8 @@ export const DEFAULT_STICKY_APPEARANCE: Readonly<StickyAppearance> = {
 
 export interface Sticky extends StickyAppearance, StickySize, NoteDetails {
   id: string;
+  /** Absent for sticky notes, including all boards saved before version 10. */
+  objectType?: 'text';
   text: string;
   /** Top-left corner in board coordinates. */
   x: number;
@@ -74,6 +76,7 @@ export interface Sticky extends StickyAppearance, StickySize, NoteDetails {
 }
 export type StickyField = Exclude<keyof Sticky, 'id'>;
 export const STICKY_FIELDS: readonly StickyField[] = [
+  'objectType',
   'kind',
   'color',
   'text',
@@ -86,6 +89,7 @@ export const STICKY_FIELDS: readonly StickyField[] = [
   'italic',
   'underline',
   'textAlign',
+  'textColor',
   'autoFont',
   'fontSize',
   'groupId',

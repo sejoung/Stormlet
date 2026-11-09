@@ -21,8 +21,8 @@ import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-// Version 9 adds black connection lines; older builds refuse such files as newer, not damaged.
-export const FORMAT_VERSION = 9;
+// Version 10 adds standalone text; older builds refuse it rather than turn text into notes.
+export const FORMAT_VERSION = 10;
 export const FILE_EXTENSION = '.stormlet';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };
@@ -81,18 +81,20 @@ function readSticky(value: unknown, index: number, version: number): Sticky {
     !isStickyId(id) ||
     !(isStickyKind(kind) || (version >= 2 && kind === null)) ||
     !isStickyColor(color) ||
+    !(item.objectType === undefined || (version >= 10 && item.objectType === 'text')) ||
     typeof text !== 'string' ||
     !isFiniteNumber(x) ||
     !isFiniteNumber(y) ||
     !isFiniteNumber(z) ||
     !isFiniteNumber(width) ||
     !isFiniteNumber(height) ||
-    !isStickySize({ width, height })
+    !isStickySize({ width, height }, item.objectType === 'text' ? 'text' : undefined)
   )
     throw new FormatError(`Sticky ${index} is malformed.`);
   try {
     return {
       id,
+      ...(item.objectType === 'text' ? { objectType: 'text' as const } : {}),
       kind,
       color,
       text,

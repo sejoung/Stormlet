@@ -2,6 +2,7 @@ import { useMemo, useState, type PointerEvent, type RefObject } from 'react';
 import { own } from '../../domain/ids';
 import { byStackOrder, type Board, type StickyColor } from '../../domain/model';
 import type { Move, Placement } from '../../domain/commands';
+import type { StickySize } from '../../domain/sticky-size';
 import { groupSelection, type NextNote } from '../../domain/note-actions';
 import { boundsOf, rectOf } from '../../domain/geometry/bounds';
 import type { ConnectionSide } from '../../domain/connections/model';
@@ -57,8 +58,9 @@ interface Props {
   onContextMenu(id: string, point: Point): void;
   onCanvasMenu(point: Point, target: CanvasTarget): void;
   onAdd(at: Point, color?: StickyColor): void;
+  onAddText(at: Point): void;
   onStartEdit(id: string | null, seed?: string): void;
-  onCommitText(id: string, text: string, next?: NextNote): void;
+  onCommitText(id: string, text: string, next?: NextNote, size?: StickySize): void;
   onDuplicate(ids: string[], offset: Point): void;
   onReact(id: string, emoji: string): void;
 }
@@ -102,7 +104,7 @@ export function BoardCanvas(props: Props) {
     if (event.button === 1 || space) event.preventDefault();
     element.current!.setPointerCapture(event.pointerId);
     if (tool === 'interact' && !space && !event.shiftKey && event.button === 0) onSelect([]);
-    if (tool === 'sticky' && event.button === 0 && !space)
+    if ((tool === 'sticky' || tool === 'text') && event.button === 0 && !space)
       setGesture({ type: 'place', start: local(event) });
     else if (panning) startPan(event);
     else {
@@ -121,6 +123,11 @@ export function BoardCanvas(props: Props) {
     event.currentTarget.setPointerCapture(event.pointerId);
     if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus();
     if (space || tool === 'hand') return startPan(event);
+    if (tool === 'text' && board.stickies[id].objectType === 'text' && !board.stickies[id].locked) {
+      event.preventDefault();
+      onSelect([id]);
+      return props.onStartEdit(id);
+    }
     const ids = pickedNotes(board, selection, id, event.shiftKey || event.metaKey || event.ctrlKey);
     onSelect(ids);
     if (board.stickies[id].locked) return;
@@ -193,7 +200,7 @@ export function BoardCanvas(props: Props) {
     if (current.type === 'place') {
       const at = local(event);
       if (Math.hypot(at.x - current.start.x, at.y - current.start.y) < DRAG_THRESHOLD)
-        props.onAdd(toBoardPoint(view, at));
+        (tool === 'text' ? props.onAddText : props.onAdd)(toBoardPoint(view, at));
     } else if (current.type === 'resize') props.onResize(resizedPlacements(board, current));
     else if (current.type === 'drag' && (current.offset.x || current.offset.y)) {
       if (current.duplicate) return props.onDuplicate(current.ids, current.offset);
