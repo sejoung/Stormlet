@@ -84,6 +84,21 @@ describe('layout conveniences', () => {
     expect([store.board.stickies.b.x, store.board.stickies.c.x]).toEqual([0, 0]);
   });
 
+  it('fits all and the selection with Option/Alt + 1 and 2 by physical key', () => {
+    const store = memoryStore(boardOf(sticky('a'), sticky('b', { x: 3000, y: 2000 })));
+    render(<App store={store} newId={ids()} />);
+    const board = boardBounds();
+    const view = () => board.querySelector('.board-layer')!.getAttribute('style');
+    const start = view();
+    // On a Mac, Option+1 types "¡" and Option+2 types "™".
+    fireEvent.keyDown(window, { key: '¡', code: 'Digit1', altKey: true });
+    const all = view();
+    expect(all).not.toBe(start);
+    pick(board, 'b');
+    fireEvent.keyDown(window, { key: '™', code: 'Digit2', altKey: true });
+    expect(view()).not.toBe(all);
+  });
+
   it('shows equal-spacing guides while dragging, snaps to them, and Ctrl/Cmd moves freely', () => {
     const store = memoryStore(
       boardOf(sticky('a'), sticky('c', { x: 560 }), sticky('b', { x: 900, y: 300 })),

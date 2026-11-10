@@ -195,6 +195,21 @@ describe('frames', () => {
     expect(applyPatches(result.board, result.inverse).board).toEqual(source);
   });
 
+  it('pastes a frame with a fractional offset by the same whole pixels as its notes', () => {
+    const source: Board = {
+      ...boardOf(sticky('flush', { x: 0, y: 0 })),
+      frames: { root: frame('root') },
+    };
+    let id = 0;
+    const copied = cloneFrameContents(source, source, () => `copy${++id}`, 100.6, 40.4);
+    const pasted = applyPatches(source, copied.patches).board;
+    const copyFrame = pasted.frames![copied.frameIds.get('root')!];
+    const copyNote = Object.values(pasted.stickies).find((note) => note.id !== 'flush')!;
+    expect(copyFrame).toMatchObject({ x: 101, y: 40 });
+    expect(copyNote).toMatchObject({ x: copyFrame.x, y: copyFrame.y });
+    expect(Object.keys(frameContents(pasted, copyFrame.id).stickies)).toEqual([copyNote.id]);
+  });
+
   it('diffs frame additions, updates and removals for outside changes and undo', () => {
     const source = board();
     const target = {

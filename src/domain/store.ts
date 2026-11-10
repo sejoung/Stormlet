@@ -45,4 +45,9 @@ export interface BoardLibrary {
   startInTab(title: string): void;
   /** Delete a closed board; false if a tab has opened it meanwhile. */
   remove(id: string): Promise<boolean>;
+  /**
+   * Keep a copy of `board` as a closed board, listed in Recent boards; false when storage
+   * refused it. Used before something replaces this tab's board for good.
+   */
+  keep(board: Board): boolean;
 }

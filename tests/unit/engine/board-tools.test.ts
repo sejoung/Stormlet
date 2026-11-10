@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { textCells } from '../../../src/engine/paste';
+import { exceedsPasteLimits, textCells } from '../../../src/engine/paste';
 import { fitBoard, fitView } from '../../../src/engine/fit-view';
 import { frame } from '../../support/frames';
 import { connection } from '../../support/connections';
@@ -23,6 +23,17 @@ describe('board tools', () => {
     expect(textCells('x'.repeat(3001))[0].text).toHaveLength(3000);
     expect(textCells('x\n'.repeat(51))).toHaveLength(50);
     expect(textCells('x\t'.repeat(101))).toHaveLength(100);
+  });
+
+  it('warns about a paste only when a cell or characters are actually dropped', () => {
+    // Many short cells exceed one note's length in total, and a trailing newline adds no row.
+    expect(exceedsPasteLimits('짧은 메모\t'.repeat(90))).toBe(false);
+    expect(exceedsPasteLimits('x\n'.repeat(50))).toBe(false);
+    expect(exceedsPasteLimits('x\n'.repeat(50) + '\n \n')).toBe(false);
+    expect(exceedsPasteLimits('x'.repeat(3000))).toBe(false);
+    expect(exceedsPasteLimits('x\n'.repeat(51))).toBe(true);
+    expect(exceedsPasteLimits('x\t'.repeat(101))).toBe(true);
+    expect(exceedsPasteLimits('x'.repeat(3001))).toBe(true);
   });
 
   it('fits content around its center and handles empty boards and unmeasured viewports', () => {
@@ -133,6 +144,11 @@ describe('board tools', () => {
     expect(snapResize(board, ['a'], frame(173, 200), 'se', { zoom: 1, grid: 20 }).frame.width).toBe(
       180,
     );
+    // An exact size or edge match is kept rather than handed to the grid.
+    const exact = (width: number) =>
+      snapResize(board, ['a'], frame(width, 200), 'se', { zoom: 1, grid: 70 });
+    expect(exact(240)).toMatchObject({ frame: { width: 240 }, guides: { sameWidth: ['b'] } });
+    expect(exact(400)).toMatchObject({ frame: { width: 400 }, guides: { x: 400 } });
   });
 
   it('snaps notes to frames, and frames to frames and notes, ignoring what moves along', () => {

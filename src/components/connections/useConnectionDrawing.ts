@@ -16,6 +16,8 @@ export interface ConnectionDrawing {
   /** The line as it would be created now, for preview; `null` when not drawing. */
   draft: Connection | null;
   active: boolean;
+  /** A line is being dragged out by a pointer that is still down. */
+  pressed: boolean;
   cancel(): void;
   /** Start (or, for a click-click line, finish) at a background, note or frame press. */
   backgroundDown(event: PointerEvent, source?: Endpoint): boolean;
@@ -193,5 +195,6 @@ export function useConnectionDrawing({
       if (current.current) finish(current.current, endpoint);
     },
     active: !!draft,
+    pressed: !!draft?.pressed,
   };
 }

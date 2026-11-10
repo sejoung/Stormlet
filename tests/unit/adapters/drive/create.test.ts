@@ -156,6 +156,21 @@ describe('creating Drive files without duplicates', () => {
     expect(drive.bodies.at(-1)).toBe(serializeBoard(newer));
   });
 
+  it('reserves a new ID once the board moved on, never taking over the earlier upload', async () => {
+    const drive = fakeDrive({
+      'GET ids': [json({ ids: ['reserved'] }), json({ ids: ['fresh'] })],
+      'POST upload': [lost(), json({ id: 'fresh', name: 'Plan.stormlet', version: '1' })],
+      'GET meta': [new TypeError('offline')],
+    });
+    expect(await failure(drive.client.create('folder', board))).toBe('network: offline');
+    // Another file was opened (or syncing stopped): a different board saves to the folder.
+    drive.client.forgetUnconfirmed();
+    expect(drive.creations.read()).toBeNull();
+    expect(await drive.client.create('folder', newer)).toMatchObject({ id: 'fresh' });
+    expect(drive.log).toEqual(['GET ids', 'POST upload', 'GET meta', 'GET ids', 'POST upload']);
+    expect(drive.bodies.at(-1)).toContain('"id":"fresh"');
+  });
+
   it('refuses to take over a reserved ID that holds something else or sits elsewhere', async () => {
     const other = fakeDrive({
       'GET ids': [json({ ids: ['reserved'] })],

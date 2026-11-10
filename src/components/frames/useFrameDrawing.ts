@@ -35,6 +35,8 @@ const CLICK_THRESHOLD = 3;
 export interface FrameDrawing {
   /** Outline of a frame being drawn, or of the copy an Alt-drag will create. */
   draft: FrameBounds | null;
+  /** A frame is being drawn, moved or resized. */
+  active: boolean;
   cancel(): void;
   backgroundDown(event: PointerEvent): boolean;
   begin(event: PointerEvent, id: string, resize?: boolean): void;
@@ -136,6 +138,7 @@ export function useFrameDrawing({
     return { ...frame, x: frame.x + dx, y: frame.y + dy };
   };
   return {
+    active: gesture !== null,
     cancel,
     backgroundDown: (event) => {
       if (tool !== 'frame' || event.button !== 0) return false;

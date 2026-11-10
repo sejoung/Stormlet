@@ -167,15 +167,21 @@ function snapResizeAxis(
   const direction = moving >= fixed ? 1 : -1;
   // Equal sizes are checked first and win ties, so they are easy to hit.
   let best = { at: moving, delta: limit, edge: undefined as number | undefined };
+  // An exact match is a match too: its position equals `moving`, so it needs its own flag.
+  let matched = false;
   for (const size of sizes) {
     const at = fixed + direction * size;
-    if (Math.abs(at - moving) < best.delta)
+    if (Math.abs(at - moving) < best.delta) {
       best = { at, delta: Math.abs(at - moving), edge: undefined };
+      matched = true;
+    }
   }
   for (const edge of edges)
-    if (Math.abs(edge - moving) < best.delta)
+    if (Math.abs(edge - moving) < best.delta) {
       best = { at: edge, delta: Math.abs(edge - moving), edge };
-  if (best.at === moving && grid) best.at = toGrid(moving, grid);
+      matched = true;
+    }
+  if (!matched && grid) best.at = toGrid(moving, grid);
   return best;
 }
 

@@ -31,8 +31,17 @@ interface Options {
   /** The board on screen, so a new board can go to Drive once it has something on it. */
   board: Board;
   flushEditor(): void;
-  /** Put an opened board on the canvas, titled after `name` when it has no title. */
-  replaceBoard(board: Board, name: string): void;
+  /**
+   * Put an opened board on the canvas, titled after `name` when it has no title, after
+   * calling `link`. A board on screen that is not in Drive is kept for Recent boards first
+   * (`'kept'`); false, with nothing changed and `link` not called, when that failed.
+   */
+  replaceBoard(
+    board: Board,
+    name: string,
+    link: () => void,
+    inDrive: boolean,
+  ): 'kept' | 'replaced' | false;
   onStatus(message: string): void;
 }
 
@@ -74,10 +83,10 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     const { auth, sync } = services;
     const follow = (event: AuthEvent) => {
       setConnected(auth.getToken() !== null);
-      const { status } = sync.current;
-      if (event === 'connected' && status === 'paused') void sync.resume();
+      // Any token, also another tab's or a renewed one, may be for another account.
+      if (event === 'connected' && 'file' in sync.current) void sync.reconnected();
       // A file saved just before the page closed is linked again once connected.
-      else if (event === 'connected' && status === 'unlinked')
+      else if (event === 'connected')
         sync.recover().then(
           (file) => {
             if (!file) return;
@@ -99,7 +108,9 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     if (auth.getToken()) follow('connected');
     return unsubscribe;
   }, [services]);
-  const renewal = useAuthRenewal(services?.auth, connected && 'file' in state, onStatus);
+  /** Suggest the linked file's account when signing in, so access stays with that file. */
+  const hint = () => services?.sync.linkedAccount?.email || undefined;
+  const renewal = useAuthRenewal(services?.auth, connected && 'file' in state, onStatus, hint);
   useEffect(() => {
     if (state.status === 'failed')
       log.warn('drive.sync-failed', { reason: state.reason, message: state.detail });
@@ -125,21 +136,37 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     if (remembered) void prepare();
   }, [remembered, prepare]);
 
-  /** Run `action`, reporting a failure; the action's first step still runs in the click. */
-  const run = (event: string, action: (drive: DriveServices) => Promise<void>) => {
-    if (!services) return;
+  /** Whether a file action (create, open, relink) is under way; set at once, unlike `busy`. */
+  const acting = useRef(false);
+  /**
+   * Run `action`, reporting a failure; the action's first step still runs in the click.
+   * An `exclusive` one is ignored while another is under way, so a double click on
+   * `Save to Drive` makes one file, not two.
+   */
+  const run = (
+    event: string,
+    action: (drive: DriveServices) => Promise<void>,
+    exclusive = false,
+  ) => {
+    if (!services || (exclusive && acting.current)) return;
+    if (exclusive) acting.current = true;
     setBusy(true);
     action(services)
       .catch((error: unknown) => {
         log.warn(event, errorDetails(error));
         onStatus(t(failure(error)));
       })
-      .finally(() => setBusy(false));
+      .finally(() => {
+        if (exclusive) acting.current = false;
+        setBusy(false);
+      });
   };
   /** Sign in first when needed; the popup opens because this still runs in the click. */
   const access = async ({ auth }: DriveServices) => {
-    if (!auth.getToken()) await auth.connect();
+    if (!auth.getToken()) await auth.connect(hint());
   };
+  /** Save everything pending, typing included, before the board leaves the linked file. */
+  const settle = (drive: DriveServices) => drive.sync.settle(flushEditor);
   const pick = (drive: DriveServices, kind: 'file' | 'folder') =>
     drive.auth.pick(kind, {
       language: locale,
@@ -160,17 +187,21 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     onStatus(t('drive.savedIn', { name: file.name, folder: folder.name }));
   };
   const saveToFolder = () =>
-    run('drive.create-failed', async (drive) => {
-      flushEditor();
-      await access(drive);
-      const folder = await pick(drive, 'folder');
-      if (folder) await createIn(drive, folder);
-    });
+    run(
+      'drive.create-failed',
+      async (drive) => {
+        flushEditor();
+        await access(drive);
+        const folder = await pick(drive, 'folder');
+        if (folder) await createIn(drive, folder);
+      },
+      true,
+    );
   const syncNow = () => {
     flushEditor();
     if (services?.auth.getToken()) void services.sync.saveNow();
     // Saving resumes when the token arrives.
-    else run('drive.connect-failed', ({ auth }) => auth.connect());
+    else run('drive.connect-failed', ({ auth }) => auth.connect(hint()));
   };
 
   // A board started in this tab goes to the shared folder with its first edit, so Drive,
@@ -185,10 +216,14 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     const folder = services.folder.read();
     if (!folder) return;
     autoSave.current = false;
-    run('drive.create-failed', async (drive) => {
-      const shared = await sharedFolder(drive);
-      if (shared) await createIn(drive, shared);
-    });
+    run(
+      'drive.create-failed',
+      async (drive) => {
+        const shared = await sharedFolder(drive);
+        if (shared) await createIn(drive, shared);
+      },
+      true,
+    );
     // `run` and `createIn` change every render; the conditions above are what matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [services, linked, connected, firstEdit]);
@@ -204,7 +239,7 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     prepare,
     connect: () =>
       // Saving resumes when the token arrives, as it does when another tab connects.
-      run('drive.connect-failed', ({ auth }) => auth.connect()),
+      run('drive.connect-failed', ({ auth }) => auth.connect(hint())),
     /** Where this board is kept, for the badge beside its name. */
     savedTo: !services ? undefined : linked ? ('drive' as const) : ('browser-only' as const),
     /** The folder boards are saved to; null until one is chosen. */
@@ -212,41 +247,58 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     saveToFolder,
     /** Save this board to Drive: into the shared folder, or a folder chosen now. */
     saveToDrive: () =>
-      run('drive.create-failed', async (drive) => {
-        flushEditor();
-        await access(drive);
-        const folder = (await sharedFolder(drive)) ?? (await pick(drive, 'folder'));
-        if (folder) await createIn(drive, folder);
-      }),
+      run(
+        'drive.create-failed',
+        async (drive) => {
+          flushEditor();
+          await access(drive);
+          const folder = (await sharedFolder(drive)) ?? (await pick(drive, 'folder'));
+          if (folder) await createIn(drive, folder);
+        },
+        true,
+      ),
     /**
      * Give access to the linked file again by choosing it in the Picker, e.g. after
      * reconnecting when Drive no longer lets Stormlet see it; then continue syncing.
      */
     relink: () =>
-      run('drive.open-failed', async (drive) => {
-        await access(drive);
-        const picked = await pick(drive, 'file');
-        if (!picked) return;
-        const { current } = drive.sync;
-        if (!('file' in current) || picked.id !== current.file.id)
-          return onStatus(t('drive.relinkOther'));
-        await drive.sync.resume();
-      }),
+      run(
+        'drive.open-failed',
+        async (drive) => {
+          await access(drive);
+          const picked = await pick(drive, 'file');
+          if (!picked) return;
+          const { current } = drive.sync;
+          if (!('file' in current) || picked.id !== current.file.id)
+            return onStatus(t('drive.relinkOther'));
+          await drive.sync.resume();
+        },
+        true,
+      ),
     /** ⌘/Ctrl+S: save the linked file now, or `download` a board not in Drive. */
     saveOr: (download: () => void) => () => (linked ? syncNow() : download()),
     open: () =>
-      run('drive.open-failed', async (drive) => {
-        flushEditor();
-        await access(drive);
-        const picked = await pick(drive, 'file');
-        if (!picked) return;
-        if (!(await drive.sync.settle())) return onStatus(t('drive.openBlocked'));
-        const opened = await drive.sync.open(picked.id);
-        // Linked first, so putting the board in place does not save it back.
-        drive.sync.linkOpened(opened);
-        replaceBoard(opened.board, opened.file.name);
-        onStatus(t('drive.opened', { name: opened.file.name }));
-      }),
+      run(
+        'drive.open-failed',
+        async (drive) => {
+          flushEditor();
+          await access(drive);
+          const picked = await pick(drive, 'file');
+          if (!picked) return;
+          if (!(await settle(drive))) return onStatus(t('drive.openBlocked'));
+          const opened = await drive.sync.open(picked.id);
+          // Edits made while the file downloaded go to the previous file too.
+          if (!(await settle(drive))) return onStatus(t('drive.openBlocked'));
+          // Linked first, so putting the board in place does not save it back.
+          const link = () => drive.sync.linkOpened(opened);
+          const inDrive = 'file' in drive.sync.current;
+          const result = replaceBoard(opened.board, opened.file.name, link, inDrive);
+          if (!result) return onStatus(t('drive.openNotKept'));
+          const message = result === 'kept' ? 'drive.openedKept' : 'drive.opened';
+          onStatus(t(message, { name: opened.file.name }));
+        },
+        true,
+      ),
     saveNow: () => {
       flushEditor();
       void services?.sync.saveNow();
@@ -254,14 +306,14 @@ export function useDrive({ services, board, flushEditor, replaceBoard, onStatus 
     /** Save the linked file now, reconnecting first if access ended. */
     syncNow,
     /**
-     * Before a new board replaces this one: save what is pending to the linked file, then
-     * stop syncing. False, with a message, when that cannot be saved now.
+     * Before a new board or a local file replaces this one: save what is pending to the
+     * linked file, then stop syncing. False, with `blocked` shown, when that cannot be saved
+     * now. Unlinking also drops unfinished creations, which belong to the previous board.
      */
-    release: async () => {
-      if (!services || !('file' in services.sync.current)) return true;
-      flushEditor();
-      if (!(await services.sync.settle())) {
-        onStatus(t('drive.newBlocked'));
+    release: async (blocked: MessageKey = 'drive.newBlocked') => {
+      if (!services) return true;
+      if (!(await settle(services))) {
+        onStatus(t(blocked));
         return false;
       }
       services.sync.unlink();

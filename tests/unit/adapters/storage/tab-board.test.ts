@@ -181,4 +181,16 @@ describe('boards of closed tabs', () => {
     expect(Object.keys(localStorage).filter((key) => key.endsWith(`.${CLOSED}`))).toEqual([]);
     expect(await library.closed()).toEqual([]);
   });
+
+  it('keeps a copy of a board as a closed board, or reports that storage refused it', async () => {
+    const library = new LocalBoardLibrary(MINE, fakeLocks().tab('me'));
+    expect(library.keep({ ...boardOf(sticky('k')), title: 'Kept' })).toBe(true);
+    expect(await library.closed()).toMatchObject([{ title: 'Kept', notes: 1, driveFile: null }]);
+    const full = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Full', 'QuotaExceededError');
+    });
+    expect(library.keep(boardOf(sticky('x')))).toBe(false);
+    full.mockRestore();
+    expect(await library.closed()).toHaveLength(1);
+  });
 });

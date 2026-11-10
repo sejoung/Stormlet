@@ -9,7 +9,7 @@ import { isText } from '../../domain/text/model';
 import { textInk } from '../text/colors';
 import { LINE_COLORS } from '../connections/colors';
 import { FRAME_STYLES } from '../frames/colors';
-import { FONT_FAMILY, layoutNote, scaledMeasure, type MeasureText } from './text-layout';
+import { FONT_FAMILY, layoutNote, scaledMeasure, xmlText, type MeasureText } from './text-layout';
 
 /** The light theme's colours: an export looks the same whichever theme the editor is in. */
 const THEME = { background: '#ffffff', text: '#232436', muted: '#737485', border: '#e6e6ee' };
@@ -29,7 +29,7 @@ export interface BoardImage {
 }
 
 const escape = (text: string) =>
-  text.replace(
+  xmlText(text).replace(
     /[&<>"']/g,
     (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!,
   );
@@ -51,7 +51,7 @@ function frameSvg(frame: Frame, measure: MeasureText) {
     bounds: {
       x: frame.x,
       y: frame.y - FRAME_TITLE.offset - FRAME_TITLE.height,
-      width: Math.max(frame.width, measure(frame.title, font) + FRAME_TITLE.inset * 2),
+      width: Math.max(frame.width, measure(xmlText(frame.title), font) + FRAME_TITLE.inset * 2),
       height: frame.height + FRAME_TITLE.offset + FRAME_TITLE.height,
     },
   };

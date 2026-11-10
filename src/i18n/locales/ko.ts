@@ -550,6 +550,9 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'drive.pickFile': 'Stormlet 보드 열기',
   'drive.saved': '{name}을(를) Drive에 저장했습니다.',
   'drive.opened': 'Drive에서 {name}을(를) 열었습니다.',
+  'drive.openedKept': 'Drive에서 {name}을(를) 열었습니다. 이전 보드는 최근 보드에 있습니다.',
+  'drive.openNotKept':
+    '저장 공간이 부족해 지금 보드를 보관할 수 없어 열지 않았습니다. 보드를 내려받은 뒤 다시 시도하세요.',
   'drive.recovered': '페이지를 닫기 직전 Drive에 저장한 {name}을(를) 찾아 다시 연결했습니다.',
   'drive.openBlocked':
     '지금 Drive 파일의 변경 내용이 아직 저장되지 않았습니다. 먼저 저장하거나 동기화를 중지하세요.',

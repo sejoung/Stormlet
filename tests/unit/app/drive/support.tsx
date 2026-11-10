@@ -5,6 +5,7 @@ import { DriveSync } from '../../../../src/application/drive-sync';
 import type { AuthEvent, DriveAuth, DriveItem } from '../../../../src/adapters/drive/types';
 import type { SavedFolder } from '../../../../src/adapters/drive/links';
 import type { Board } from '../../../../src/domain/model';
+import type { BoardLibrary } from '../../../../src/domain/store';
 import type { RemoteLink } from '../../../../src/domain/sync/remote';
 import { boardOf, sticky } from '../../../support/boards';
 import { ids, memoryStore } from '../../../support/app';
@@ -71,7 +72,7 @@ export function memoryFolder(folder: SavedFolder | null = null) {
 export function renderWithDrive(
   board: Board = boardOf(sticky('a')),
   link: RemoteLink | null = null,
-  options: { folder?: SavedFolder; startedEmpty?: boolean } = {},
+  options: { folder?: SavedFolder; startedEmpty?: boolean; library?: BoardLibrary } = {},
 ) {
   const auth = fakeAuth();
   const drive = fakeDrive();
@@ -80,7 +81,7 @@ export function renderWithDrive(
   const sync = new DriveSync(store, drive.remote, links);
   const folder = memoryFolder(options.folder);
   const services = { auth, sync, folder, startedEmpty: options.startedEmpty };
-  render(<App store={sync} drive={services} newId={ids()} />);
+  render(<App store={sync} drive={services} newId={ids()} library={options.library} />);
   return { auth, drive, store, sync, links, folder };
 }
 

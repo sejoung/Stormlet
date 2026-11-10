@@ -31,6 +31,7 @@ function fakeLibrary() {
     open: vi.fn<BoardLibrary['open']>(),
     startInTab: vi.fn<BoardLibrary['startInTab']>(),
     remove: vi.fn<BoardLibrary['remove']>(async () => true),
+    keep: vi.fn<BoardLibrary['keep']>(() => true),
   };
 }
 const fromFile = (item: string) => {

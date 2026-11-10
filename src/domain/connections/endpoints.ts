@@ -1,7 +1,7 @@
 import type { Board, Sticky } from '../model';
 import { own } from '../ids';
 import { DEFAULT_FRAME_TITLE, type Frame } from '../frames/model';
-import { frameOf, matchEndpoint, stickyOf, type Endpoint } from './model';
+import { frameOf, isFreeEndpoint, matchEndpoint, stickyOf, type Endpoint } from './model';
 
 /** Words, in the current language, for connection ends that have no text of their own. */
 export interface EndpointNames {
@@ -21,6 +21,16 @@ export const endpointObject = (board: Board, end: Endpoint): Sticky | Frame | un
 export const sameAttachment = (a: Endpoint, b: Endpoint): boolean =>
   (stickyOf(a) !== undefined && stickyOf(a) === stickyOf(b)) ||
   (frameOf(a) !== undefined && frameOf(a) === frameOf(b));
+
+export const endpointExists = (board: Board, endpoint: Endpoint): boolean =>
+  isFreeEndpoint(endpoint)
+    ? Number.isFinite(endpoint.x) && Number.isFinite(endpoint.y)
+    : !!endpointObject(board, endpoint);
+
+/** Both ends exist and are not the same object; a line that fails this cannot be drawn. */
+export function validEndpoints(board: Board, from: Endpoint, to: Endpoint): boolean {
+  return endpointExists(board, from) && endpointExists(board, to) && !sameAttachment(from, to);
+}
 
 export const endpointLabel = (board: Board, end: Endpoint, names: EndpointNames): string =>
   matchEndpoint(end, {

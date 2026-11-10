@@ -170,5 +170,8 @@ describe('frame gestures', () => {
     expect(store.board.frames?.frame.locked).toBe(false);
     await user.keyboard('{Control>}d{/Control}');
     expect(Object.keys(store.board.frames!)).toHaveLength(2);
+    // Alt+arrow steps a whole frame plus a gap, as it does for notes.
+    await user.keyboard('{Alt>}{ArrowDown}{/Alt}');
+    expect(store.board.frames?.s2).toMatchObject({ x: 2033, y: 42 + 400 + 24 });
   });
 });

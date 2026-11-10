@@ -15,18 +15,29 @@ export interface TextCell {
   column: number;
 }
 
-/** TSV clipboard supports quoted cells containing tabs, newlines and escaped quotes. */
-export function textCells(source: string): TextCell[] {
+/**
+ * TSV clipboard supports quoted cells containing tabs, newlines and escaped quotes.
+ * `truncated` tells whether a non-empty cell fell outside the row or column limit or was
+ * cut to the note length, so the warning reflects what was actually lost.
+ */
+function readCells(source: string): { cells: TextCell[]; truncated: boolean } {
   const text = source.replace(/\r\n?/g, '\n');
   const cells: TextCell[] = [];
+  let truncated = false;
   let value = '';
   let row = 0;
   let column = 0;
   let quoted = false;
   const flush = () => {
-    if (value.trim() && row < MAX_PASTE_ROWS && column < MAX_PASTE_COLUMNS)
-      cells.push({ text: value.trim().slice(0, MAX_NOTE_LENGTH), row, column });
+    const trimmed = value.trim();
     value = '';
+    if (!trimmed) return;
+    if (row >= MAX_PASTE_ROWS || column >= MAX_PASTE_COLUMNS) {
+      truncated = true;
+      return;
+    }
+    if (trimmed.length > MAX_NOTE_LENGTH) truncated = true;
+    cells.push({ text: trimmed.slice(0, MAX_NOTE_LENGTH), row, column });
   };
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
@@ -44,12 +55,13 @@ export function textCells(source: string): TextCell[] {
     } else value += char;
   }
   flush();
-  return cells;
+  return { cells, truncated };
 }
 
-/** Whether pasting `text` would drop rows or characters beyond the paste limits. */
-export const exceedsPasteLimits = (text: string): boolean =>
-  text.length > MAX_NOTE_LENGTH || text.split('\n').length > MAX_PASTE_ROWS;
+export const textCells = (source: string): TextCell[] => readCells(source).cells;
+
+/** Whether pasting `text` would drop cells or characters beyond the paste limits. */
+export const exceedsPasteLimits = (text: string): boolean => readCells(text).truncated;
 
 /**
  * Top-left corners for one note per cell. Spreadsheet cells keep their row and column;

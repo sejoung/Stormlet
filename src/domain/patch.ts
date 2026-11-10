@@ -1,4 +1,6 @@
 import { own } from './ids';
+import { same } from './sync/merge';
+import { validEndpoints } from './connections/endpoints';
 import { FRAME_FIELDS, type Frame, type FramePatch, type FrameSetPatch } from './frames/model';
 import { STICKY_FIELDS, type Board, type Sticky, type StickyField } from './model';
 import {
@@ -125,19 +127,66 @@ function applyChange(items: ReturnType<typeof draft>, kind: Kind<Entity>, change
     items.remove(change.id);
     return kind.add(before as Entity);
   }
-  if (before[change.field] === change.value) return null;
+  // Endpoints and reactions are objects: a structurally equal value is no change.
+  if (same(before[change.field], change.value)) return null;
   const next: Record<string, unknown> = { ...before, [change.field]: change.value };
   if (change.value === undefined) delete next[change.field];
   items.put(next as Entity);
   return kind.set(change.id, change.field, before[change.field]);
 }
 
+type Drafts = Record<Collection, ReturnType<typeof draft>>;
+
+const connectionId = (patch: Patch): string | undefined =>
+  patch.op === 'connection:add'
+    ? patch.connection.id
+    : patch.op === 'connection:delete' || patch.op === 'connection:set'
+      ? patch.id
+      : undefined;
+
+/** Whether a draft copy holds exactly the source's records, so it changed nothing. */
+const unchanged = (copy: Record<string, Entity>, source: Readonly<Record<string, Entity>> = {}) =>
+  Object.keys(copy).length === Object.keys(source).length &&
+  Object.values(copy).every((item) => own(source, item.id) === item);
+
+/**
+ * A line whose note or frame is gone can be neither drawn, edited nor saved (ADR 0006), yet
+ * undo, redo or another participant can bring one back after its end was deleted. Such lines
+ * are dropped once the whole batch is applied, so a batch may restore a note and its lines in
+ * any order. Their removal is recorded in `inverse`; a line that was absent before and is
+ * dropped again leaves no trace there, so redo does not resurrect it either.
+ */
+function dropDangling(board: Board, drafts: Drafts, inverse: Patch[]) {
+  const stickies = drafts.stickies.result() as Record<string, Sticky> | null;
+  const frames = drafts.frames.result() as Record<string, Frame> | null;
+  const lines = drafts.connections.result() ?? board.connections;
+  if ((!stickies && !frames && !drafts.connections.result()) || !lines) return;
+  const ends: Board = {
+    stickies: stickies ?? board.stickies,
+    frames: frames ?? board.frames,
+  };
+  const vanished = new Set<string>();
+  for (const line of Object.values(lines) as Connection[]) {
+    if (validEndpoints(ends, line.from, line.to)) continue;
+    const undo = applyChange(drafts.connections, CONNECTION, { type: 'delete', id: line.id });
+    if (undo) inverse.push(undo);
+    if (!own(board.connections ?? {}, line.id)) vanished.add(line.id);
+  }
+  if (!vanished.size) return;
+  const kept = inverse.filter((patch) => {
+    const id = connectionId(patch);
+    return id === undefined || !vanished.has(id);
+  });
+  inverse.splice(0, inverse.length, ...kept);
+}
+
 /**
  * Apply `patches` in order. Patches about a record that is gone are skipped rather than
- * thrown, because another participant may have deleted it. Nothing changed → same board.
+ * thrown, because another participant may have deleted it; lines left without an end are
+ * dropped. Nothing changed → same board.
  */
 export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
-  const drafts = {
+  const drafts: Drafts = {
     stickies: draft(board.stickies),
     connections: draft(board.connections),
     frames: draft(board.frames),
@@ -156,9 +205,13 @@ export function applyPatches(board: Board, patches: readonly Patch[]): Applied {
     const undo = applyChange(drafts[kind.collection], kind, change);
     if (undo) inverse.push(undo);
   }
+  dropDangling(board, drafts, inverse);
   inverse.reverse();
   const stickies = drafts.stickies.result() as Record<string, Sticky> | null;
-  const connections = drafts.connections.result() as Record<string, Connection> | null;
+  const changedLines = drafts.connections.result() as Record<string, Connection> | null;
+  // A line added and then dropped as dangling leaves the collection as it was.
+  const connections =
+    changedLines && unchanged(changedLines, board.connections) ? null : changedLines;
   const frames = drafts.frames.result() as Record<string, Frame> | null;
   if (!stickies && !connections && !frames && title === board.title) return { board, inverse };
   const next: Board = { ...board, stickies: stickies ?? board.stickies };
@@ -193,7 +246,7 @@ function diffCollection<T extends Entity>(
     const previous = before as Record<string, unknown>;
     const next = item as Record<string, unknown>;
     for (const field of kind.fields)
-      if (previous[field] !== next[field]) patches.push(kind.set(item.id, field, next[field]));
+      if (!same(previous[field], next[field])) patches.push(kind.set(item.id, field, next[field]));
   }
   return patches;
 }

@@ -78,7 +78,7 @@ export class GoogleConnection implements DriveAuth {
     this.loaded = true;
   }
 
-  connect(): Promise<void> {
+  connect(hint?: string): Promise<void> {
     const oauth = window.google?.accounts?.oauth2;
     if (!oauth)
       return Promise.reject(new DriveAuthError('unavailable', 'Google sign-in is not loaded.'));
@@ -102,8 +102,8 @@ export class GoogleConnection implements DriveAuth {
           reject(new DriveAuthError('cancelled', 'The sign-in window was closed or blocked.')),
       });
       // An empty prompt skips the consent screen when the user already agreed, so a renewal
-      // popup closes on its own.
-      client.requestAccessToken({ prompt: '' });
+      // popup closes on its own. The hint keeps it on the linked file's account.
+      client.requestAccessToken({ prompt: '', ...(hint ? { login_hint: hint } : {}) });
     });
   }
 

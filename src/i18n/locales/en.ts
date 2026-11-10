@@ -552,6 +552,9 @@ export const en = {
   'drive.pickFile': 'Open a Stormlet board',
   'drive.saved': 'Saved {name} to Drive.',
   'drive.opened': 'Opened {name} from Drive.',
+  'drive.openedKept': 'Opened {name} from Drive. The previous board is in Recent boards.',
+  'drive.openNotKept':
+    'Not opened: storage is too full to keep the current board. Download it and try again.',
   'drive.recovered':
     'Found {name}, saved to Drive just before the page closed, and linked it again.',
   'drive.openBlocked':

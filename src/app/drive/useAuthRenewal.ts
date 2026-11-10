@@ -17,6 +17,8 @@ export function useAuthRenewal(
   /** Whether a file is being synced, so access is worth keeping. */
   active: boolean,
   onStatus: (message: string) => void,
+  /** The email of the account to renew for: the linked file's, not whichever is signed in. */
+  hint: () => string | undefined = () => undefined,
 ) {
   const t = useT();
   const [expiring, setExpiring] = useState(() => Boolean(auth?.expiring()));
@@ -29,7 +31,7 @@ export function useAuthRenewal(
     if (!auth || renewing.current || !auth.expiring() || (stopped.current && !manual)) return;
     renewing.current = true;
     try {
-      await auth.connect();
+      await auth.connect(hint());
       log.info('drive.renewed', { manual });
     } catch (error) {
       stopped.current = true;

@@ -60,8 +60,10 @@ describe('frame files', () => {
         ),
       ).toThrow(FormatError);
     }
+    const dangling = JSON.parse(serializeBoard(board));
+    dangling.connections[0].from = { frameId: 'gone', side: 'right' };
+    expect(parseBoard(JSON.stringify(dangling))).not.toHaveProperty('connections');
     for (const from of [
-      { frameId: 'gone', side: 'right' },
       { frameId: '__proto__', side: 'right' },
       { frameId: 'a', stickyId: 'a', side: 'right' },
       { frameId: 'a', side: 'bad' },

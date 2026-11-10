@@ -1,5 +1,17 @@
 import type { BoardLibrary, BoardSummary } from '../../domain/store';
-import { boardSlots, isSlotId, migrateSingleBoard, removeSlot, summarize } from './board-slots';
+import type { Board } from '../../domain/model';
+import {
+  boardSlots,
+  isSlotId,
+  markSaved,
+  migrateSingleBoard,
+  removeSlot,
+  slotKey,
+  summarize,
+} from './board-slots';
+import { BOARD_KEY } from './local-board-store';
+import { writeItem } from './web-storage';
+import { serializeBoard } from '../files/stormlet-format';
 import { log } from '../diagnostics/log';
 
 /** sessionStorage: the board slot this tab shows, kept across reloads of the tab. */
@@ -165,6 +177,17 @@ export class LocalBoardLibrary implements BoardLibrary {
 
   startInTab(title: string): void {
     openTab(`#new=${encodeURIComponent(title)}`);
+  }
+
+  keep(board: Board): boolean {
+    const slot = crypto.randomUUID();
+    if (!writeItem(slotKey(BOARD_KEY, slot), serializeBoard(board))) {
+      removeSlot(slot);
+      return false;
+    }
+    markSaved(slot);
+    log.info('boards.kept');
+    return true;
   }
 
   async remove(id: string): Promise<boolean> {

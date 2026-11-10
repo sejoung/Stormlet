@@ -1,4 +1,5 @@
 import type { Point } from '../../engine/viewport';
+import { NOTE_GAP } from '../../domain/note-actions';
 import type { FrameSession } from '../frames/useFrameSession';
 import type { ConnectionSession } from '../useConnectionSession';
 
@@ -23,7 +24,14 @@ function frameCommands(frames: FrameSession): SelectionCommands | null {
   return {
     remove: frames.remove,
     cut: frames.cut,
-    duplicate: (offset) => frames.onDuplicate(frame.id, offset?.x, offset?.y),
+    duplicate: (offset, directional) => {
+      if (!offset) return frames.onDuplicate(frame.id);
+      // Alt+arrow gives a direction, not pixels: step a whole frame plus the notes' gap.
+      const step = directional
+        ? { x: frame.width + NOTE_GAP, y: frame.height + NOTE_GAP }
+        : { x: 1, y: 1 };
+      frames.onDuplicate(frame.id, offset.x * step.x, offset.y * step.y);
+    },
     toggleLock: () => frames.onChange(frame.id, { locked: !frame.locked }),
     nudge: (offset) => frames.onMove(frame.id, offset.x, offset.y),
   };
@@ -35,6 +43,7 @@ function connectionCommands(links: ConnectionSession): SelectionCommands | null 
   return {
     remove: links.remove,
     cut: links.remove,
+    // A copy keeps the same ends (usually attached to notes), so it ignores any offset.
     duplicate: links.duplicate,
     toggleLock: () => links.onChange(line.id, { locked: !line.locked }),
     // Only free ends have positions of their own; nudging a line is not supported.

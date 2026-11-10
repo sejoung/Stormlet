@@ -17,6 +17,7 @@ import {
   type Gesture,
 } from './gestures/gestures';
 import { useCanvasListeners } from './gestures/useCanvasListeners';
+import { usePointerOwner } from './gestures/usePointerOwner';
 import { keyboardResize, resizedPlacements, resizeStep } from './gestures/resize';
 import { SelectionFrame } from './SelectionFrame';
 import { BoardOverlays } from './BoardOverlays';
@@ -92,8 +93,16 @@ export function BoardCanvas(props: Props) {
     drawing.cancel();
   });
   const space = useCanvasListeners({ element, view, onViewChange, onCancel: cancelGestures });
+  const pointers = usePointerOwner(gesture !== null || frameDrawing.active || drawing.pressed);
 
   const startPan = (event: PointerEvent) => setGesture({ type: 'pan', last: local(event) });
+  /** Middle-button (or hand tool) panning that starts on a note or frame, not the background. */
+  const panFrom = (event: PointerEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    element.current!.setPointerCapture(event.pointerId);
+    startPan(event);
+  };
 
   const onBackgroundDown = (event: PointerEvent) => {
     if ((event.button !== 0 && event.button !== 1) || event.target !== event.currentTarget) return;
@@ -118,6 +127,7 @@ export function BoardCanvas(props: Props) {
   const onStickyDown = useStableCallback((event: PointerEvent, id: string) => {
     if (!space && tool !== 'hand' && drawing.backgroundDown(event, { stickyId: id, side: 'auto' }))
       return;
+    if (event.button === 1) return panFrom(event);
     if (event.button !== 0 || editing === id) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -141,7 +151,7 @@ export function BoardCanvas(props: Props) {
   });
 
   const onPointerMove = (event: PointerEvent) => {
-    if (frameDrawing.move(event)) return;
+    if (!pointers.owns(event) || frameDrawing.move(event)) return;
     if (drawing.move(event)) return;
     if (!gesture || gesture.type === 'place') return;
     const point = local(event);
@@ -216,7 +226,7 @@ export function BoardCanvas(props: Props) {
   };
 
   const onPointerUp = (event: PointerEvent) => {
-    if (frameDrawing.up(event)) return;
+    if (!pointers.owns(event) || frameDrawing.up(event)) return;
     if (drawing.up(event)) return;
     if (gesture) finishGesture(event, gesture);
     setGesture(null);
@@ -229,7 +239,11 @@ export function BoardCanvas(props: Props) {
   const onKeyboardConnect = useStableCallback((id: string, side: ConnectionSide) =>
     drawing.keyboardStart({ stickyId: id, side }),
   );
-  const onNoteMenu = useStableCallback(props.onContextMenu);
+  // A touch long-press opens the menu mid-drag; the note stops the event reaching the board.
+  const onNoteMenu = useStableCallback((id: string, point: Point) => {
+    cancelGestures();
+    props.onContextMenu(id, point);
+  });
   const onReact = useStableCallback(props.onReact);
   const onStartEdit = useStableCallback(props.onStartEdit);
   const onCommitText = useStableCallback(props.onCommitText);
@@ -287,6 +301,7 @@ export function BoardCanvas(props: Props) {
           );
         }
       }}
+      onPointerDownCapture={pointers.down}
       onPointerDown={onBackgroundDown}
       onContextMenu={(event) => {
         if (event.target instanceof Element && event.target.closest(TEXT_ENTRY)) return;
@@ -299,8 +314,9 @@ export function BoardCanvas(props: Props) {
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={cancelGestures}
-      onLostPointerCapture={() => {
+      onPointerCancel={(event) => pointers.owns(event) && cancelGestures()}
+      onLostPointerCapture={(event) => {
+        if (!pointers.owns(event)) return;
         setGesture(null);
         frameDrawing.cancel();
       }}
@@ -316,12 +332,7 @@ export function BoardCanvas(props: Props) {
           frameDrawing={frameDrawing}
           tool={tool}
           space={space}
-          onPan={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            element.current!.setPointerCapture(event.pointerId);
-            startPan(event);
-          }}
+          onPan={panFrom}
         />
         <ConnectionLayer
           board={displayed}

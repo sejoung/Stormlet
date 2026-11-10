@@ -14,6 +14,16 @@ export const isComposing = (event: AnyKeyboardEvent): boolean =>
   ('nativeEvent' in event ? event.nativeEvent.isComposing : event.isComposing) ||
   event.keyCode === 229;
 
+/** Hangul jamo, which a Korean IME reports for the first key of a syllable it composes. */
+const HANGUL_JAMO = /^[\u1100-\u11ff\u3130-\u318f]$/;
+
+/**
+ * A key that starts an IME composition rather than typing a character: the IME is already
+ * composing ('Process', keyCode 229), or it reports the syllable's first jamo on its own.
+ */
+export const startsComposition = (event: AnyKeyboardEvent): boolean =>
+  isComposing(event) || event.key === 'Process' || HANGUL_JAMO.test(event.key);
+
 /** The keyboard's context menu key, or its Shift+F10 equivalent. */
 export const isMenuKey = (event: AnyKeyboardEvent): boolean =>
   event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10');

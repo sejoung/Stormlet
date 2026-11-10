@@ -81,6 +81,26 @@ describe('board SVG', () => {
     expect(image.width).toBeGreaterThan(560);
   });
 
+  it('drops characters XML forbids, such as vertical tabs pasted from Office', () => {
+    const illegal = 'x\u000by\u0000￾￿\ud800z';
+    const board = {
+      ...boardOf(sticky('a', { text: `Plan${illegal}` }), sticky('b', { text: 'Planxyz', x: 400 })),
+      frames: { f: frame('f', { x: -40, y: -40, title: `T${illegal}` }) },
+      connections: { line: connection('line', { label: `L${illegal}` }) },
+    };
+    const { svg } = boardSvg(board, measure)!;
+    expect(svg).not.toMatch(/[^\t\n\r -퟿-�\u{10000}-\u{10ffff}]/u);
+    expect(svg).toContain('Txyz</text>');
+    expect(svg).toContain('Lxyz</text>');
+    // Laid out from the cleaned text, so it wraps and fits like the same text without them.
+    const measureAt = scaledMeasure(measure);
+    expect(layoutNote(board.stickies.a, measureAt)).toEqual(
+      layoutNote(board.stickies.b, measureAt),
+    );
+    // Emoji and other characters outside the BMP are kept.
+    expect(boardSvg(boardOf(sticky('c', { text: '😀' })), measure)!.svg).toContain('😀');
+  });
+
   it('has nothing to draw for an empty board', () => {
     expect(boardSvg(boardOf(), measure)).toBeNull();
   });

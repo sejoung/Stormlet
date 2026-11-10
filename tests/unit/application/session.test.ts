@@ -4,6 +4,7 @@ import {
   HISTORY_LIMIT,
   receive,
   redo,
+  restart,
   startSession,
   undo,
 } from '../../../src/application/session';
@@ -59,5 +60,16 @@ describe('session history', () => {
     expect(step.session.undo).toEqual([]);
     expect(step.session.redo).toEqual([]);
     expect(receive(session, [])).toBe(session);
+  });
+
+  it('replaces the board with no history to undo or redo', () => {
+    let session = startSession(boardOf(sticky('a')));
+    session = edit(session, [{ op: 'set', id: 'a', field: 'text', value: 'mine' }]).session;
+    session = undo(edit(session, [{ op: 'delete', id: 'a' }]).session).session;
+    const step = restart(session, [{ op: 'delete', id: 'a' }]);
+    expect(step.applied).toEqual([{ op: 'delete', id: 'a' }]);
+    expect(step.session).toEqual(startSession(boardOf()));
+    // Even replacing with the same board leaves nothing to undo.
+    expect(restart(session, []).session).toEqual({ ...session, undo: [], redo: [] });
   });
 });

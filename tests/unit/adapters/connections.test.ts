@@ -57,14 +57,28 @@ describe('connection files', () => {
     [{ ...connection(), width: 0 }],
     [{ ...connection(), label: 'x'.repeat(301) }],
     [{ ...connection(), locked: 'yes' }],
-    [{ ...connection(), from: { stickyId: 'gone', side: 'auto' } }],
     [{ ...connection(), from: { stickyId: 'a', side: 'invalid' } }],
     [{ ...connection(), from: { x: null, y: 0 } }],
     [{ ...connection(), from: null }],
-    [{ ...connection(), to: { stickyId: 'a', side: 'left' } }],
     [{ ...connection(), endArrow: 1 }],
-  ])('rejects malformed or dangling connections %j', (connections) => {
+  ])('rejects malformed connections %j', (connections) => {
     expect(() => parseBoard(file(connections))).toThrow(FormatError);
+  });
+
+  it('skips dangling or self connections and keeps the rest of the board', () => {
+    const board = parseBoard(
+      file([
+        connection('kept'),
+        connection('dangling', { from: { stickyId: 'gone', side: 'auto' } }),
+        connection('frameless', { to: { frameId: 'gone', side: 'auto' } }),
+        connection('self', { to: { stickyId: 'a', side: 'left' } }),
+      ]),
+    );
+    expect(Object.keys(board.connections ?? {})).toEqual(['kept']);
+    expect(Object.keys(board.stickies)).toEqual(['a', 'b', 'c']);
+    expect(
+      parseBoard(file([connection('self', { to: { stickyId: 'a', side: 'left' } })])),
+    ).not.toHaveProperty('connections');
   });
 
   it('continues to read v5 boards and discards unknown connection properties', () => {

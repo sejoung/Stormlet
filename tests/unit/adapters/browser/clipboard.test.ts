@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   readClipboard,
+  readCustomFormat,
   writeClipboard,
   writeClipboardText,
 } from '../../../../src/adapters/browser/clipboard';
@@ -46,6 +47,31 @@ describe('menu clipboard adapter', () => {
     write.mockRejectedValue(new Error('unsupported'));
     await writeClipboard({ structured: '{}', plain: '대체 텍스트' });
     expect(writeText).toHaveBeenCalledWith('대체 텍스트');
+  });
+  it('reads the web custom format for a paste event only when it matches and is readable', async () => {
+    const custom = 'web application/x-stormlet';
+    vi.stubGlobal('ClipboardItem', undefined);
+    expect(await readCustomFormat('내용')).toBe('');
+    vi.stubGlobal('ClipboardItem', { supports: (type: string) => type === custom });
+    const read = vi.fn().mockRejectedValue(new DOMException('Denied', 'NotAllowedError'));
+    const query = vi.fn().mockResolvedValue({ state: 'granted' });
+    vi.stubGlobal('navigator', { clipboard: { read }, permissions: { query } });
+    expect(await readCustomFormat('내용')).toBe('');
+    read.mockResolvedValue([
+      {
+        types: [custom, 'text/plain'],
+        getType: async (type: string) => ({
+          text: async () => (type === custom ? '{"board":true}' : '내용'),
+        }),
+      },
+    ]);
+    expect(await readCustomFormat('내용')).toBe('{"board":true}');
+    expect(await readCustomFormat('다른 내용')).toBe('');
+    // Without permission already granted, it never reads, so no prompt is raised.
+    read.mockClear();
+    query.mockResolvedValue({ state: 'prompt' });
+    expect(await readCustomFormat('내용')).toBe('');
+    expect(read).not.toHaveBeenCalled();
   });
   it('writes plain text and rejects where the clipboard API is missing', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);

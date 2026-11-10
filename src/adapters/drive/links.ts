@@ -54,15 +54,24 @@ export class LocalDriveLinks implements RemoteLinks {
     }
   }
 
+  /**
+   * The file record and its base are kept together or not at all: a new version beside an
+   * old base (a full quota refuses the large base first) would merge against the wrong
+   * board after a reload. Without them the link lasts until the page closes.
+   */
   write(link: RemoteLink | null): void {
-    if (!link) {
-      removeItem(this.fileKey);
-      removeItem(this.baseKey);
-      return;
+    if (link) {
+      const { id, name, version } = link.file;
+      const record = JSON.stringify({ id, name, version, account: link.account });
+      if (
+        writeItem(this.baseKey, serializeBoard(link.base, { compact: true })) &&
+        writeItem(this.fileKey, record)
+      )
+        return;
+      log.warn('drive.link-not-kept');
     }
-    const { id, name, version } = link.file;
-    writeItem(this.baseKey, serializeBoard(link.base, { compact: true }));
-    writeItem(this.fileKey, JSON.stringify({ id, name, version, account: link.account }));
+    removeItem(this.fileKey);
+    removeItem(this.baseKey);
   }
 }
 

@@ -1,5 +1,5 @@
 import type { Board } from '../model';
-import { validEndpoints } from '../connections/commands';
+import { validEndpoints } from '../connections/endpoints';
 
 /**
  * Three-way merge of boards (ADR 0002, ADR 0010): what changed on only one side since the
@@ -30,12 +30,20 @@ export interface Merged {
 type Choose = (conflict: Conflict) => Side | undefined;
 type Item = Record<string, unknown> & { id: string };
 
-/** Fields that only make sense together, such as a position, merge as one. */
-const GROUPS: Record<string, readonly string[]> = {
+/**
+ * Fields that only make sense together, such as a position, merge as one. Only notes (text
+ * items included) and frames have a box; a line's `width` is its stroke and stands alone.
+ */
+const BOX_GROUPS: Record<string, readonly string[]> = {
   x: ['x', 'y'],
   y: ['x', 'y'],
   width: ['width', 'height'],
   height: ['width', 'height'],
+};
+const GROUPS: Record<Collection, Record<string, readonly string[]>> = {
+  stickies: BOX_GROUPS,
+  frames: BOX_GROUPS,
+  connections: {},
 };
 const GROUP_NAMES: Record<string, string> = { x: 'position', width: 'size' };
 
@@ -80,11 +88,11 @@ function mergeFields(
   const fields = new Set([...Object.keys(base), ...Object.keys(local), ...Object.keys(remote)]);
   fields.delete('id');
   for (const field of fields) {
-    const group = GROUPS[field] ?? [field];
+    const group = GROUPS[collection][field] ?? [field];
     // A group is decided once, by its first field.
     if (group[0] !== field) continue;
     const pick = (item: Item) => group.map((name) => item[name]);
-    const name = GROUP_NAMES[field] ?? field;
+    const name = (group.length > 1 && GROUP_NAMES[field]) || field;
     const values = resolve(
       pick(base),
       pick(local),

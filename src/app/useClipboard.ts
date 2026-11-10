@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { own } from '../domain/ids';
+import { editableIds } from '../domain/commands';
 import { stackOrder, type Board } from '../domain/model';
 import { internalConnections } from '../domain/connections/commands';
 import { frameContents, type BoardSlice } from '../domain/frames/commands';
@@ -7,7 +8,10 @@ import { MAX_NOTE_LENGTH } from '../domain/note-details';
 import { serializeBoard, parseBoard } from '../adapters/files/stormlet-format';
 import { errorDetails, log } from '../adapters/diagnostics/log';
 import {
+  canReadCustomFormat,
   readClipboard,
+  readCustomFormat,
+  STORMLET_TYPE,
   writeClipboard,
   type ClipboardContent,
 } from '../adapters/browser/clipboard';
@@ -26,8 +30,6 @@ import { useLatest } from '../components/common/useStableCallback';
 import { useT } from '../components/common/i18n';
 import type { Translate } from '../i18n/messages';
 
-const STORMLET_TYPE = 'application/x-stormlet';
-
 interface Options {
   board: Board;
   ids: readonly string[];
@@ -44,8 +46,22 @@ export interface Clipboard {
 }
 
 const hasSelection = ({ ids, frameId }: Options) => !!ids.length || !!frameId;
-const canCut = ({ board, frameId }: Options) =>
-  !frameId || !own(board.frames ?? {}, frameId)?.locked;
+
+/**
+ * What a cut takes: like delete, it leaves locked notes where they are, so they are neither
+ * carried to the clipboard (a paste would duplicate them) nor counted. Null when nothing can
+ * be cut: a locked frame, or only locked notes.
+ */
+function cutSelection(options: Options): Options | null {
+  const { board, ids, frameId } = options;
+  if (frameId) return own(board.frames ?? {}, frameId)?.locked ? null : options;
+  const editable = editableIds(board, ids);
+  return editable.length ? { ...options, ids: editable } : null;
+}
+
+/** The selection a copy or cut works on, or null when there is nothing to take. */
+const taken = (options: Options, cut: boolean): Options | null =>
+  !hasSelection(options) ? null : cut ? cutSelection(options) : options;
 
 /** What a copy of the current selection (a frame and its contents, or notes) carries. */
 function selectionPayload({ board, ids, frameId }: Options): ClipboardContent {
@@ -119,10 +135,10 @@ export function useClipboard(options: Options): Clipboard {
 
   useEffect(() => {
     const onCopy = (event: ClipboardEvent) => {
-      const current = latest.current;
       const cut = event.type === 'cut';
       if (isTyping(event.target) || !event.clipboardData) return;
-      if (!hasSelection(current) || (cut && !canCut(current))) return;
+      const current = taken(latest.current, cut);
+      if (!current) return;
       const content = selectionPayload(current);
       cached.current = content;
       event.clipboardData.setData(STORMLET_TYPE, content.structured);
@@ -139,7 +155,13 @@ export function useClipboard(options: Options): Clipboard {
       };
       if (!content.structured && !content.plain) return;
       event.preventDefault();
-      accept(latest.current, content, cached.current, t);
+      const last = cached.current;
+      if (content.structured || last?.plain === content.plain || !canReadCustomFormat())
+        return accept(latest.current, content, last, t);
+      // A menu copy from another tab is only in the async API's format; look there first.
+      void readCustomFormat(content.plain).then((structured) =>
+        accept(latest.current, { ...content, structured }, cached.current, t),
+      );
     };
     document.addEventListener('copy', onCopy);
     document.addEventListener('cut', onCopy);
@@ -153,13 +175,14 @@ export function useClipboard(options: Options): Clipboard {
 
   return {
     copy: async (cut = false) => {
-      if (!hasSelection(options) || (cut && !canCut(options))) return;
+      const current = taken(options, cut);
+      if (!current) return;
       try {
-        const content = selectionPayload(options);
+        const content = selectionPayload(current);
         await writeClipboard(content);
         cached.current = content;
-        if (cut) options.onCut();
-        announce(options, cut, t);
+        if (cut) current.onCut();
+        announce(current, cut, t);
       } catch (error) {
         log.warn('clipboard.copy-failed', errorDetails(error, false));
         options.onStatus(t('clipboard.copyUnavailable'));

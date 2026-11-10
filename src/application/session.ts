@@ -33,6 +33,18 @@ export function edit(session: Session, patches: readonly Patch[]): Step {
   };
 }
 
+/**
+ * Replace the board with no way back: applied, and both stacks cleared. The old history
+ * belongs to the board being replaced, so undoing it would only write that board back.
+ */
+export function restart(session: Session, patches: readonly Patch[]): Step {
+  const { board } = applyPatches(session.board, patches);
+  return {
+    session: startSession(board),
+    applied: board === session.board ? [] : [...patches],
+  };
+}
+
 /** Changes from elsewhere: applied, but not part of this editor's history. */
 export function receive(session: Session, patches: readonly Patch[]): Session {
   const { board } = applyPatches(session.board, patches);

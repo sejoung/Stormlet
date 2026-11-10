@@ -6,6 +6,7 @@ import {
   edit,
   receive,
   redo,
+  restart,
   startSession,
   undo,
   type Session,
@@ -65,6 +66,11 @@ export function useBoardSession(store: BoardStore) {
     edit: useCallback<Edit>(
       (change) => void editWith((board) => ({ patches: change(board) })),
       [editWith],
+    ),
+    /** Replace the board without history, e.g. with a file just opened from Drive. */
+    restart: useCallback<Edit>(
+      (change) => run((current) => restart(current, change(current.board))),
+      [run],
     ),
     undo: useCallback(() => run(undo), [run]),
     redo: useCallback(() => run(redo), [run]),

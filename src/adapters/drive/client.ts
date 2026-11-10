@@ -205,7 +205,13 @@ export class DriveClient implements RemoteBoards {
     return { file: existing.file, board: read(existing.content) };
   }
 
+  /**
+   * Drop unfinished creations, kept and remembered, once the board moves on (another file,
+   * stopped syncing). A later creation reserves a new ID: reusing one could find the file
+   * an earlier board's late upload made, take it for its own and overwrite it.
+   */
   forgetUnconfirmed(): void {
+    this.reserved.clear();
     this.creations.write(null);
   }
 

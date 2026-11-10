@@ -17,7 +17,7 @@ const config = { clientId: 'client', apiKey: 'key', appId: 'app' };
 /** Google's scripts as the tests drive them: answers to sign-in and Picker are queued. */
 function fakeGoogle() {
   const answers: (TokenResponse | 'closed')[] = [];
-  const requested: { client_id: string; scope: string; prompt: string }[] = [];
+  const requested: { client_id: string; scope: string; prompt: string; login_hint?: string }[] = [];
   const revoked: string[] = [];
   let revokeResult = { successful: true };
   const built: Record<string, unknown>[] = [];
@@ -65,8 +65,8 @@ function fakeGoogle() {
           callback: (result: TokenResponse) => void;
           error_callback: () => void;
         }) => ({
-          requestAccessToken: ({ prompt }: { prompt: string }) => {
-            requested.push({ client_id: options.client_id, scope: options.scope, prompt });
+          requestAccessToken: (request: { prompt: string; login_hint?: string }) => {
+            requested.push({ client_id: options.client_id, scope: options.scope, ...request });
             const answer = answers.shift() ?? 'closed';
             if (answer === 'closed') options.error_callback();
             else options.callback(answer);
@@ -157,9 +157,10 @@ describe('Google connection', () => {
     expect([connection.expiring(), events]).toEqual([false, ['connected']]);
     await vi.advanceTimersByTimeAsync(1);
     expect([connection.expiring(), events]).toEqual([true, ['connected', 'expiring']]);
-    // Renewing replaces the token and starts a new schedule.
+    // Renewing replaces the token and starts a new schedule, suggesting the same account.
     fake.answers.push({ access_token: 'renewed', expires_in: 3600 });
-    await connection.connect();
+    await connection.connect('me@example.com');
+    expect(fake.requested.at(-1)).toMatchObject({ prompt: '', login_hint: 'me@example.com' });
     expect([connection.getToken(), connection.expiring()]).toEqual(['renewed', false]);
     await vi.advanceTimersByTimeAsync(lifetime);
     expect(connection.getToken()).toBeNull();

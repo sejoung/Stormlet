@@ -65,6 +65,29 @@ describe('Drive link storage', () => {
     expect(localStorage.getItem(DRIVE_FILE_KEY)).toBeNull();
   });
 
+  it('keeps no new version beside an old base when storage refuses the base', () => {
+    const links = new LocalDriveLinks();
+    links.write(link);
+    const setItem = Storage.prototype.setItem;
+    const full = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      this: Storage,
+      key,
+      value,
+    ) {
+      if (key === DRIVE_BASE_KEY) throw new DOMException('full', 'QuotaExceededError');
+      setItem.call(this, key, value);
+    });
+    links.write({ ...link, file: { ...link.file, version: '4' } });
+    full.mockRestore();
+    // Neither half is left, so a reload cannot merge version 4 against version 3's board.
+    expect(localStorage.getItem(DRIVE_FILE_KEY)).toBeNull();
+    expect(localStorage.getItem(DRIVE_BASE_KEY)).toBeNull();
+    expect(recentLog().map((entry) => entry.event)).toEqual([
+      'storage.write-failed',
+      'drive.link-not-kept',
+    ]);
+  });
+
   it('ignores a broken record and logs it', () => {
     const links = new LocalDriveLinks();
     links.write(link);

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CONSENT_KEY,
   GTAG_URL,
@@ -13,7 +13,16 @@ const ID = 'G-TEST1234';
 
 /** A page of its own for each instance, so earlier instances cannot reach its data layer. */
 type Page = Window & { dataLayer?: IArguments[] } & Record<string, unknown>;
-const page = () => ({ location: window.location, document }) as unknown as Page;
+const page = () => {
+  const target = new EventTarget();
+  return Object.assign(target, { location: window.location, document }) as unknown as Page;
+};
+/** What a page hears when another tab changes the stored choice. */
+const otherTab = (target: Page, consent: string | null) => {
+  if (consent) localStorage.setItem(CONSENT_KEY, consent);
+  else localStorage.removeItem(CONSENT_KEY);
+  target.dispatchEvent(new StorageEvent('storage', { key: CONSENT_KEY, newValue: consent }));
+};
 
 /** What the page sent through gtag, as plain arrays. */
 const calls = (target: Page) => (target.dataLayer ?? []).map((args) => [...args]);
@@ -21,6 +30,7 @@ const events = (target: Page) => calls(target).filter(([command]) => command ===
 const tags = () => document.head.querySelectorAll(`script[src^="${GTAG_URL}"]`);
 
 afterEach(() => {
+  vi.restoreAllMocks();
   localStorage.clear();
   document.head.innerHTML = '';
 });
@@ -134,5 +144,41 @@ describe('Google Analytics', () => {
     expect(events(target)).toEqual([['event', 'file_downloaded', {}]]);
     expect(tags()).toHaveLength(1);
     document.cookie = 'other=; Max-Age=0; path=/';
+  });
+
+  it('follows a choice made in another tab', () => {
+    const target = page();
+    const stats = new GoogleAnalytics(ID, target);
+    otherTab(target, 'granted');
+    expect(stats.consent).toBe('granted');
+    expect(tags()).toHaveLength(1);
+    document.cookie = '_ga=GA1.1.123; path=/';
+
+    otherTab(target, 'denied');
+    log.info('files.downloaded');
+    expect(stats.consent).toBe('denied');
+    expect(events(target)).toHaveLength(0);
+    expect(target[`ga-disable-${ID}`]).toBe(true);
+    expect(calls(target).at(-1)).toEqual(['consent', 'update', { analytics_storage: 'denied' }]);
+    expect(document.cookie).toBe('');
+
+    // A tab whose refusal could not be stored leaves no choice; that sends nothing too.
+    otherTab(target, 'granted');
+    otherTab(target, null);
+    log.info('files.downloaded');
+    expect(stats.consent).toBeNull();
+    expect(events(target)).toHaveLength(0);
+  });
+
+  it('forgets an earlier agreement when a refusal cannot be stored', () => {
+    localStorage.setItem(CONSENT_KEY, 'granted');
+    const stats = new GoogleAnalytics(ID, page());
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Full', 'QuotaExceededError');
+    });
+    stats.choose('denied');
+    expect(stats.consent).toBe('denied');
+    expect(localStorage.getItem(CONSENT_KEY)).toBeNull();
+    expect(new GoogleAnalytics(ID, page()).consent).toBeNull();
   });
 });

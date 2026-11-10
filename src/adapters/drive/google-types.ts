@@ -44,7 +44,10 @@ export interface GoogleApi {
         scope: string;
         callback: (result: TokenResponse) => void;
         error_callback: () => void;
-      }): { requestAccessToken(options: { prompt: string }): void };
+      }): {
+        /** `login_hint`: the email of the account to preselect in Google's popup. */
+        requestAccessToken(options: { prompt: string; login_hint?: string }): void;
+      };
       revoke(
         token: string,
         callback: (result: { successful: boolean; error?: string }) => void,

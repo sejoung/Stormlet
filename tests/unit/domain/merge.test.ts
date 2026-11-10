@@ -78,6 +78,28 @@ describe('three-way board merge', () => {
     expect(chosen.board.stickies.a).toMatchObject({ text: 'mine', x: 0, y: 20 });
   });
 
+  it('merges a line’s stroke width on its own, and keeps text sizes as one', () => {
+    const start = frozen({
+      ...boardOf(sticky('a'), sticky('b'), sticky('t', { objectType: 'text' })),
+      connections: { line: connection('line') },
+    });
+    const line = (b: Board) =>
+      (b.connections as unknown as Record<string, Record<string, unknown>>).line;
+    const local = edit(start, (b) => {
+      line(b).width = 4;
+      Object.assign(note(b, 't'), { width: 200 });
+    });
+    const remote = edit(start, (b) => {
+      line(b).width = 6;
+      Object.assign(note(b, 't'), { height: 80 });
+    });
+    const { conflicts } = mergeBoards(start, local, remote);
+    expect(conflicts.map(({ key, local, remote }) => ({ key, local, remote }))).toEqual([
+      { key: 'stickies:t:size', local: [200, 120], remote: [160, 80] },
+      { key: 'connections:line:width', local: [4], remote: [6] },
+    ]);
+  });
+
   it('agrees silently when both sides made the same change, and drops removed fields', () => {
     const local = edit(base(), (b) => {
       Object.assign(note(b, 'a'), { text: 'same' });

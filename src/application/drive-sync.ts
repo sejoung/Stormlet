@@ -1,38 +1,22 @@
 import type { Board } from '../domain/model';
 import type { BoardStore } from '../domain/store';
 import { diffBoards, type Patch } from '../domain/patch';
-import { mergeBoards, same, type Conflict, type Side } from '../domain/sync/merge';
+import { mergeBoards, same, type Side } from '../domain/sync/merge';
 import {
   RemoteError,
   type RemoteAccount,
   type RemoteBoards,
-  type RemoteFailure,
   type RemoteFile,
   type RemoteLink,
   type RemoteLinks,
 } from '../domain/sync/remote';
 
-/** Quiet time after the last edit before the board is saved to the linked file. */
-export const SYNC_DELAY = 2000;
-/** Continuous editing still saves at least this often. */
-export const MAX_SYNC_WAIT = 10_000;
-/** Waits before retrying a save that failed on the network; then it waits for the next edit. */
-export const RETRY_DELAYS = [5_000, 15_000, 60_000] as const;
-/** Save attempts in one run, each after merging what changed remotely in between. */
-const ROUNDS = 3;
+import { MAX_SYNC_WAIT, RETRY_DELAYS, ROUNDS, SYNC_DELAY } from './sync-state';
+import type { Status, SyncFailure, SyncState } from './sync-state';
 
-/** `account`: the file is in another Google account than the one connected now. */
-export type SyncFailure = Exclude<RemoteFailure, 'auth'> | 'unknown' | 'account';
-export type SyncState =
-  | { status: 'unlinked' }
-  | { status: 'synced' | 'pending' | 'saving'; file: RemoteFile }
-  /** The connection lapsed; edits stay local until the user reconnects. */
-  | { status: 'paused'; file: RemoteFile }
-  /** Both sides changed the same things; waiting for the user to choose. */
-  | { status: 'conflict'; file: RemoteFile; conflicts: Conflict[] }
-  | { status: 'failed'; file: RemoteFile; reason: SyncFailure; detail: string };
+export { MAX_SYNC_WAIT, RETRY_DELAYS, SYNC_DELAY } from './sync-state';
+export type { SyncFailure, SyncState } from './sync-state';
 
-type Status = SyncState['status'];
 type Opened = Awaited<ReturnType<RemoteBoards['open']>> & { account?: RemoteAccount };
 
 /**
@@ -57,6 +41,8 @@ export class DriveSync implements BoardStore {
   private pullWanted = false;
   private retries = 0;
   private generation = 0;
+  /** A token arrived since the account was checked, so the next save checks it first. */
+  private recheck = false;
   /** The remote side of a conflict waiting for the user. */
   private theirs: Opened | null = null;
 
@@ -111,15 +97,20 @@ export class DriveSync implements BoardStore {
     return () => this.watchers.delete(listener);
   }
 
-  /** Save the board as a new file in `folderId` and keep it in sync from now on. */
+  /**
+   * Save the board as a new file in `folderId` and keep it in sync from now on. A linked
+   * file stays linked (and saving) until then, so a failed copy changes nothing; with none,
+   * this claims the board at once, so a `recover` under way yields.
+   */
   async create(folderId: string): Promise<RemoteFile> {
-    const generation = this.detach();
+    const generation = this.link ? this.generation : this.detach();
     const board = this.load();
     const [file, account] = await Promise.all([
       this.remote.create(folderId, board),
       this.account(),
     ]);
     if (generation === this.generation) {
+      this.detach();
       this.remember({ file, base: board, account });
       this.set('synced');
       if (!same(this.load(), board)) this.changed();
@@ -131,6 +122,11 @@ export class DriveSync implements BoardStore {
   async open(id: string): Promise<Opened> {
     const [opened, account] = await Promise.all([this.remote.open(id), this.account()]);
     return { ...opened, account };
+  }
+
+  /** The account the linked file is in, when known; a hint for signing in again. */
+  get linkedAccount(): RemoteAccount | undefined {
+    return this.link?.account;
   }
 
   /** The Google account the current access is for; undefined when it cannot be told. */
@@ -183,7 +179,7 @@ export class DriveSync implements BoardStore {
   saveNow(): Promise<void> {
     if (!this.link) return Promise.resolve();
     // Another account may be connected by now; that is checked again first.
-    return this.otherAccount() ? this.resume() : this.run();
+    return this.otherAccount() || this.state.status === 'paused' ? this.resume() : this.run();
   }
 
   /**
@@ -194,17 +190,21 @@ export class DriveSync implements BoardStore {
     if (!this.link) return;
     const generation = this.generation;
     this.set('saving');
-    const expected = this.link.account;
-    const current = await this.account();
-    if (generation !== this.generation || !this.link) return;
-    if (expected && current && current.id !== expected.id) {
-      this.cancelWait();
-      return this.set('failed', { reason: 'account', detail: expected.email });
-    }
-    // A link made before accounts were kept learns its account now.
-    if (!expected && current) this.remember({ ...this.link, account: current });
+    if (!(await this.verify(this.activeFor(generation)))) return;
     this.pullWanted = true;
     return this.run();
+  }
+
+  /**
+   * A token arrived while a file is linked (signed in, renewed, another tab's), maybe for
+   * another account: check it before more is written. Conflicts and failures check later.
+   */
+  reconnected(): Promise<void> {
+    if (!this.link) return Promise.resolve();
+    const { status } = this.state;
+    if (status === 'paused' || this.otherAccount()) return this.resume();
+    this.recheck = true;
+    return ['synced', 'pending', 'saving'].includes(status) ? this.run() : Promise.resolve();
   }
 
   /** Finish a conflict with a side for each conflict key; unnamed ones keep the local side. */
@@ -219,16 +219,43 @@ export class DriveSync implements BoardStore {
 
   /**
    * Save what is pending before the linked file changes. True when nothing is left unsaved,
-   * so the caller can safely switch files.
+   * so the caller can safely switch files. `flush` commits text still being typed, before
+   * and after each save, as typing goes on while one runs.
    */
-  async settle(): Promise<boolean> {
-    if (!this.link) return true;
-    if (!['paused', 'conflict'].includes(this.state.status) && !this.otherAccount())
+  async settle(flush: () => void = () => {}): Promise<boolean> {
+    for (let round = 0; ; round++) {
+      flush();
+      if (!this.link || same(this.load(), this.link.base)) return true;
+      const { status } = this.state;
+      const failed = status === 'failed' && (round > 0 || this.otherAccount());
+      if (status === 'paused' || status === 'conflict' || failed || round === ROUNDS) return false;
       await this.run();
-    return !this.link || same(this.load(), this.link.base);
+    }
   }
 
   // --- Internals ---
+
+  /** Whether requests of `generation` still count; a lapse meanwhile keeps 'paused'. */
+  private activeFor(generation: number): () => boolean {
+    return () =>
+      generation === this.generation && this.link !== null && this.state.status !== 'paused';
+  }
+
+  /** Whether the linked file is in the account connected now; stops with `account` if not. */
+  private async verify(active: () => boolean): Promise<boolean> {
+    this.recheck = false;
+    const expected = this.link?.account;
+    const current = await this.account();
+    if (!active()) return false;
+    if (expected && current && current.id !== expected.id) {
+      this.cancelWait();
+      this.set('failed', { reason: 'account', detail: expected.email });
+      return false;
+    }
+    // A link made before accounts were kept learns its account now.
+    if (!expected && current) this.remember({ ...this.link!, account: current });
+    return true;
+  }
 
   private otherAccount(): boolean {
     return this.state.status === 'failed' && this.state.reason === 'account';
@@ -284,12 +311,14 @@ export class DriveSync implements BoardStore {
   private async sync(): Promise<void> {
     const generation = this.generation;
     const live = () => generation === this.generation && this.link !== null;
+    const active = this.activeFor(generation);
     try {
+      if (this.recheck && !(await this.verify(active))) return;
       if (this.pullWanted) {
         this.pullWanted = false;
-        if (!(await this.pull(live, false))) return;
+        if (!(await this.pull(active, false))) return;
       }
-      for (let round = 0; round < ROUNDS && live(); round++) {
+      for (let round = 0; round < ROUNDS && active(); round++) {
         const board = this.load();
         if (same(board, this.link!.base)) return this.set('synced');
         this.set('saving');
@@ -298,18 +327,20 @@ export class DriveSync implements BoardStore {
           if (!live()) return;
           this.remember({ file, base: board, account: this.link!.account });
           this.retries = 0;
+          // Saved, but access lapsed meanwhile: stay paused until reconnecting.
+          if (!active()) return;
           // Edits made while saving go out on the usual schedule.
           if (same(this.load(), board)) this.set('synced');
           else this.changed();
           return;
         } catch (error) {
           if (!(error instanceof RemoteError && error.reason === 'conflict')) throw error;
-          if (!(await this.pull(live, true))) return;
+          if (!(await this.pull(active, true))) return;
         }
       }
-      if (live()) throw new RemoteError('conflict', 'The file kept changing while saving.');
+      if (active()) throw new RemoteError('conflict', 'The file kept changing while saving.');
     } catch (error) {
-      if (live()) this.fail(error);
+      if (active()) this.fail(error);
     }
   }
 

@@ -59,7 +59,7 @@ export function Workspace({
   onLanguage,
 }: WorkspaceProps) {
   // --- Board, history and view ---
-  const { session, edit, editWith, undo, redo } = useBoardSession(store);
+  const { session, edit, editWith, restart, undo, redo } = useBoardSession(store);
   const { board } = session;
   const saved = useSaveHealth(store);
   const locale = useLocale();
@@ -179,13 +179,15 @@ export function Workspace({
     selectFrame,
     selectConnection: selected.selectConnection,
   });
-  const { save, onOpen, replace, newBoard, exportImage } = useBoardFiles({
+  const { save, onOpen, startFrom, newBoard, exportImage } = useBoardFiles({
     store,
+    library,
     edit,
+    restart,
     flushEditor,
     onStatus: setStatus,
-    // A local file is a different board, so the Drive file stops following this one.
-    beforeOpen: () => driveServices?.sync.unlink(),
+    // A local file is a different board: save the Drive file's pending edits, then unlink it.
+    beforeOpen: () => drive.release('drive.openBlocked'),
     reset: () => {
       selected.clear();
       notes.stopEdit();
@@ -196,7 +198,7 @@ export function Workspace({
     services: driveServices,
     board,
     flushEditor,
-    replaceBoard: replace,
+    replaceBoard: startFrom,
     onStatus: setStatus,
   });
   // The same commands back the shortcuts and the Edit and View menus.

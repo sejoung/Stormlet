@@ -1,10 +1,9 @@
 import { own } from '../ids';
 import type { Board } from '../model';
 import type { Patch } from '../patch';
-import { endpointObject, sameAttachment } from './endpoints';
+import { validEndpoints } from './endpoints';
 import {
   DEFAULT_CONNECTION,
-  isFreeEndpoint,
   joinsStickies,
   type Connection,
   type Endpoint,
@@ -13,15 +12,6 @@ import {
   type SharedStroke,
   SHARED_STROKE_FIELDS,
 } from './model';
-
-export const endpointExists = (board: Board, endpoint: Endpoint): boolean =>
-  isFreeEndpoint(endpoint)
-    ? Number.isFinite(endpoint.x) && Number.isFinite(endpoint.y)
-    : !!endpointObject(board, endpoint);
-
-export function validEndpoints(board: Board, from: Endpoint, to: Endpoint): boolean {
-  return endpointExists(board, from) && endpointExists(board, to) && !sameAttachment(from, to);
-}
 
 export function addConnection(
   board: Board,

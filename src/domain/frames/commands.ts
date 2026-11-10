@@ -189,9 +189,13 @@ export function cloneFrameContents(
   source: BoardSlice,
   target: Board,
   newId: () => string,
-  dx: number,
-  dy: number,
+  offsetX: number,
+  offsetY: number,
 ) {
+  // One whole-pixel offset for notes, frames and free ends alike: notes are rounded on copy,
+  // so an unrounded frame would no longer hold a note that sat flush with its edge.
+  const dx = Math.round(offsetX);
+  const dy = Math.round(offsetY);
   const frames = Object.values(source.frames ?? {});
   const frameIds = new Map(frames.map((frame) => [frame.id, newId()]));
   const notes = Object.values(source.stickies);

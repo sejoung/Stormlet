@@ -13,6 +13,14 @@ export const FONT_FAMILY =
 const CJK = /[ᄀ-ᇿ⺀-〿぀-ヿ㄰-㆏㐀-鿿가-힯豈-﫿]/u;
 const TOKENS = new RegExp(`\\s+|${CJK.source}|[^\\s${CJK.source.slice(1, -1)}]+`, 'gu');
 
+/**
+ * Characters XML 1.0 forbids (C0 controls other than tab and newlines, U+FFFE/U+FFFF and lone
+ * surrogates). Office pastes bring in vertical tabs; one of these makes the whole SVG
+ * unreadable, so they are dropped before text is measured and written.
+ */
+const XML_ILLEGAL = /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu;
+export const xmlText = (text: string) => text.replace(XML_ILLEGAL, '');
+
 export const noteFont = (note: Pick<Sticky, 'bold' | 'italic'>, size: number) =>
   `${note.italic ? 'italic ' : ''}${note.bold ? 700 : 400} ${size}px ${FONT_FAMILY}`;
 
@@ -75,19 +83,20 @@ export function scaledMeasure(measure: MeasureText) {
 
 /** A note's text as drawn: the fitted (or chosen) font size and the wrapped lines. */
 export function layoutNote(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>) {
+  const text = xmlText(note.text);
   const padding = contentPadding(note);
   const width = note.width - padding * 2;
   const height = note.height - padding * 2;
   const fits = (size: number) => {
     const measure = measureAt(note, size);
-    const lines = wrapText(note.text, width, measure);
+    const lines = wrapText(text, width, measure);
     return (
       lines.length * size * NOTE_LINE_HEIGHT <= height &&
       lines.every((line) => measure(line) <= width + 0.5)
     );
   };
-  const fitted = fitNoteFont(note.text, note, fits, padding);
+  const fitted = fitNoteFont(text, note, fits, padding);
   const chosen = note.autoFont === false ? (note.fontSize ?? DEFAULT_NOTE_FONT) : null;
   const size = chosen === null ? fitted : Math.min(chosen, fitted);
-  return { size, lines: wrapText(note.text, width, measureAt(note, size)) };
+  return { size, lines: wrapText(text, width, measureAt(note, size)) };
 }

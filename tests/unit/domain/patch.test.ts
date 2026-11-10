@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyPatches, diffBoards, type Patch } from '../../../src/domain/patch';
 import { boardOf, frozen, sticky } from '../../support/boards';
+import { connectedBoard, connection } from '../../support/connections';
+import { frame } from '../../support/frames';
 
 describe('applyPatches', () => {
   it('applies add, set and delete without changing its input', () => {
@@ -47,7 +49,82 @@ describe('applyPatches', () => {
   });
 });
 
+describe('applyPatches with lines whose ends are gone', () => {
+  it('does not bring back a line by undo after its note was deleted elsewhere', () => {
+    const board = frozen(connectedBoard());
+    const deleted = applyPatches(board, [{ op: 'connection:delete', id: 'line' }]);
+    expect(deleted.inverse).toEqual([{ op: 'connection:add', connection: connection() }]);
+    const pulled = applyPatches(deleted.board, [{ op: 'delete', id: 'a' }]).board;
+    const undone = applyPatches(pulled, deleted.inverse);
+    expect(undone.board).toBe(pulled);
+    expect(undone.inverse).toEqual([]);
+  });
+
+  it('keeps a line restored together with its note, in either order', () => {
+    const board = frozen(boardOf(sticky('b')));
+    const note = { op: 'add', sticky: sticky('a') } as const;
+    const line = { op: 'connection:add', connection: connection() } as const;
+    for (const patches of [
+      [note, line],
+      [line, note],
+    ]) {
+      const { board: next, inverse } = applyPatches(board, patches);
+      expect(Object.keys(next.connections ?? {})).toEqual(['line']);
+      expect(applyPatches(next, inverse).board).toEqual(board);
+    }
+  });
+
+  it('drops a line whose note or frame is deleted, and its inverse restores both', () => {
+    const board = frozen({
+      ...connectedBoard(connection('line', { to: { frameId: 'frame', side: 'auto' } })),
+      frames: { frame: frame() },
+    });
+    for (const patch of [
+      { op: 'delete', id: 'a' },
+      { op: 'frame:delete', id: 'frame' },
+    ] as const) {
+      const { board: next, inverse } = applyPatches(board, [patch]);
+      expect(next.connections).toBeUndefined();
+      const restored = applyPatches(next, inverse);
+      expect(restored.board).toEqual(board);
+      // Redo deletes the note again and takes the line with it.
+      expect(applyPatches(restored.board, restored.inverse).board).toEqual(next);
+    }
+  });
+
+  it('drops a line moved onto a missing end or onto the note it starts from', () => {
+    const board = frozen(connectedBoard());
+    for (const value of [
+      { stickyId: 'gone', side: 'auto' },
+      { stickyId: 'a', side: 'left' },
+    ] as const) {
+      const { board: next, inverse } = applyPatches(board, [
+        { op: 'connection:set', id: 'line', field: 'to', value },
+      ]);
+      expect(next.connections).toBeUndefined();
+      expect(applyPatches(next, inverse).board).toEqual(board);
+    }
+  });
+});
+
 describe('diffBoards', () => {
+  it('finds no change between a board and its structured copy', () => {
+    const reactions = [{ emoji: '👍', people: ['me'] }];
+    const base = connectedBoard();
+    const board = frozen({
+      ...base,
+      stickies: { ...base.stickies, a: sticky('a', { reactions }) },
+    });
+    const copy = structuredClone(board);
+    expect(diffBoards(board, copy)).toEqual([]);
+    const patches: Patch[] = [
+      { op: 'set', id: 'a', field: 'reactions', value: copy.stickies.a.reactions },
+      { op: 'connection:set', id: 'line', field: 'from', value: copy.connections!.line.from },
+    ];
+    expect(applyPatches(board, patches)).toEqual({ board, inverse: [] });
+    expect(applyPatches(board, patches).board).toBe(board);
+  });
+
   it('lists field changes, additions and deletions that turn one board into another', () => {
     const from = frozen(boardOf(sticky('a'), sticky('b')));
     const to = frozen(boardOf(sticky('a', { kind: 'command', y: 20 }), sticky('c')));

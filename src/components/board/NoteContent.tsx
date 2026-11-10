@@ -10,8 +10,17 @@ import { useT } from '../common/i18n';
 import type { NextNote } from '../../domain/note-actions';
 import { fittedTextSize } from '../text/fit-size';
 
-export function StickyText({ note, size }: { note: Sticky; size: StickySize }) {
-  const { ref, fontSize } = useFittedText(note.id, note.text, size, note);
+/** `live` while a resize previews, so the text is fitted once per frame (see useFittedText). */
+export function StickyText({
+  note,
+  size,
+  live = false,
+}: {
+  note: Sticky;
+  size: StickySize;
+  live?: boolean;
+}) {
+  const { ref, fontSize } = useFittedText(note.id, note.text, size, note, live);
   return (
     <div className="sticky-content">
       <p ref={ref} className="sticky-text" style={noteTextStyle(note, fontSize)}>

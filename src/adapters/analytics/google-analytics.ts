@@ -1,5 +1,5 @@
 import { onLogEntry, type LogEntry } from '../diagnostics/log';
-import { readItem, writeItem } from '../storage/web-storage';
+import { readItem, removeItem, writeItem } from '../storage/web-storage';
 import { usageEvent } from './usage-events';
 
 /** localStorage: whether the user agreed to send usage statistics (`granted` or `denied`). */
@@ -37,7 +37,8 @@ function removeCookies(document: Document, measurementId: string) {
  * Usage statistics through Google Analytics 4 (ADR 0014). Nothing is loaded or sent until
  * the user agrees; then page views, the features listed in `usage-events` and the names of
  * errors are sent, with Google signals and ad personalisation off. Declining later stops
- * sending and removes the Analytics cookies. The choice is kept in this browser.
+ * sending and removes the Analytics cookies. The choice is kept in this browser and applies
+ * to every open tab: one still sending would write the cookies again.
  */
 export class GoogleAnalytics implements UsageStats {
   #consent: Consent | null = readConsent();
@@ -50,6 +51,12 @@ export class GoogleAnalytics implements UsageStats {
   ) {
     if (this.#consent === 'granted') this.#start();
     onLogEntry((entry) => this.#forward(entry));
+    // Another tab's choice; `key` is null when that tab cleared the storage.
+    page.addEventListener('storage', (event) => {
+      if (event.key !== CONSENT_KEY && event.key !== null) return;
+      const consent = readConsent();
+      if (consent !== this.#consent) this.#apply(consent);
+    });
   }
 
   get consent(): Consent | null {
@@ -57,12 +64,20 @@ export class GoogleAnalytics implements UsageStats {
   }
 
   choose(consent: Consent): void {
-    writeItem(CONSENT_KEY, consent);
+    // A refusal that could not be stored must not leave an earlier 'granted' behind for the
+    // next page load; without the key that load is undecided, which sends nothing.
+    if (!writeItem(CONSENT_KEY, consent) && consent === 'denied') removeItem(CONSENT_KEY);
+    this.#apply(consent);
+  }
+
+  /** Undecided stops sending like a refusal: it is what a failed refusal falls back to. */
+  #apply(consent: Consent | null) {
     this.#consent = consent;
     const page = this.page as TaggedWindow;
+    const granted = consent === 'granted';
     // Google's own switch, honoured by a tag already running in this page.
-    page[`ga-disable-${this.measurementId}`] = consent === 'denied';
-    if (consent === 'denied') {
+    page[`ga-disable-${this.measurementId}`] = !granted;
+    if (!granted) {
       if (this.#started) this.#gtag('consent', 'update', { analytics_storage: 'denied' });
       removeCookies(page.document, this.measurementId);
     } else if (this.#started) this.#gtag('consent', 'update', { analytics_storage: 'granted' });

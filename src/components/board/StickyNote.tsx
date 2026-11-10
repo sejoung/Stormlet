@@ -1,4 +1,5 @@
 import { memo, type MouseEvent, type PointerEvent } from 'react';
+import { flushSync } from 'react-dom';
 import type { Sticky } from '../../domain/model';
 import type { StickySize } from '../../domain/sticky-size';
 import { isText, TEXT_PADDING } from '../../domain/text/model';
@@ -13,7 +14,7 @@ import { StickyText, StickyEditor } from './NoteContent';
 import { Icon } from '../toolbar/Icon';
 import { ConnectionPorts } from '../connections/ConnectionPorts';
 import type { ConnectionSide } from '../../domain/connections/model';
-import { isMenuKey } from '../common/keyboard';
+import { isMenuKey, startsComposition } from '../common/keyboard';
 import { ResizeHandles } from './SelectionFrame';
 import { clientCenter } from '../common/points';
 import { cx } from '../common/cx';
@@ -99,15 +100,20 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         event.stopPropagation();
         if (!sticky.locked) props.onStartEdit(sticky.id);
       }}
-      onCompositionStart={() => {
-        if (!editing && !sticky.locked) props.onStartEdit(sticky.id, '');
-      }}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;
         if (!editing && !sticky.locked && !event.ctrlKey && !event.metaKey && !event.altKey) {
           if (event.key === 'Enter') {
             event.preventDefault();
             props.onStartEdit(sticky.id);
+          } else if (selected && startsComposition(event)) {
+            // The IME composes into whatever is focused once this key is handled, so the
+            // editor opens empty and takes focus now; seeding it with this key would leave a
+            // lone jamo before the syllable ("ㅅㅐ" instead of "새").
+            event.stopPropagation();
+            const note = event.currentTarget;
+            flushSync(() => props.onStartEdit(sticky.id, ''));
+            note.querySelector('textarea')?.focus();
           } else if (selected && event.key.length === 1 && event.key !== ' ') {
             event.preventDefault();
             event.stopPropagation();
@@ -129,7 +135,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
           onDone={(text, next, size) => props.onCommitText(sticky.id, text, next, size)}
         />
       ) : (
-        <StickyText note={sticky} size={size} />
+        <StickyText note={sticky} size={size} live={props.resized !== null} />
       )}
       {props.showPorts && (
         <ConnectionPorts

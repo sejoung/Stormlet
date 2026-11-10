@@ -34,8 +34,11 @@ export interface DriveAuth {
   prepare(): Promise<void>;
   /** Whether `prepare` has finished, so `connect` can open its popup at once. */
   ready(): boolean;
-  /** Ask for access, or renew it, in Google's popup; call it straight from a click. */
-  connect(): Promise<void>;
+  /**
+   * Ask for access, or renew it, in Google's popup; call it straight from a click. `hint`
+   * is the email of the account to suggest, e.g. the one the linked file is in.
+   */
+  connect(hint?: string): Promise<void>;
   /** Show the Picker; resolves with the chosen item, or null when cancelled. */
   pick(kind: PickKind, options: PickOptions): Promise<DriveItem | null>;
   /**

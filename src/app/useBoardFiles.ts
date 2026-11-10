@@ -1,8 +1,8 @@
 import type { Board } from '../domain/model';
-import type { BoardStore } from '../domain/store';
+import type { BoardLibrary, BoardStore } from '../domain/store';
 import { diffBoards } from '../domain/patch';
 import { boardTitle, boardFileStem, normalizeBoardTitle } from '../domain/board-title';
-import { emptyBoard } from '../domain/model';
+import { emptyBoard, isEmptyBoard } from '../domain/model';
 import { downloadBlob, downloadText, readFileText } from '../adapters/files/download';
 import { canvasTextMeasure, svgToPng } from '../adapters/files/image-export';
 import { boardSvg } from '../components/export/board-svg';
@@ -30,33 +30,57 @@ const titleFromFileName = (name: string) =>
 
 export function useBoardFiles({
   store,
+  library,
   edit,
+  restart,
   flushEditor,
   reset,
   beforeOpen,
   onStatus,
 }: {
   store: BoardStore;
+  /** Where a board opened over from Drive is kept, since that cannot be undone. */
+  library?: BoardLibrary;
   edit: Edit;
+  /** Replaces the board and clears undo and redo. */
+  restart: Edit;
   flushEditor(): void;
   reset(): void;
-  /** Called before a local file replaces the board, e.g. to stop syncing the previous file. */
-  beforeOpen?(): void;
+  /**
+   * Called before a local file replaces the board, e.g. to save and stop syncing the
+   * previous Drive file; false keeps the board and cancels opening.
+   */
+  beforeOpen?(): Promise<boolean>;
   onStatus(message: string): void;
 }) {
   const t = useT();
-  /** Put `opened` on the board as an undoable edit, titled after `name` if it has no title. */
-  const replace = (opened: Board, name: string) => {
+  /** Put `opened` on the board, titled after `name` if it has no title. */
+  const replace = (opened: Board, name: string, change: Edit) => {
     const title = opened.title ?? titleFromFileName(name);
-    edit((current) => diffBoards(current, { ...opened, title }));
+    change((current) => diffBoards(current, { ...opened, title }));
     reset();
   };
   return {
-    replace,
-    /** Start an empty board named `title` (the default name when blank), as one undoable edit. */
+    /**
+     * Put a board opened from Drive in place, after `link` links its file, with no undo
+     * back to the previous board: undoing would save the old board over the opened file.
+     * So a previous board that is only in this browser is kept in Recent boards first, and
+     * nothing is opened when it cannot be kept.
+     */
+    startFrom: (opened: Board, name: string, link: () => void, inDrive: boolean) => {
+      const previous = store.load();
+      const keep = !inDrive && !isEmptyBoard(previous) && library !== undefined;
+      if (keep && !library.keep(previous)) return false;
+      link();
+      replace(opened, name, restart);
+      return keep ? ('kept' as const) : ('replaced' as const);
+    },
+    /**
+     * Start an empty board named `title` (the default name when blank), as one undoable
+     * edit. The caller has already saved and stopped syncing the previous Drive file.
+     */
     newBoard: (title: string) => {
       flushEditor();
-      beforeOpen?.();
       edit((current) =>
         diffBoards(current, { ...emptyBoard(), title: normalizeBoardTitle(title) }),
       );
@@ -92,8 +116,9 @@ export function useBoardFiles({
         if (file.size > MAX_BOARD_FILE_BYTES)
           throw new Error(t('files.tooLarge', { size: MAX_BOARD_FILE_BYTES / 1024 / 1024 }));
         const opened = parseBoard(await readFileText(file));
-        beforeOpen?.();
-        replace(opened, file.name);
+        if (beforeOpen && !(await beforeOpen())) return;
+        // Undoable: the previous Drive file is no longer linked, so nothing is saved back.
+        replace(opened, file.name, edit);
         log.info('files.opened', { size: file.size });
         onStatus(t('files.opened', { name: file.name }));
       } catch (error) {

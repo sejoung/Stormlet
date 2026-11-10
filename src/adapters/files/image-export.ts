@@ -22,6 +22,14 @@ const PNG_SCALE = 2;
 const MAX_SIDE = 16384;
 const MAX_AREA = 120_000_000;
 
+/**
+ * iOS Safari refuses canvases past about 16.7M pixels (4096²), returning no context or an
+ * empty blob, so a failed draw is retried at this area before export gives up.
+ */
+const SAFE_AREA = 16_000_000;
+/** Attempts before reporting failure; each is smaller than the last. */
+const MAX_ATTEMPTS = 4;
+
 export function pngScale(width: number, height: number): number {
   return Math.min(
     PNG_SCALE,
@@ -31,6 +39,35 @@ export function pngScale(width: number, height: number): number {
   );
 }
 
+/**
+ * Densities to try in turn: the best one, then (if that fails) at most the area every
+ * browser allows and at most half the last try, until one is both within it and ≤ 1.
+ */
+export function pngScales(width: number, height: number): number[] {
+  const safe = Math.sqrt(SAFE_AREA / (width * height));
+  const scales = [pngScale(width, height)];
+  while (scales.length < MAX_ATTEMPTS && scales.at(-1)! > Math.min(1, safe))
+    scales.push(Math.min(scales.at(-1)! / 2, safe));
+  return scales;
+}
+
+/** Draws the decoded image at `scale` and encodes it, or `null` if the canvas refuses. */
+async function drawPng(image: HTMLImageElement, width: number, height: number, scale: number) {
+  const canvas = document.createElement('canvas');
+  // Rounded down, so a board scaled to the limit never lands a pixel past it.
+  canvas.width = Math.max(1, Math.floor(width * scale));
+  canvas.height = Math.max(1, Math.floor(height * scale));
+  try {
+    const context = canvas.getContext('2d');
+    if (!context) return null;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  } finally {
+    // Safari holds on to canvas memory until the canvas shrinks; free it before a retry.
+    canvas.width = canvas.height = 0;
+  }
+}
+
 /** Draws `svg` (`width` × `height` CSS pixels) onto a canvas and encodes it as a PNG. */
 export async function svgToPng(svg: string, width: number, height: number): Promise<Blob> {
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
@@ -38,20 +75,11 @@ export async function svgToPng(svg: string, width: number, height: number): Prom
     const image = new Image();
     image.src = url;
     await image.decode();
-    const scale = pngScale(width, height);
-    const canvas = document.createElement('canvas');
-    // Rounded down, so a board scaled to the limit never lands a pixel past it.
-    canvas.width = Math.max(1, Math.floor(width * scale));
-    canvas.height = Math.max(1, Math.floor(height * scale));
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Canvas drawing is unavailable.');
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error('The PNG could not be encoded.'))),
-        'image/png',
-      ),
-    );
+    for (const scale of pngScales(width, height)) {
+      const blob = await drawPng(image, width, height, scale);
+      if (blob) return blob;
+    }
+    throw new Error('The PNG could not be encoded.');
   } finally {
     URL.revokeObjectURL(url);
   }

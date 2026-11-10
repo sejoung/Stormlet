@@ -111,7 +111,8 @@ const BINDINGS: readonly Binding[] = [
     codes: Object.keys(ALIGN_CODES),
     run: (h, e) => h.onArrange(ALIGN_CODES[e.code]),
   },
-  { alt: true, keys: ['1', '2'], run: (h, _, key) => h.onFit(key === '2') },
+  // By physical key too: Option+1 and Option+2 type "¡" and "™" on a Mac.
+  { alt: true, keys: [], codes: ['Digit1', 'Digit2'], run: (h, e) => h.onFit(e.code === 'Digit2') },
   {
     mod: false,
     keys: Object.keys(ARROWS),

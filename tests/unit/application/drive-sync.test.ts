@@ -176,8 +176,10 @@ describe('Drive sync', () => {
     await vi.advanceTimersByTimeAsync(SYNC_DELAY);
     expect(sync.current.status).toBe('paused');
 
+    // Saving while paused resumes: what changed in the file comes first.
     drive.failures.push('permission');
     await sync.saveNow();
+    expect(drive.calls.at(-1)).toBe('version file1');
     expect(sync.current).toMatchObject({
       status: 'failed',
       reason: 'permission',
@@ -185,7 +187,7 @@ describe('Drive sync', () => {
     });
     sync.apply(setText('a', 'y'));
     await vi.advanceTimersByTimeAsync(SYNC_DELAY * 2);
-    expect(drive.calls.filter((call) => call.startsWith('save'))).toHaveLength(2);
+    expect(drive.calls.filter((call) => call.startsWith('save'))).toHaveLength(1);
 
     await sync.saveNow();
     expect(sync.current.status).toBe('synced');

@@ -1,6 +1,6 @@
 import type { Board } from '../../domain/model';
 import { isStickyId } from '../../domain/ids';
-import { validEndpoints } from '../../domain/connections/commands';
+import { validEndpoints } from '../../domain/connections/endpoints';
 import {
   CONNECTION_COLORS,
   CONNECTION_PATHS,
@@ -35,6 +35,7 @@ function readEndpoint(raw: unknown): Endpoint {
   return { x: point.x, y: point.y };
 }
 
+/** Connections of a file; malformed entries throw, lines without both ends are left out. */
 export function readConnections(raw: unknown, board: Board): Record<string, Connection> {
   if (raw === undefined) return {};
   if (!Array.isArray(raw)) throw new Error('Invalid connection list.');
@@ -58,7 +59,9 @@ export function readConnections(raw: unknown, board: Board): Record<string, Conn
       throw new Error('Malformed connection.');
     const from = readEndpoint(item.from);
     const to = readEndpoint(item.to);
-    if (!validEndpoints(board, from, to)) throw new Error('Dangling or self connection.');
+    // A well-formed line whose note or frame is missing is skipped, not fatal: one such line
+    // (from an older build or another editor) must not make the whole board unreadable.
+    if (!validEndpoints(board, from, to)) continue;
     connections[id] = {
       id,
       from,
