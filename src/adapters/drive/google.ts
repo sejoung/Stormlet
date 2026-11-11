@@ -209,16 +209,10 @@ function revoke(token: string): Promise<void> {
 
 const FOLDER_TYPE = 'application/vnd.google-apps.folder';
 /**
- * What the Picker shows when opening a board: board files, older ones saved as JSON, and
- * `.stormlet` files uploaded to Drive by hand, which Drive stores as unknown binary. Folders
- * stay listed so they can be browsed.
+ * What the Picker shows when opening a board: board files, `.stormlet` files uploaded to
+ * Drive by hand, which Drive stores as unknown binary, and folders to browse.
  */
-const OPENABLE_TYPES = [
-  MIME_TYPE,
-  'application/json',
-  'application/octet-stream',
-  FOLDER_TYPE,
-];
+const OPENABLE_TYPES = [MIME_TYPE, 'application/octet-stream', FOLDER_TYPE];
 
 interface PickerAccess extends PickOptions {
   api: PickerApi;

@@ -278,7 +278,7 @@ describe('Google connection', () => {
           folders: true,
           selectFolders: false,
           mimeTypes:
-            'application/vnd.stormlet+json,application/json,application/octet-stream,application/vnd.google-apps.folder',
+            'application/vnd.stormlet+json,application/octet-stream,application/vnd.google-apps.folder',
         },
       }),
     ]);
