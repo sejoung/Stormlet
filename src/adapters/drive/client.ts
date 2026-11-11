@@ -11,6 +11,7 @@ import {
   FILE_EXTENSION,
   FormatError,
   MAX_BOARD_FILE_BYTES,
+  MIME_TYPE,
   parseBoard,
   serializeBoard,
 } from '../files/stormlet-format';
@@ -137,7 +138,7 @@ export class DriveClient implements RemoteBoards {
   }
 
   async save(file: RemoteFile, board: Board): Promise<RemoteFile> {
-    const current = await this.metadata(file.id);
+    const current = await this.metadata(file.id, 'version,mimeType');
     if (current.data.version !== file.version)
       throw new RemoteError('conflict', 'The file changed in Drive.');
     // A numbered copy of the title's name (`Plan (2).stormlet`) keeps its number.
@@ -145,15 +146,19 @@ export class DriveClient implements RemoteBoards {
       ? file.name
       : await this.nameInParent(file.id, board);
     const content = serializeBoard(board);
-    // Renaming needs the metadata part; otherwise the content alone is sent.
-    const upload = name === file.name ? null : multipart({ name }, content);
+    // Renaming, or giving an older `application/json` file the board type, needs the
+    // metadata part; otherwise the content alone is sent.
+    const upload =
+      name === file.name && current.data.mimeType === MIME_TYPE
+        ? null
+        : multipart({ name, mimeType: MIME_TYPE }, content, MIME_TYPE);
     const { data } = await this.request(
       `${DRIVE_UPLOAD}/${encodeURIComponent(file.id)}?uploadType=${upload ? 'multipart' : 'media'}&fields=${FILE_FIELDS}`,
       (response) => response.json() as Promise<RemoteFile>,
       {
         method: 'PATCH',
         headers: {
-          'Content-Type': upload?.type ?? 'application/json',
+          'Content-Type': upload?.type ?? MIME_TYPE,
           // Only a validator from the fresh metadata read may guard the write.
           ...(current.etag ? { 'If-Match': current.etag } : {}),
         },
@@ -288,8 +293,9 @@ export class DriveClient implements RemoteBoards {
 
   private async upload(id: string, folderId: string, { name, content }: Sent) {
     const upload = multipart(
-      { id, name, mimeType: 'application/json', parents: [folderId] },
+      { id, name, mimeType: MIME_TYPE, parents: [folderId] },
       content,
+      MIME_TYPE,
     );
     const { data } = await this.request(
       `${DRIVE_UPLOAD}?uploadType=multipart&fields=${FILE_FIELDS}`,
@@ -346,10 +352,10 @@ export class DriveClient implements RemoteBoards {
     return this.save(existing.file, board);
   }
 
-  private metadata(id: string) {
+  private metadata(id: string, fields = 'version') {
     return this.request(
-      `${DRIVE_API}/${encodeURIComponent(id)}?fields=version`,
-      (response) => response.json() as Promise<{ version: string }>,
+      `${DRIVE_API}/${encodeURIComponent(id)}?fields=${fields}`,
+      (response) => response.json() as Promise<{ version: string; mimeType?: string }>,
     );
   }
 

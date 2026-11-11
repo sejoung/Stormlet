@@ -30,13 +30,14 @@ export async function failureOf(response: Response): Promise<RemoteError> {
   return new RemoteError(failure, reason ? `${status} (${reason}).` : `${status}.`);
 }
 
-export function multipart(metadata: object, content: string) {
+/** A `multipart/related` upload: metadata as JSON, then `content` as `contentType`. */
+export function multipart(metadata: object, content: string, contentType: string) {
   const boundary = `stormlet-${crypto.randomUUID()}`;
   return {
     type: `multipart/related; boundary=${boundary}`,
     body:
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-      `${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n` +
+      `${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${contentType}\r\n\r\n` +
       `${content}\r\n--${boundary}--`,
   };
 }

@@ -88,7 +88,7 @@ describe('creating Drive files without duplicates', () => {
     });
     expect(drive.log).toEqual(['GET ids', 'POST upload']);
     expect(drive.bodies[0]).toContain(
-      '{"id":"reserved","name":"Plan.stormlet","mimeType":"application/json","parents":["folder"]}',
+      '{"id":"reserved","name":"Plan.stormlet","mimeType":"application/vnd.stormlet+json","parents":["folder"]}',
     );
   });
 
@@ -133,7 +133,7 @@ describe('creating Drive files without duplicates', () => {
       // Drive did not list the first upload yet, so the first call gives up.
       'GET meta': [new TypeError('offline'), meta()],
       'GET media': [new Response(serializeBoard(board))],
-      'GET version': [json({ version: '1' })],
+      'GET version': [json({ version: '1', mimeType: 'application/vnd.stormlet+json' })],
       'PATCH upload': [created('2')],
     });
     expect(await failure(drive.client.create('folder', board))).toBe('network: offline');

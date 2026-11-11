@@ -1,6 +1,7 @@
 import type { GoogleConfig } from './config';
 import type { AuthChannel, AuthMessage } from './auth-channel';
 import { loadScript } from './script-loader';
+import { MIME_TYPE } from '../files/stormlet-format';
 import type { PickerApi } from './google-types';
 import {
   DriveAuthError,
@@ -206,6 +207,19 @@ function revoke(token: string): Promise<void> {
   });
 }
 
+const FOLDER_TYPE = 'application/vnd.google-apps.folder';
+/**
+ * What the Picker shows when opening a board: board files, older ones saved as JSON, and
+ * `.stormlet` files uploaded to Drive by hand, which Drive stores as unknown binary. Folders
+ * stay listed so they can be browsed.
+ */
+const OPENABLE_TYPES = [
+  MIME_TYPE,
+  'application/json',
+  'application/octet-stream',
+  FOLDER_TYPE,
+];
+
 interface PickerAccess extends PickOptions {
   api: PickerApi;
   token: string;
@@ -221,8 +235,8 @@ export function showPicker(kind: PickKind, access: PickerAccess): Promise<DriveI
       .setIncludeFolders(true)
       .setSelectFolderEnabled(kind === 'folder')
       .setMode(api.DocsViewMode.LIST);
-    if (kind === 'folder')
-      view.setParent('root').setMimeTypes('application/vnd.google-apps.folder');
+    if (kind === 'folder') view.setParent('root').setMimeTypes(FOLDER_TYPE);
+    else view.setMimeTypes(OPENABLE_TYPES.join(','));
     const picker = new api.PickerBuilder()
       .setLocale(access.language)
       .setTitle(access.title)

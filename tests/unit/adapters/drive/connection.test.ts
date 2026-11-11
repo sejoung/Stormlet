@@ -273,7 +273,14 @@ describe('Google connection', () => {
           mimeTypes: 'application/vnd.google-apps.folder',
         },
       },
-      expect.objectContaining({ view: { folders: true, selectFolders: false } }),
+      expect.objectContaining({
+        view: {
+          folders: true,
+          selectFolders: false,
+          mimeTypes:
+            'application/vnd.stormlet+json,application/json,application/octet-stream,application/vnd.google-apps.folder',
+        },
+      }),
     ]);
   });
 

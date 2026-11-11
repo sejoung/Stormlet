@@ -9,6 +9,8 @@ export interface FakeFile {
   version: number;
   content: string;
   parents: string[];
+  /** Drive's media type; seeded files without one are older plain-JSON uploads. */
+  mimeType?: string;
 }
 
 export const TOKEN = 'e2e-token';
@@ -98,6 +100,7 @@ export async function mockDrive(page: Target) {
     return {
       id,
       name: file.name,
+      mimeType: file.mimeType ?? 'application/json',
       version: String(file.version),
       size: String(file.content.length),
     };
@@ -129,6 +132,7 @@ export async function mockDrive(page: Target) {
         version: 1,
         content,
         parents: metadata.parents as string[],
+        mimeType: metadata.mimeType as string | undefined,
       });
       if (faults.holdNextCreate) {
         faults.holdNextCreate = false;
@@ -145,7 +149,9 @@ export async function mockDrive(page: Target) {
     if (request.method() === 'PATCH') {
       if (url.searchParams.get('uploadType') === 'multipart') {
         const [metadata, content] = multipart(request);
-        Object.assign(file, { name: metadata.name, content });
+        file.content = content;
+        if (metadata.name !== undefined) file.name = String(metadata.name);
+        if (metadata.mimeType !== undefined) file.mimeType = String(metadata.mimeType);
       } else file.content = request.postData() ?? '';
       file.version++;
       return reply(route, meta(id));

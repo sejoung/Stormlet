@@ -24,6 +24,11 @@ export const FORMAT = 'stormlet';
 // Version 10 adds standalone text; older builds refuse it rather than turn text into notes.
 export const FORMAT_VERSION = 10;
 export const FILE_EXTENSION = '.stormlet';
+/**
+ * The media type board files carry in Google Drive, so Drive and the Picker can tell them
+ * from other JSON. Files saved before it existed are `application/json`.
+ */
+export const MIME_TYPE = 'application/vnd.stormlet+json';
 // Versions 1–2 omitted dimensions and always used this historical rectangle.
 const LEGACY_STICKY_SIZE = { width: 160, height: 120 };
 

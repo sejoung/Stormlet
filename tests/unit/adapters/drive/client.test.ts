@@ -7,7 +7,11 @@ import {
   REQUEST_TIMEOUT,
   driveFileName,
 } from '../../../../src/adapters/drive/client';
-import { parseBoard, serializeBoard } from '../../../../src/adapters/files/stormlet-format';
+import {
+  MIME_TYPE,
+  parseBoard,
+  serializeBoard,
+} from '../../../../src/adapters/files/stormlet-format';
 import { RemoteError } from '../../../../src/domain/sync/remote';
 import { boardOf, sticky } from '../../../support/boards';
 
@@ -73,22 +77,37 @@ describe('Drive client', () => {
 
   it('saves content after checking the version, guarded by a fresh ETag', async () => {
     const { fetcher, sent } = fakeFetch(
-      json({ version: '3' }, { ETag: '"fresh"' }),
+      json({ version: '3', mimeType: MIME_TYPE }, { ETag: '"fresh"' }),
       json({ id: 'f1', name: 'Plan.stormlet', version: '4' }),
     );
     const client = new DriveClient(() => 'token', fetcher);
     expect(await client.save(file, board)).toEqual({ ...file, version: '4' });
+    expect(sent[0].url).toBe(`${DRIVE_API}/f1?fields=version,mimeType`);
     expect(sent[1].url).toBe(`${DRIVE_UPLOAD}/f1?uploadType=media&fields=id,name,version`);
     expect(sent[1].init).toMatchObject({
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'If-Match': '"fresh"' },
+      headers: { 'Content-Type': MIME_TYPE, 'If-Match': '"fresh"' },
     });
     expect(parseBoard(String(sent[1].init.body))).toEqual(board);
   });
 
+  it('gives a file saved as plain JSON the board type on its next save', async () => {
+    const { fetcher, sent } = fakeFetch(
+      json({ version: '3', mimeType: 'application/json' }, { ETag: '"fresh"' }),
+      json({ id: 'f1', name: 'Plan.stormlet', version: '4' }),
+    );
+    await new DriveClient(() => 'token', fetcher).save(file, board);
+    expect(sent).toHaveLength(2);
+    expect(sent[1].url).toContain('uploadType=multipart');
+    expect(sent[1].init.headers).toMatchObject({ 'If-Match': '"fresh"' });
+    const body = String(sent[1].init.body);
+    expect(body).toContain(`{"name":"Plan.stormlet","mimeType":"${MIME_TYPE}"}`);
+    expect(body).toContain(`Content-Type: ${MIME_TYPE}\r\n\r\n`);
+  });
+
   it('renames the file with the content when the title changed, numbered if taken', async () => {
     const { fetcher, sent } = fakeFetch(
-      json({ version: '3' }),
+      json({ version: '3', mimeType: MIME_TYPE }),
       json({ parents: ['folder'] }),
       json({
         files: [
@@ -104,12 +123,14 @@ describe('Drive client', () => {
     const headers = sent[3].init.headers as Record<string, string>;
     expect(headers['Content-Type']).toMatch(/^multipart\/related; boundary=stormlet-/);
     expect(headers).not.toHaveProperty('If-Match');
-    expect(String(sent[3].init.body)).toContain('{"name":"Renamed (2).stormlet"}');
+    expect(String(sent[3].init.body)).toContain(
+      `{"name":"Renamed (2).stormlet","mimeType":"${MIME_TYPE}"}`,
+    );
   });
 
   it('keeps a numbered name while the title stays the same', async () => {
     const { fetcher, sent } = fakeFetch(
-      json({ version: '3' }),
+      json({ version: '3', mimeType: MIME_TYPE }),
       json({ id: 'f1', name: 'Plan (2).stormlet', version: '4' }),
     );
     const client = new DriveClient(() => 'token', fetcher);
