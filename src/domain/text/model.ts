@@ -1,5 +1,5 @@
 /** Text shares note geometry and commands, with no paper or shadow (ADR 0015). */
-export const isText = (item: { objectType?: 'text' }): boolean => item.objectType === 'text';
+export const isText = (item: { objectType?: string }): boolean => item.objectType === 'text';
 export const DEFAULT_TEXT_SIZE = { width: 320, height: 100 } as const;
 export const MIN_TEXT_SIZE = { width: 16, height: 16 } as const;
 export const TEXT_PADDING = 4;

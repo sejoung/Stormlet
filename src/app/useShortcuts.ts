@@ -63,6 +63,7 @@ const TOOL_KEYS: Readonly<Record<string, BoardTool>> = {
   h: 'hand',
   n: 'sticky',
   t: 'text',
+  p: 'pen',
   l: 'connect',
   f: 'frame',
 };

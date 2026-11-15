@@ -9,6 +9,8 @@ import type { Guides } from '../../engine/snapping';
 import type { FrameDrawing } from '../frames/useFrameDrawing';
 import type { Size } from '../common/useElementSize';
 import { useT } from '../common/i18n';
+import { isDrawing } from '../../domain/drawing/model';
+import { Ink } from '../drawing/Ink';
 
 /** Screen pixels between a note and its size markers or size badge. */
 const MARKER_GAP = 6;
@@ -43,7 +45,9 @@ export function BoardOverlays({
               className={
                 note.objectType === 'text'
                   ? 'sticky sticky-preview is-text'
-                  : 'sticky sticky-preview'
+                  : isDrawing(note)
+                    ? 'sticky sticky-preview is-drawing'
+                    : 'sticky sticky-preview'
               }
               aria-hidden="true"
               style={{
@@ -51,15 +55,14 @@ export function BoardOverlays({
                 top: note.y + dragging.offset.y,
                 width: note.width,
                 height: note.height,
-                background:
-                  note.objectType === 'text' ? 'transparent' : COLOR_STYLES[note.color].paper,
+                background: note.objectType ? 'transparent' : COLOR_STYLES[note.color].paper,
                 color:
                   note.objectType === 'text'
                     ? textInk(note.textColor)
                     : COLOR_STYLES[note.color].ink,
               }}
             >
-              {note.text || t('note.copyPreview')}
+              {isDrawing(note) ? <Ink note={note} /> : note.text || t('note.copyPreview')}
             </div>
           );
         })}

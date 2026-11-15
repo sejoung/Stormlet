@@ -19,6 +19,8 @@ import { ResizeHandles } from './SelectionFrame';
 import { clientCenter } from '../common/points';
 import { cx } from '../common/cx';
 import { useT } from '../common/i18n';
+import { isDrawing } from '../../domain/drawing/model';
+import { Ink } from '../drawing/Ink';
 
 interface Props {
   sticky: Sticky;
@@ -37,6 +39,7 @@ interface Props {
   /** The only selected note shows corner handles; a larger selection resizes as a whole. */
   resizable: boolean;
   onPointerDown(event: PointerEvent, id: string): void;
+  onSelect(id: string): void;
   onResizeStart(event: PointerEvent, id: string, corner: Corner): void;
   onResize(placements: readonly Placement[]): void;
   onContextMenu(id: string, point: Point): void;
@@ -51,6 +54,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
   const { sticky, selected, editing, offset } = props;
   const size = props.resized ?? sticky;
   const text = isText(sticky);
+  const drawing = isDrawing(sticky);
   const style = COLOR_STYLES[sticky.color];
   const label = sticky.kind
     ? t(KIND_LABELS[sticky.kind])
@@ -66,6 +70,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       className={cx(
         'sticky',
         text && 'is-text',
+        drawing && 'is-drawing',
         selected && 'is-selected',
         offset && 'is-dragging',
         editing && 'is-editing',
@@ -75,9 +80,11 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       role="button"
       tabIndex={0}
       aria-label={
-        text
-          ? t('text.label', { text: sticky.text || t('text.empty') })
-          : t('note.label', { label, text: sticky.text || t('note.empty') })
+        drawing
+          ? t('pen.drawing')
+          : text
+            ? t('text.label', { text: sticky.text || t('text.empty') })
+            : t('note.label', { label, text: sticky.text || t('note.empty') })
       }
       aria-pressed={selected}
       aria-haspopup="menu"
@@ -89,7 +96,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         height: size.height,
         padding: text ? TEXT_PADDING : undefined,
         zIndex: props.zIndex,
-        background: text ? 'transparent' : style.paper,
+        background: text || drawing ? 'transparent' : style.paper,
         color: text ? textInk(sticky.textColor) : style.ink,
         fontWeight: sticky.bold ? 700 : 400,
         fontStyle: sticky.italic ? 'italic' : 'normal',
@@ -98,11 +105,23 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       onContextMenu={contextMenu}
       onDoubleClick={(event) => {
         event.stopPropagation();
-        if (!sticky.locked) props.onStartEdit(sticky.id);
+        if (!sticky.locked && !drawing) props.onStartEdit(sticky.id);
       }}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget) return;
-        if (!editing && !sticky.locked && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (drawing && event.key === 'Enter') {
+          event.preventDefault();
+          event.stopPropagation();
+          return props.onSelect(sticky.id);
+        }
+        if (
+          !drawing &&
+          !editing &&
+          !sticky.locked &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.altKey
+        ) {
           if (event.key === 'Enter') {
             event.preventDefault();
             props.onStartEdit(sticky.id);
@@ -127,7 +146,9 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         }
       }}
     >
-      {editing ? (
+      {drawing ? (
+        <Ink note={sticky} width={size.width} height={size.height} />
+      ) : editing ? (
         <StickyEditor
           note={sticky}
           initial={props.seed ?? sticky.text}
@@ -137,7 +158,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       ) : (
         <StickyText note={sticky} size={size} live={props.resized !== null} />
       )}
-      {props.showPorts && (
+      {props.showPorts && !drawing && (
         <ConnectionPorts
           onStart={(event, side) => props.onConnect(event, sticky.id, side)}
           onKeyboardStart={(side) => props.onKeyboardConnect(sticky.id, side)}
@@ -174,7 +195,7 @@ export const StickyNote = memo(function StickyNote(props: Props) {
       )}
       {props.resizable && !editing && !sticky.locked && (
         <ResizeHandles
-          label={t(text ? 'text.resize' : 'note.resize')}
+          label={t(drawing ? 'pen.resize' : text ? 'text.resize' : 'note.resize')}
           hint={t('note.resizeHint')}
           onStart={(event, corner) => props.onResizeStart(event, sticky.id, corner)}
           onKey={(width, height) =>

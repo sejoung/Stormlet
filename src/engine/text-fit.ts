@@ -5,7 +5,7 @@ import { TEXT_PADDING } from '../domain/text/model';
 export { MAX_NOTE_FONT, MIN_NOTE_FONT };
 export const NOTE_PADDING = 12;
 export const NOTE_LINE_HEIGHT = 1.15;
-export const contentPadding = (item: { objectType?: 'text' }): number =>
+export const contentPadding = (item: { objectType?: string }): number =>
   item.objectType === 'text' ? TEXT_PADDING : NOTE_PADDING;
 
 /** Conservative layout before the browser can measure the actual font. */

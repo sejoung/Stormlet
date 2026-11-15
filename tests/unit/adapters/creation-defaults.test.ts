@@ -13,10 +13,12 @@ describe('creation defaults', () => {
     expect(readCreationDefaults()).toMatchObject({
       stickyColor: 'yellow',
       connection: { path: 'elbow', color: 'slate', endArrow: true },
+      pen: { strokeColor: '#232436', strokeWidth: 3 },
     });
     const defaults = {
       ...readCreationDefaults(),
       stickyColor: 'blue' as const,
+      pen: { strokeColor: '#ab12cd', strokeWidth: 12 },
       connection: {
         path: 'curve' as const,
         color: 'purple' as const,
@@ -36,6 +38,7 @@ describe('creation defaults', () => {
     '42',
     JSON.stringify({
       stickyColor: 'unknown',
+      pen: { strokeColor: 'url(bad)', strokeWidth: -1 },
       connection: {
         path: 'unknown',
         color: 'unknown',

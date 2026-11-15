@@ -11,6 +11,7 @@ const SHORTCUTS: readonly (readonly [action: MessageKey, keys: MessageKey])[] = 
   ['help.renameBoard', 'help.renameBoardKeys'],
   ['help.stickyTool', 'help.stickyToolKeys'],
   ['text.tool', 'text.shortcut'],
+  ['pen.tool', 'pen.shortcut'],
   ['text.helpEdit', 'text.helpEditKeys'],
   ['help.selectHandTool', 'help.selectHandToolKeys'],
   ['help.panBoard', 'help.panBoardKeys'],

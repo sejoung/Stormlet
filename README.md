@@ -40,6 +40,13 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 - Whole-box bold, italic, underline, size, alignment and text color; font size defaults to Auto to fit the resizable box, with a theme-aware default color
 - Move, resize, copy, group, lock and undo just like notes; included in autosave, `.stormlet` files, Google Drive and PNG/SVG exports
 
+**Pen**
+
+- Choose the pen tool or press `P` to draw with a mouse, trackpad, touch or stylus; click to leave a dot
+- Seven palette colors, a custom color picker and 1–16px thickness; preferences survive reloads
+- Press `V` to select, restyle, move, resize, copy, lock or delete drawings. `Esc` exits the pen, and undo removes one stroke at a time
+- Drawings participate in autosave, board files, Google Drive and PNG/SVG exports
+
 **Connections**
 
 - Connect notes and frames with `L` or by dragging a side port; lines follow moves and resizing
@@ -80,6 +87,7 @@ Reactions use a stable local identifier, so no profile is shown.
 | --------------------------------------- | --------------------------------------- |
 | Note / select / hand tool               | `N` / `V` / `H`                         |
 | Connection / frame tool                 | `L` / `F`                               |
+| Pen tool / exit                         | `P` / `Esc`                             |
 | Text tool / newline / finish            | `T` / `Enter` / `Ctrl/Cmd+Enter`, `Esc` |
 | Edit note, newline, finish              | `Enter`, `Shift+Enter`, `Esc`           |
 | Continue in a new note (right / below)  | `Tab` / `Ctrl/Cmd+Enter`                |
@@ -172,7 +180,7 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 
 ### File format
 
-`.stormlet` files are JSON with a `format` and `version` field. The current version is 10 and stores the title, notes, standalone text, connections, frames and their styles. Files from versions 1–9 can still be opened.
+`.stormlet` files are JSON with a `format` and `version` field. The current version is 11 and stores the title, notes, standalone text, pen drawings, connections, frames and their styles. Files from versions 1–10 can still be opened.
 
 ### Translations
 

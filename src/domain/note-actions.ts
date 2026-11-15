@@ -248,7 +248,11 @@ export function applyStyle(board: Board, ids: readonly string[], style: NoteStyl
 /** Unlocked notes with the same colour as any note in `ids`, in stacking order. */
 export function sameColorIds(board: Board, ids: readonly string[]): string[] {
   const colorOf = (note: Sticky) =>
-    note.objectType === 'text' ? `text:${note.textColor ?? 'default'}` : note.color;
+    note.objectType === 'drawing'
+      ? `ink:${note.strokeColor}`
+      : note.objectType === 'text'
+        ? `text:${note.textColor ?? 'default'}`
+        : note.color;
   const colors = new Set(
     ids.flatMap((id) => {
       const note = own(board.stickies, id);

@@ -38,6 +38,7 @@ import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
 import { WorkspaceDialogs, type DialogName } from './panels/WorkspaceDialogs';
 import { AppSettings, DriveControl, ToolbarMenus } from './panels/ToolbarMenus';
+import { usePenSession } from './drawing/usePenSession';
 
 export interface WorkspaceProps {
   store: BoardStore;
@@ -58,12 +59,12 @@ export function Workspace({
   language,
   onLanguage,
 }: WorkspaceProps) {
-  // --- Board, history and view ---
   const { session, edit, editWith, restart, undo, redo } = useBoardSession(store);
   const { board } = session;
   const saved = useSaveHealth(store);
   const locale = useLocale();
   const defaults = useCreationDefaults();
+  const pen = usePenSession(defaults.pen, edit, newId);
   const canvas = useBoardView();
   const { view, viewport } = canvas;
   const minimap = useMinimap();
@@ -72,7 +73,6 @@ export function Workspace({
   const finishTool = () => setTool('interact');
   const [reactor] = useState(reactionIdentity);
 
-  // --- Selection and text editing ---
   const selected = useSelection();
   const drafts = useDraftRegistry();
   const fits = useFitRegistry();
@@ -88,13 +88,11 @@ export function Workspace({
   });
   const { activeIds } = notes;
 
-  // --- Panels and messages ---
   const [dialog, setDialog] = useState<DialogName | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const search = useBoardSearch(board);
   const [status, setStatus] = useStatus();
 
-  // --- Helpers shared by the commands below ---
   const selectFrame = (id: string) => {
     flushEditor();
     notes.stopEdit();
@@ -112,7 +110,6 @@ export function Workspace({
       ids && { notes: ids, connection: selected.connectionId, frame: selected.frameId },
     );
 
-  // --- Object sessions ---
   const links = useConnectionSession({
     board,
     edit,
@@ -159,7 +156,6 @@ export function Workspace({
   });
   const selectAll = () => selected.selectNotes(editableIds(board, Object.keys(board.stickies)));
 
-  // --- Clipboard, files, menus and keys ---
   const clipboard = useClipboard({
     board,
     ids: activeIds,
@@ -275,6 +271,7 @@ export function Workspace({
             <CreationToolbar
               frames={frames}
               defaults={defaults}
+              onPenStyle={defaults.onPen}
               onStickyColor={defaults.onStickyColor}
               onDropSticky={(color, client) => {
                 const at = canvas.boardPointAt(client);
@@ -295,6 +292,7 @@ export function Workspace({
                 links={links}
                 frames={frames}
                 view={view}
+                pen={pen}
                 viewport={viewport}
                 selection={notes.selection}
                 editing={notes.editing}

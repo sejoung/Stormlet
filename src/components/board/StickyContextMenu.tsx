@@ -13,6 +13,7 @@ interface Props {
   size: StickySize;
   count: number;
   textOnly?: boolean;
+  drawingOnly?: boolean;
   onFront(): void;
   onBack(): void;
   onResize(size: StickySize): void;
@@ -41,7 +42,7 @@ export function StickyContextMenu(props: Props) {
   const [width, setWidth] = useState(String(props.size.width));
   const [height, setHeight] = useState(String(props.size.height));
   const { onClose } = props;
-  const objectType = props.textOnly ? 'text' : undefined;
+  const objectType = props.drawingOnly ? 'drawing' : props.textOnly ? 'text' : undefined;
   const { min, max } = sizeLimits(objectType);
   const run = (action: () => void) => {
     action();
@@ -50,13 +51,21 @@ export function StickyContextMenu(props: Props) {
   return (
     <ContextMenu
       point={props.point}
-      label={t(props.textOnly ? 'text.menu' : 'noteMenu.label')}
+      label={t(
+        props.drawingOnly ? 'pen.selection' : props.textOnly ? 'text.menu' : 'noteMenu.label',
+      )}
       onClose={onClose}
     >
       <span className="context-caption">
         {props.count > 1
           ? t(props.textOnly ? 'selection.count' : 'noteMenu.count', { count: props.count })
-          : t(props.textOnly ? 'text.single' : 'noteMenu.single')}
+          : t(
+              props.drawingOnly
+                ? 'pen.drawing'
+                : props.textOnly
+                  ? 'text.single'
+                  : 'noteMenu.single',
+            )}
       </span>
       <button
         type="button"
@@ -111,7 +120,7 @@ export function StickyContextMenu(props: Props) {
       )}
       <div className="context-separator" role="separator" />
       <span className="context-caption">{t('noteMenu.size')}</span>
-      {!props.textOnly && (
+      {!props.textOnly && !props.drawingOnly && (
         <div className="size-presets">
           {PRESETS.map((size) => (
             <button
@@ -174,7 +183,7 @@ export function StickyContextMenu(props: Props) {
         </button>
       </form>
       <div className="context-separator" role="separator" />
-      {props.count === 1 && (
+      {props.count === 1 && !props.drawingOnly && (
         <button
           type="button"
           role="menuitem"
@@ -184,17 +193,21 @@ export function StickyContextMenu(props: Props) {
           {t(props.textOnly ? 'text.edit' : 'noteMenu.edit')}
         </button>
       )}
-      <button type="button" role="menuitem" onClick={() => run(props.onCopyStyle)}>
-        {t('noteMenu.copyStyle')} <span>⌘ / Ctrl+Alt+C</span>
-      </button>
-      <button
-        type="button"
-        role="menuitem"
-        disabled={props.locked}
-        onClick={() => run(props.onPasteStyle)}
-      >
-        {t('noteMenu.pasteStyle')} <span>⌘ / Ctrl+Alt+V</span>
-      </button>
+      {!props.drawingOnly && (
+        <>
+          <button type="button" role="menuitem" onClick={() => run(props.onCopyStyle)}>
+            {t('noteMenu.copyStyle')} <span>⌘ / Ctrl+Alt+C</span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={props.locked}
+            onClick={() => run(props.onPasteStyle)}
+          >
+            {t('noteMenu.pasteStyle')} <span>⌘ / Ctrl+Alt+V</span>
+          </button>
+        </>
+      )}
       <button type="button" role="menuitem" onClick={() => run(props.onSelectSameColor)}>
         {t('noteMenu.selectSameColor')}
       </button>

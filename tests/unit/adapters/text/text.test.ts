@@ -28,7 +28,7 @@ describe('standalone text persistence and shared commands', () => {
   it('round-trips text and mixed boards without changing older notes', () => {
     const board = boardOf(text(), sticky('b'));
     const serialized = serializeBoard(board);
-    expect(JSON.parse(serialized).version).toBe(10);
+    expect(JSON.parse(serialized).version).toBe(11);
     expect(parseBoard(serialized)).toEqual(board);
     const legacy = JSON.parse(serializeBoard(boardOf(sticky('old'))));
     legacy.version = 9;

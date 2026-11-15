@@ -19,7 +19,7 @@ export function useFittedText(
   id: string,
   text: string,
   size: StickySize,
-  details: NoteDetails & { objectType?: 'text' } = {},
+  details: NoteDetails & { objectType?: string } = {},
   live = false,
 ) {
   const ref = useRef<HTMLParagraphElement>(null);
@@ -58,7 +58,7 @@ export function useFittedText(
 
 /** Text styling shared by a note's text, its editor and the editor's measuring copy. */
 export const noteTextStyle = (
-  note: NoteDetails & { objectType?: 'text' },
+  note: NoteDetails & { objectType?: string },
   fontSize: number,
 ): CSSProperties => ({
   fontSize,

@@ -11,6 +11,8 @@ import { FRAME_STYLES } from '../frames/colors';
 import { LINE_COLORS } from '../connections/colors';
 import { ARROW_DELTAS } from '../common/keyboard';
 import { useT } from '../common/i18n';
+import { isDrawing } from '../../domain/drawing/model';
+import { inkPath } from '../../domain/drawing/geometry';
 
 /** Minimap size in screen pixels. */
 export const MINIMAP_SIZE = { width: 200, height: 136 };
@@ -144,20 +146,33 @@ const MinimapShapes = memo(function MinimapShapes({ board }: { board: Board }) {
           )
         );
       })}
-      {Object.values(board.stickies).map((note) => (
-        <rect
-          key={note.id}
-          className="minimap-note"
-          x={note.x}
-          y={note.y}
-          width={note.width}
-          height={note.height}
-          fill={
-            note.objectType === 'text' ? textInk(note.textColor) : COLOR_STYLES[note.color].paper
-          }
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
+      {Object.values(board.stickies).map((note) =>
+        isDrawing(note) ? (
+          <path
+            key={note.id}
+            transform={`translate(${note.x} ${note.y})`}
+            d={inkPath(note)}
+            fill="none"
+            stroke={note.strokeColor}
+            strokeWidth={note.strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : (
+          <rect
+            key={note.id}
+            className="minimap-note"
+            x={note.x}
+            y={note.y}
+            width={note.width}
+            height={note.height}
+            fill={
+              note.objectType === 'text' ? textInk(note.textColor) : COLOR_STYLES[note.color].paper
+            }
+            vectorEffect="non-scaling-stroke"
+          />
+        ),
+      )}
     </g>
   );
 });

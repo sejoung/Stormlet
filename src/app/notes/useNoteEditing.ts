@@ -23,6 +23,7 @@ import { setTextAndFit } from '../../domain/text/commands';
 import { centeredAt } from '../../engine/sticky-metrics';
 import type { Point } from '../../engine/viewport';
 import type { Edit } from '../useBoardSession';
+import { isDrawing } from '../../domain/drawing/model';
 
 /** The selected notes, the note being typed in, and the edits made directly on notes. */
 export interface NoteEditing {
@@ -71,7 +72,8 @@ export function useNoteEditing(options: Options): NoteEditing {
     [editing, board.stickies, selection],
   );
   const startEdit = (id: string | null, initial?: string) => {
-    if (id && own(board.stickies, id)?.locked) return;
+    const item = id ? own(board.stickies, id) : undefined;
+    if (item && (item.locked || isDrawing(item))) return;
     setSeed(initial);
     setEditing(id);
   };

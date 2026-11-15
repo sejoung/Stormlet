@@ -2,6 +2,7 @@ import type { StickySize } from './sticky-size';
 import type { NoteDetails } from './note-details';
 import type { Connection } from './connections/model';
 import type { Frame } from './frames/model';
+import type { DrawingDetails } from './drawing/model';
 
 /**
  * The board model (ADR 0002). Notes, connections and frames are flat maps keyed by random IDs; every
@@ -63,10 +64,10 @@ export const DEFAULT_STICKY_APPEARANCE: Readonly<StickyAppearance> = {
   kind: null,
 };
 
-export interface Sticky extends StickyAppearance, StickySize, NoteDetails {
+export interface Sticky extends StickyAppearance, StickySize, NoteDetails, DrawingDetails {
   id: string;
   /** Absent for sticky notes, including all boards saved before version 10. */
-  objectType?: 'text';
+  objectType?: 'text' | 'drawing';
   text: string;
   /** Top-left corner in board coordinates. */
   x: number;
@@ -77,6 +78,9 @@ export interface Sticky extends StickyAppearance, StickySize, NoteDetails {
 export type StickyField = Exclude<keyof Sticky, 'id'>;
 export const STICKY_FIELDS: readonly StickyField[] = [
   'objectType',
+  'ink',
+  'strokeColor',
+  'strokeWidth',
   'kind',
   'color',
   'text',

@@ -4,6 +4,29 @@
  * `{name}` marks a value filled in at runtime.
  */
 export const en = {
+  'pen.tool': 'Pen',
+  'pen.toolHint': 'Pen (P)',
+  'pen.shortcut': 'P',
+  'pen.settings': 'Pen settings',
+  'pen.style': 'Color and thickness',
+  'pen.color': 'Pen color',
+  'pen.colorOption': 'Pen color: {color}',
+  'pen.customColor': 'Custom pen color',
+  'pen.width': 'Pen thickness',
+  'pen.hint': 'Drag to draw. Press V to select a drawing, or Esc to finish.',
+  'pen.drawing': 'Pen drawing',
+  'pen.resize': 'Resize drawing',
+  'pen.selection': 'Drawing tools',
+  'pen.delete': 'Delete drawing',
+  'pen.lock': 'Lock drawing',
+  'pen.duplicate': 'Duplicate drawing',
+  'pen.black': 'Black',
+  'pen.white': 'White',
+  'pen.red': 'Red',
+  'pen.orange': 'Orange',
+  'pen.green': 'Green',
+  'pen.blue': 'Blue',
+  'pen.purple': 'Purple',
   // Each language names itself in the language setting.
   'language.name': 'English',
 

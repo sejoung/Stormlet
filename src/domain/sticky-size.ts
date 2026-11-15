@@ -9,24 +9,35 @@ export const DEFAULT_STICKY_SIZE: Readonly<StickySize> = { width: 160, height: 1
 export const MIN_STICKY_SIZE: Readonly<StickySize> = { width: 80, height: 60 };
 export const MAX_STICKY_SIZE: Readonly<StickySize> = { width: 1280, height: 960 };
 
-export const sizeLimits = (objectType?: 'text') => ({
-  min: objectType === 'text' ? MIN_TEXT_SIZE : MIN_STICKY_SIZE,
-  max: MAX_STICKY_SIZE,
+export const sizeLimits = (objectType?: 'text' | 'drawing') => ({
+  min:
+    objectType === 'drawing'
+      ? { width: 1, height: 1 }
+      : objectType === 'text'
+        ? MIN_TEXT_SIZE
+        : MIN_STICKY_SIZE,
+  max: objectType === 'drawing' ? { width: 1000000, height: 1000000 } : MAX_STICKY_SIZE,
 });
 
-export const isStickySize = (size: StickySize, objectType?: 'text'): boolean =>
+export const isStickySize = (size: StickySize, objectType?: 'text' | 'drawing'): boolean =>
   Number.isFinite(size.width) &&
   Number.isFinite(size.height) &&
   size.width >= sizeLimits(objectType).min.width &&
-  size.width <= MAX_STICKY_SIZE.width &&
+  size.width <= sizeLimits(objectType).max.width &&
   size.height >= sizeLimits(objectType).min.height &&
-  size.height <= MAX_STICKY_SIZE.height;
+  size.height <= sizeLimits(objectType).max.height;
 
-export const clampStickySize = (size: StickySize, objectType?: 'text'): StickySize => ({
+export const clampStickySize = (size: StickySize, objectType?: 'text' | 'drawing'): StickySize => ({
   width: Math.round(
-    Math.min(MAX_STICKY_SIZE.width, Math.max(sizeLimits(objectType).min.width, size.width)),
+    Math.min(
+      sizeLimits(objectType).max.width,
+      Math.max(sizeLimits(objectType).min.width, size.width),
+    ),
   ),
   height: Math.round(
-    Math.min(MAX_STICKY_SIZE.height, Math.max(sizeLimits(objectType).min.height, size.height)),
+    Math.min(
+      sizeLimits(objectType).max.height,
+      Math.max(sizeLimits(objectType).min.height, size.height),
+    ),
   ),
 });

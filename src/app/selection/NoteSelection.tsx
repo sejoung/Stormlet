@@ -1,7 +1,10 @@
 import type { RefObject } from 'react';
 import type { Sticky } from '../../domain/model';
 import type { StickySize } from '../../domain/sticky-size';
-import { setColor } from '../../domain/commands';
+import { setColor, deleteStickies } from '../../domain/commands';
+import { isDrawing } from '../../domain/drawing/model';
+import { styleDrawings } from '../../domain/drawing/commands';
+import { DrawingToolbar } from '../../components/drawing/DrawingToolbar';
 import type { Point, View } from '../../engine/viewport';
 import { SelectionToolbar } from '../../components/selection/SelectionToolbar';
 import { localToClient } from '../../components/common/points';
@@ -34,6 +37,19 @@ export function NoteSelection({
   onMenu(menu: { ids: readonly string[]; point: Point }): void;
   onFrame(): void;
 }) {
+  if (notes.every(isDrawing))
+    return (
+      <DrawingToolbar
+        notes={notes}
+        view={view}
+        viewport={viewport}
+        onStyle={(style) => edit((current) => styleDrawings(current, ids, style))}
+        onDelete={() => edit((current) => deleteStickies(current, ids))}
+        onDuplicate={() => actions.duplicate()}
+        onLock={() => actions.format({ locked: !notes.some((note) => note.locked) })}
+        onMore={(point) => onMenu({ ids, point: localToClient(element, point) })}
+      />
+    );
   return (
     <SelectionToolbar
       key={ids.join(',')}

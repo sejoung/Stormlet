@@ -1,14 +1,11 @@
-import { useMemo, useState, type PointerEvent, type RefObject } from 'react';
+import { useMemo, useState, type PointerEvent } from 'react';
 import { own } from '../../domain/ids';
-import { byStackOrder, type Board, type StickyColor } from '../../domain/model';
-import type { Move, Placement } from '../../domain/commands';
-import type { StickySize } from '../../domain/sticky-size';
-import { groupSelection, type NextNote } from '../../domain/note-actions';
+import { byStackOrder } from '../../domain/model';
+import { groupSelection } from '../../domain/note-actions';
 import { boundsOf, rectOf } from '../../domain/geometry/bounds';
 import type { ConnectionSide } from '../../domain/connections/model';
 import { GRID_SIZE, snapOffset, type Corner } from '../../engine/snapping';
-import { panBy, toBoardPoint, type Point, type View } from '../../engine/viewport';
-import type { BoardTool } from './kinds';
+import { panBy, toBoardPoint, type Point } from '../../engine/viewport';
 import {
   rectangle,
   intersects,
@@ -23,58 +20,29 @@ import { SelectionFrame } from './SelectionFrame';
 import { BoardOverlays } from './BoardOverlays';
 import { ConnectionEndpoints, ConnectionLayer } from '../connections/ConnectionLayer';
 import { useConnectionDrawing } from '../connections/useConnectionDrawing';
-import type { ConnectionInteraction } from '../connections/types';
 import { StickyNote } from './StickyNote';
 import { useFrameDrawing } from '../frames/useFrameDrawing';
 import { FrameLayer } from '../frames/FrameLayer';
-import type { FrameInteraction } from '../frames/types';
 import { canvasTarget, closestData, type CanvasTarget } from '../menus/CanvasContextMenu';
 import { useStableCallback } from '../common/useStableCallback';
 import { clientCenter, clientToLocal } from '../common/points';
 import { isMenuKey, TEXT_ENTRY } from '../common/keyboard';
 import { cx } from '../common/cx';
-import type { Size } from '../common/useElementSize';
 import { useT } from '../common/i18n';
-
-interface Props {
-  board: Board;
-  links: ConnectionInteraction;
-  frames: FrameInteraction;
-  view: View;
-  viewport: Size;
-  selection: ReadonlySet<string>;
-  editing: string | null;
-  seed?: string;
-  reactor: string;
-  matches: ReadonlySet<string> | null;
-  element: RefObject<HTMLDivElement | null>;
-  tool: BoardTool;
-  onViewChange(view: View): void;
-  onSelect(ids: string[]): void;
-  onMove(moves: Move[]): void;
-  /** Commit a resize: new positions and sizes for the notes. */
-  onResize(placements: readonly Placement[]): void;
-  /** Whether the grid is drawn, and whether moves and resizes snap to it. */
-  grid: { visible: boolean; snap: boolean };
-  onContextMenu(id: string, point: Point): void;
-  onCanvasMenu(point: Point, target: CanvasTarget): void;
-  onAdd(at: Point, color?: StickyColor): void;
-  onAddText(at: Point): void;
-  onStartEdit(id: string | null, seed?: string): void;
-  onCommitText(id: string, text: string, next?: NextNote, size?: StickySize): void;
-  onDuplicate(ids: string[], offset: Point): void;
-  onReact(id: string, emoji: string): void;
-}
+import type { CanvasProps } from './canvas/types';
+import { usePenDrawing } from '../drawing/usePenDrawing';
+import { Ink } from '../drawing/Ink';
 
 const DRAG_THRESHOLD = 3;
 /** Grid spacing on screen below which the dots would turn into a grey wash, so none are drawn. */
 const MIN_GRID_PIXELS = 8;
 
-export function BoardCanvas(props: Props) {
+export function BoardCanvas(props: CanvasProps) {
   const t = useT();
   const { board, view, selection, editing, element, tool, onViewChange, onSelect } = props;
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const drawing = useConnectionDrawing({ board, view, element, tool, links: props.links });
+  const pen = usePenDrawing({ element, view, pen: props.pen, enabled: tool === 'pen' });
   const snapping = { zoom: view.zoom, grid: props.grid.snap ? GRID_SIZE : null };
   const frameDrawing = useFrameDrawing({
     board,
@@ -91,9 +59,12 @@ export function BoardCanvas(props: Props) {
     setGesture(null);
     frameDrawing.cancel();
     drawing.cancel();
+    pen.cancel();
   });
   const space = useCanvasListeners({ element, view, onViewChange, onCancel: cancelGestures });
-  const pointers = usePointerOwner(gesture !== null || frameDrawing.active || drawing.pressed);
+  const pointers = usePointerOwner(
+    gesture !== null || frameDrawing.active || drawing.pressed || pen.draft !== null,
+  );
 
   const startPan = (event: PointerEvent) => setGesture({ type: 'pan', last: local(event) });
   /** Middle-button (or hand tool) panning that starts on a note or frame, not the background. */
@@ -151,7 +122,7 @@ export function BoardCanvas(props: Props) {
   });
 
   const onPointerMove = (event: PointerEvent) => {
-    if (!pointers.owns(event) || frameDrawing.move(event)) return;
+    if (!pointers.owns(event) || pen.move(event) || frameDrawing.move(event)) return;
     if (drawing.move(event)) return;
     if (!gesture || gesture.type === 'place') return;
     const point = local(event);
@@ -226,7 +197,7 @@ export function BoardCanvas(props: Props) {
   };
 
   const onPointerUp = (event: PointerEvent) => {
-    if (!pointers.owns(event) || frameDrawing.up(event)) return;
+    if (!pointers.owns(event) || pen.up(event) || frameDrawing.up(event)) return;
     if (drawing.up(event)) return;
     if (gesture) finishGesture(event, gesture);
     setGesture(null);
@@ -245,6 +216,7 @@ export function BoardCanvas(props: Props) {
     props.onContextMenu(id, point);
   });
   const onReact = useStableCallback(props.onReact);
+  const onPick = useStableCallback((id: string) => onSelect(groupSelection(board, [id])));
   const onStartEdit = useStableCallback(props.onStartEdit);
   const onCommitText = useStableCallback(props.onCommitText);
   const onResize = useStableCallback(props.onResize);
@@ -301,7 +273,13 @@ export function BoardCanvas(props: Props) {
           );
         }
       }}
-      onPointerDownCapture={pointers.down}
+      onPointerDownCapture={(event) => {
+        pointers.down(event);
+        if (!event.isPropagationStopped() && tool === 'pen' && !space && event.button === 0) {
+          onSelect([]);
+          pen.down(event);
+        }
+      }}
       onPointerDown={onBackgroundDown}
       onContextMenu={(event) => {
         if (event.target instanceof Element && event.target.closest(TEXT_ENTRY)) return;
@@ -319,6 +297,7 @@ export function BoardCanvas(props: Props) {
         if (!pointers.owns(event)) return;
         setGesture(null);
         frameDrawing.cancel();
+        pen.cancel();
       }}
     >
       <div
@@ -366,10 +345,16 @@ export function BoardCanvas(props: Props) {
             onKeyboardConnect={onKeyboardConnect}
             offset={moving.has(sticky.id) ? dragging!.offset : null}
             onPointerDown={onStickyDown}
+            onSelect={onPick}
             onStartEdit={onStartEdit}
             onCommitText={onCommitText}
           />
         ))}
+        {pen.draft && (
+          <div className="pen-preview" style={{ left: pen.draft.x, top: pen.draft.y }}>
+            <Ink note={pen.draft} />
+          </div>
+        )}
         <BoardOverlays
           board={board}
           gesture={gesture}

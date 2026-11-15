@@ -15,14 +15,15 @@ import { readConnections } from './connections';
 import type { Connection } from '../../domain/connections/model';
 import { readFrames } from './frames';
 import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
+import { readInk } from './drawing/ink';
 
 /**
  * The `.stormlet` file: readable JSON with stickies listed bottom to top. Unknown fields
  * are dropped on read for now; files from a newer version are refused instead of trimmed.
  */
 export const FORMAT = 'stormlet';
-// Version 10 adds standalone text; older builds refuse it rather than turn text into notes.
-export const FORMAT_VERSION = 10;
+// Version 11 adds pen drawings; older builds refuse it rather than lose their ink.
+export const FORMAT_VERSION = 11;
 export const FILE_EXTENSION = '.stormlet';
 /**
  * The media type board files carry in Google Drive, so Drive and the Picker can tell them
@@ -82,24 +83,30 @@ function readSticky(value: unknown, index: number, version: number): Sticky {
   const color = version === 1 && isStickyKind(kind) ? KIND_COLORS[kind] : item.color;
   const width = version < 3 ? LEGACY_STICKY_SIZE.width : item.width;
   const height = version < 3 ? LEGACY_STICKY_SIZE.height : item.height;
+  const objectType = item.objectType;
   if (
     !isStickyId(id) ||
     !(isStickyKind(kind) || (version >= 2 && kind === null)) ||
     !isStickyColor(color) ||
-    !(item.objectType === undefined || (version >= 10 && item.objectType === 'text')) ||
+    !(
+      objectType === undefined ||
+      (version >= 10 && objectType === 'text') ||
+      (version >= 11 && objectType === 'drawing')
+    ) ||
     typeof text !== 'string' ||
     !isFiniteNumber(x) ||
     !isFiniteNumber(y) ||
     !isFiniteNumber(z) ||
     !isFiniteNumber(width) ||
     !isFiniteNumber(height) ||
-    !isStickySize({ width, height }, item.objectType === 'text' ? 'text' : undefined)
+    !isStickySize({ width, height }, objectType)
   )
     throw new FormatError(`Sticky ${index} is malformed.`);
   try {
     return {
       id,
-      ...(item.objectType === 'text' ? { objectType: 'text' as const } : {}),
+      ...(objectType ? { objectType } : {}),
+      ...(objectType === 'drawing' ? readInk(item) : {}),
       kind,
       color,
       text,

@@ -1,0 +1,92 @@
+.board.tool-pen,
+.board.tool-pen .sticky,
+.board.tool-pen .frame-item {
+  cursor: crosshair;
+}
+.sticky.is-drawing {
+  display: block;
+  padding: 0;
+  box-shadow: none;
+  pointer-events: none;
+}
+.sticky.is-drawing:not(.sticky-preview) .pen-ink path {
+  pointer-events: stroke;
+}
+.sticky.is-drawing .resize-handle {
+  pointer-events: auto;
+}
+.sticky.is-drawing::after {
+  content: none;
+}
+.pen-ink {
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+.pen-preview {
+  position: absolute;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+.flyout-pen {
+  width: 260px;
+}
+.pen-controls {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.pen-controls legend {
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.pen-colors {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 3px;
+}
+.pen-colors button,
+.pen-colors input {
+  width: 23px;
+  height: 23px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.pen-colors button[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.pen-width {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.pen-width select {
+  padding: 5px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.drawing-toolbar {
+  width: 280px;
+  max-width: calc(100% - 24px);
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.drawing-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}

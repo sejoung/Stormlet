@@ -10,6 +10,8 @@ import type { CreationDefaults } from '../../domain/creation-defaults';
 import { FrameFlyout } from '../frames/FrameFlyout';
 import type { FrameInteraction } from '../frames/types';
 import { useT } from '../common/i18n';
+import { PenFlyout } from '../drawing/PenFlyout';
+import type { PenStyle } from '../../domain/drawing/model';
 
 /** The connection tool shows the shape new lines will get. */
 function connectionIcon({ path, endArrow }: ConnectionStyle) {
@@ -28,6 +30,7 @@ export function CreationToolbar({
   onDropSticky,
   onConnectionStyle,
   frames,
+  onPenStyle,
 }: {
   tool: BoardTool;
   onTool(tool: BoardTool): void;
@@ -38,9 +41,10 @@ export function CreationToolbar({
   onDropSticky(color: StickyColor, client: Point): void;
   onConnectionStyle(style: Partial<ConnectionStyle>): void;
   frames: FrameInteraction;
+  onPenStyle(style: Partial<PenStyle>): void;
 }) {
   const t = useT();
-  const [panel, setPanel] = useState<'sticky' | 'connect' | 'frame' | null>(null);
+  const [panel, setPanel] = useState<'sticky' | 'connect' | 'frame' | 'pen' | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const open = panel && tool === panel ? panel : null;
   const close = () => setPanel(null);
@@ -67,7 +71,7 @@ export function CreationToolbar({
       document.removeEventListener('keydown', escape);
     };
   }, [open, onTool]);
-  const chooseTool = (next: 'sticky' | 'connect' | 'frame') => {
+  const chooseTool = (next: 'sticky' | 'connect' | 'frame' | 'pen') => {
     setPanel(open === next ? null : next);
     onTool(next);
   };
@@ -124,6 +128,20 @@ export function CreationToolbar({
         <button
           type="button"
           className="creation-tool"
+          aria-label={t('pen.tool')}
+          data-creation-tool="pen"
+          aria-haspopup="dialog"
+          aria-expanded={open === 'pen'}
+          aria-pressed={tool === 'pen'}
+          title={t('pen.toolHint')}
+          onClick={() => chooseTool('pen')}
+        >
+          <Icon name="pencil" />
+          <span className="creation-color-dot" style={{ background: defaults.pen.strokeColor }} />
+        </button>
+        <button
+          type="button"
+          className="creation-tool"
           aria-label={t('creation.connect')}
           data-creation-tool="connect"
           aria-haspopup="dialog"
@@ -171,7 +189,8 @@ export function CreationToolbar({
         </button>
       </aside>
       {open === 'frame' && <FrameFlyout frames={frames} onClose={close} />}
-      {open && open !== 'frame' && (
+      {open === 'pen' && <PenFlyout style={defaults.pen} onChange={onPenStyle} onClose={close} />}
+      {(open === 'sticky' || open === 'connect') && (
         <CreationFlyout
           kind={open}
           defaults={defaults}

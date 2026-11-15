@@ -8,6 +8,7 @@ import {
 import type { CreationDefaults } from '../../domain/creation-defaults';
 import { readItem, writeItem } from './web-storage';
 import { errorDetails, log } from '../diagnostics/log';
+import { DEFAULT_PEN, isInkColor, isInkWidth } from '../../domain/drawing/model';
 
 export const CREATION_DEFAULTS_KEY = 'stormlet.creation-defaults';
 
@@ -18,11 +19,14 @@ export function readCreationDefaults(): CreationDefaults {
   const defaults: CreationDefaults = {
     stickyColor: DEFAULT_STICKY_APPEARANCE.color,
     connection: { path, color, width, startArrow, endArrow, dashed },
+    pen: { ...DEFAULT_PEN },
   };
   try {
     const stored = JSON.parse(readItem(CREATION_DEFAULTS_KEY) ?? 'null');
     if (!stored || typeof stored !== 'object') return defaults;
     if (isStickyColor(stored.stickyColor)) defaults.stickyColor = stored.stickyColor;
+    if (isInkColor(stored.pen?.strokeColor)) defaults.pen.strokeColor = stored.pen.strokeColor;
+    if (isInkWidth(stored.pen?.strokeWidth)) defaults.pen.strokeWidth = stored.pen.strokeWidth;
     const style = stored.connection;
     if (!style || typeof style !== 'object') return defaults;
     if (includes(CONNECTION_PATHS, style.path)) defaults.connection.path = style.path;

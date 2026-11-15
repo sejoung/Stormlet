@@ -10,6 +10,8 @@ import { textInk } from '../text/colors';
 import { LINE_COLORS } from '../connections/colors';
 import { FRAME_STYLES } from '../frames/colors';
 import { FONT_FAMILY, layoutNote, scaledMeasure, xmlText, type MeasureText } from './text-layout';
+import { isDrawing } from '../../domain/drawing/model';
+import { inkPath } from '../../domain/drawing/geometry';
 
 /** The light theme's colours: an export looks the same whichever theme the editor is in. */
 const THEME = { background: '#ffffff', text: '#232436', muted: '#737485', border: '#e6e6ee' };
@@ -85,6 +87,18 @@ function connectionSvg(board: Board, line: Connection) {
 }
 
 function noteSvg(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>, measure: MeasureText) {
+  if (isDrawing(note)) {
+    const pad = (note.strokeWidth ?? 3) / 2;
+    return {
+      svg: `<path transform="translate(${n(note.x)} ${n(note.y)})" d="${inkPath(note)}" fill="none" stroke="${escape(note.strokeColor ?? '#232436')}" stroke-width="${note.strokeWidth ?? 3}" stroke-linecap="round" stroke-linejoin="round"/>`,
+      bounds: {
+        x: note.x - pad,
+        y: note.y - pad,
+        width: note.width + pad * 2,
+        height: note.height + pad * 2,
+      },
+    };
+  }
   const style = COLOR_STYLES[note.color];
   const freeText = isText(note);
   const padding = contentPadding(note);

@@ -11,7 +11,7 @@ import { touchesStickies } from './connections/model';
  */
 export interface NewSticky extends StickyAppearance, NoteDetails, Partial<StickySize> {
   id: string;
-  objectType?: 'text';
+  objectType?: 'text' | 'drawing';
   x: number;
   y: number;
   text?: string;
