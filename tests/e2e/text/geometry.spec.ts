@@ -37,8 +37,10 @@ test('finishes short Auto text with balanced side margins and keeps the fitted w
   expect(Math.abs(actual.top - actual.bottom), JSON.stringify(actual)).toBeLessThanOrEqual(2);
   expect(actual.font).toBe(font);
   await screenshot(page, info, 'text-tight-width');
-  await expect.poll(async () => (await saved(page)).stickies.length).toBe(1);
-  const width = (await saved(page)).stickies[0].width;
+  // A newly created note may already be saved at its initial width. Wait for
+  // the fitted geometry to reach the debounced store before checking reload.
+  const width = await text.evaluate((node) => parseFloat((node as HTMLElement).style.width));
+  await expect.poll(async () => (await saved(page)).stickies[0]?.width).toBe(width);
   await page.reload();
   await expect(text).toBeVisible();
   expect((await saved(page)).stickies[0].width).toBe(width);
