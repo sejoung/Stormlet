@@ -16,6 +16,10 @@ Stormlet runs entirely in the browser, with no sign-in and no server. Boards are
 
 New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual/en/) ([source](public/manual/en/index.html)).
 
+## Example boards
+
+Preview and download [KPT retrospectives, idea organization and event storming](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor.
+
 ## Features
 
 **Notes**

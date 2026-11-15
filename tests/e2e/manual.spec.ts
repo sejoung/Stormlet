@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './support';
+import { parseBoard } from '../../src/adapters/files/stormlet-format';
 
 /** Every contents link has its section, and every screenshot loads with a description. */
 async function checkGuide(guide: Page, contents: string) {
@@ -7,10 +8,20 @@ async function checkGuide(guide: Page, contents: string) {
     .getByRole('navigation', { name: contents })
     .getByRole('link')
     .evaluateAll((links) => links.map((link) => link.getAttribute('href')!));
-  expect(targets).toHaveLength(12);
+  expect(targets).toHaveLength(13);
   for (const target of targets) await expect(guide.locator(target)).toHaveCount(1);
+  const downloads = guide.locator('#examples a[download]');
+  await expect(downloads).toHaveCount(3);
+  for (const link of await downloads.all()) {
+    const url = new URL((await link.getAttribute('href'))!, guide.url()).href;
+    const response = await guide.request.get(url);
+    expect(response.ok()).toBe(true);
+    const board = parseBoard(await response.text());
+    expect(Object.keys(board.frames ?? {}).length).toBeGreaterThanOrEqual(3);
+    expect(Object.keys(board.stickies).length).toBeGreaterThanOrEqual(6);
+  }
   const images = guide.locator('main img');
-  expect(await images.count()).toBe(19);
+  expect(await images.count()).toBe(22);
   for (const image of await images.all()) {
     await image.scrollIntoViewIfNeeded();
     await expect(image).toHaveAttribute('alt', /.+/);

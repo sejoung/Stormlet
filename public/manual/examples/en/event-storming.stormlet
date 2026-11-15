@@ -1,0 +1,146 @@
+{
+  "format": "stormlet",
+  "version": 11,
+  "title": "Event storming · Order flow",
+  "stickies": [
+    {
+      "id": "n00",
+      "kind": null,
+      "color": "orange",
+      "text": "Order received",
+      "x": 75,
+      "y": 110,
+      "z": 0,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n01",
+      "kind": null,
+      "color": "pink",
+      "text": "Question · What if stock runs out?",
+      "x": 75,
+      "y": 305,
+      "z": 1,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n10",
+      "kind": null,
+      "color": "orange",
+      "text": "Payment approved",
+      "x": 455,
+      "y": 110,
+      "z": 4,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n11",
+      "kind": null,
+      "color": "pink",
+      "text": "Question · How do failed payments retry?",
+      "x": 455,
+      "y": 305,
+      "z": 5,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n20",
+      "kind": null,
+      "color": "orange",
+      "text": "Shipping started",
+      "x": 835,
+      "y": 110,
+      "z": 8,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n21",
+      "kind": null,
+      "color": "pink",
+      "text": "Question · When is cancellation allowed?",
+      "x": 835,
+      "y": 305,
+      "z": 9,
+      "width": 280,
+      "height": 160
+    }
+  ],
+  "frames": [
+    {
+      "id": "f0",
+      "title": "Order",
+      "x": 40,
+      "y": 40,
+      "width": 350,
+      "height": 690,
+      "color": "none",
+      "borderWidth": 2,
+      "locked": false
+    },
+    {
+      "id": "f1",
+      "title": "Payment",
+      "x": 420,
+      "y": 40,
+      "width": 350,
+      "height": 690,
+      "color": "none",
+      "borderWidth": 2,
+      "locked": false
+    },
+    {
+      "id": "f2",
+      "title": "Shipping",
+      "x": 800,
+      "y": 40,
+      "width": 350,
+      "height": 690,
+      "color": "none",
+      "borderWidth": 2,
+      "locked": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": {
+        "stickyId": "n00",
+        "side": "right"
+      },
+      "to": {
+        "stickyId": "n10",
+        "side": "left"
+      },
+      "path": "elbow",
+      "color": "slate",
+      "width": 2,
+      "startArrow": false,
+      "endArrow": true,
+      "dashed": false,
+      "label": ""
+    },
+    {
+      "id": "c1",
+      "from": {
+        "stickyId": "n10",
+        "side": "right"
+      },
+      "to": {
+        "stickyId": "n20",
+        "side": "left"
+      },
+      "path": "elbow",
+      "color": "slate",
+      "width": 2,
+      "startArrow": false,
+      "endArrow": true,
+      "dashed": false,
+      "label": ""
+    }
+  ]
+}

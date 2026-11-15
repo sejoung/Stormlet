@@ -16,6 +16,10 @@
 
 처음이라면 [사용 설명서](https://sejoung.github.io/Stormlet/manual/)를 읽어 보세요([원본](public/manual/index.html)).
 
+## 활용 샘플
+
+[KPT 회고·아이디어 정리·이벤트 스토밍](https://sejoung.github.io/Stormlet/manual/#examples) 예시를 미리 보고 `.stormlet` 파일로 내려받아 수정해 보세요. 보드의 **파일 → 열기**에서 열 수 있습니다.
+
 ## 기능
 
 **포스트잇**

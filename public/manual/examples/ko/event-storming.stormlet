@@ -1,0 +1,146 @@
+{
+  "format": "stormlet",
+  "version": 11,
+  "title": "이벤트 스토밍 · 주문 흐름",
+  "stickies": [
+    {
+      "id": "n00",
+      "kind": null,
+      "color": "orange",
+      "text": "주문이 접수되었다",
+      "x": 75,
+      "y": 110,
+      "z": 0,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n01",
+      "kind": null,
+      "color": "pink",
+      "text": "질문 · 재고가 없으면 어떻게 할까?",
+      "x": 75,
+      "y": 305,
+      "z": 1,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n10",
+      "kind": null,
+      "color": "orange",
+      "text": "결제가 승인되었다",
+      "x": 455,
+      "y": 110,
+      "z": 4,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n11",
+      "kind": null,
+      "color": "pink",
+      "text": "질문 · 결제 실패 후 재시도는?",
+      "x": 455,
+      "y": 305,
+      "z": 5,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n20",
+      "kind": null,
+      "color": "orange",
+      "text": "배송이 시작되었다",
+      "x": 835,
+      "y": 110,
+      "z": 8,
+      "width": 280,
+      "height": 160
+    },
+    {
+      "id": "n21",
+      "kind": null,
+      "color": "pink",
+      "text": "질문 · 배송 전 취소는 언제까지?",
+      "x": 835,
+      "y": 305,
+      "z": 9,
+      "width": 280,
+      "height": 160
+    }
+  ],
+  "frames": [
+    {
+      "id": "f0",
+      "title": "주문",
+      "x": 40,
+      "y": 40,
+      "width": 350,
+      "height": 690,
+      "color": "none",
+      "borderWidth": 2,
+      "locked": false
+    },
+    {
+      "id": "f1",
+      "title": "결제",
+      "x": 420,
+      "y": 40,
+      "width": 350,
+      "height": 690,
+      "color": "none",
+      "borderWidth": 2,
+      "locked": false
+    },
+    {
+      "id": "f2",
+      "title": "배송",
+      "x": 800,
+      "y": 40,
+      "width": 350,
+      "height": 690,
+      "color": "none",
+      "borderWidth": 2,
+      "locked": false
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": {
+        "stickyId": "n00",
+        "side": "right"
+      },
+      "to": {
+        "stickyId": "n10",
+        "side": "left"
+      },
+      "path": "elbow",
+      "color": "slate",
+      "width": 2,
+      "startArrow": false,
+      "endArrow": true,
+      "dashed": false,
+      "label": ""
+    },
+    {
+      "id": "c1",
+      "from": {
+        "stickyId": "n10",
+        "side": "right"
+      },
+      "to": {
+        "stickyId": "n20",
+        "side": "left"
+      },
+      "path": "elbow",
+      "color": "slate",
+      "width": 2,
+      "startArrow": false,
+      "endArrow": true,
+      "dashed": false,
+      "label": ""
+    }
+  ]
+}
