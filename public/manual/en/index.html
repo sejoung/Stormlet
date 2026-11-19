@@ -189,6 +189,29 @@
               >
             </p>
           </article>
+          <article>
+            <h3>Kubernetes · top to bottom</h3>
+            <p>
+              Draw a layered setup such as a cluster from top to bottom, so it reads at a glance.
+            </p>
+            <figure>
+              <img
+                loading="lazy"
+                src="../images/en/example-kubernetes.png"
+                alt="Kubernetes · top to bottom"
+              />
+            </figure>
+            <p>
+              It goes down from the ingress to services, deployments, a stateful set and its volume.
+              Pick icons such as pod, ingress or secret under <b>Icon → Kubernetes</b> on the
+              toolbar, and join configuration such as config maps and secrets with gray, dashed
+              lines. Show an AI your manifests or docker-compose file and ask for a diagram, and it
+              draws one like this.
+            </p>
+            <p>
+              <a href="../examples/en/kubernetes.stormlet" download>Download sample (.stormlet)</a>
+            </p>
+          </article>
         </section>
 
         <section id="start">
@@ -381,6 +404,10 @@
               the board at once (locked lines are skipped).
             </li>
             <li>Drag an end to connect it to something else.</li>
+            <li>
+              Elbow lines go around the notes in their way. Lines that share a side sit side by side
+              instead of on top of each other, and a side crowded by a neighbouring note is avoided.
+            </li>
           </ul>
         </section>
 
@@ -818,6 +845,11 @@
               If the AI shows JSON instead of a file, copy it and paste it on the board
               (<kbd>Ctrl/Cmd</kbd>+<kbd>V</kbd>). It is fine if the code block’s
               <code>```json</code> line comes along.
+            </li>
+            <li>
+              You can also give the AI a board you already have and ask for changes. Notes you moved
+              stay where they are, and new ones go beside the notes they connect to or into the
+              frame they belong in.
             </li>
             <li>
               Opening replaces the current board, and Undo brings the previous one back. If the

@@ -1,4 +1,4 @@
-import { NOTE_ICONS, type NoteIcon } from '../../domain/note-details';
+import { isKubernetesIcon, NOTE_ICONS, type NoteIcon } from '../../domain/note-details';
 import type { MessageKey } from '../../i18n/messages';
 import { useT } from '../common/i18n';
 import { NoteIconGlyph } from './NoteIconGlyph';
@@ -16,9 +16,21 @@ export function NoteIconPicker({
 }) {
   const t = useT();
   const none = icons.every((icon) => !icon);
+  const option = (icon: NoteIcon) => (
+    <button
+      key={icon}
+      type="button"
+      aria-label={t('selection.iconOption', { icon: t(label(icon)) })}
+      title={t(label(icon))}
+      aria-pressed={icons.every((value) => value === icon)}
+      onClick={() => onChange(icon)}
+    >
+      <NoteIconGlyph icon={icon} size={20} />
+    </button>
+  );
   return (
     <>
-      <span className="popover-label">{t('selection.iconHeading')}</span>
+      <span className="popover-label">{t('selection.iconGeneral')}</span>
       <div className="icon-grid">
         <button
           type="button"
@@ -30,19 +42,10 @@ export function NoteIconPicker({
         >
           ∅
         </button>
-        {NOTE_ICONS.map((icon) => (
-          <button
-            key={icon}
-            type="button"
-            aria-label={t('selection.iconOption', { icon: t(label(icon)) })}
-            title={t(label(icon))}
-            aria-pressed={icons.every((value) => value === icon)}
-            onClick={() => onChange(icon)}
-          >
-            <NoteIconGlyph icon={icon} size={20} />
-          </button>
-        ))}
+        {NOTE_ICONS.filter((icon) => !isKubernetesIcon(icon)).map(option)}
       </div>
+      <span className="popover-label">{t('selection.iconKubernetes')}</span>
+      <div className="icon-grid">{NOTE_ICONS.filter(isKubernetesIcon).map(option)}</div>
     </>
   );
 }

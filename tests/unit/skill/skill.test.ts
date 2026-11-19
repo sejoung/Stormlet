@@ -15,6 +15,7 @@ import { NOTE_ICONS } from '../../../src/domain/note-details';
 const ROOT = 'skills/stormlet';
 const skill = readFileSync(`${ROOT}/SKILL.md`, 'utf8');
 const reference = readFileSync(`${ROOT}/references/format.md`, 'utf8');
+const architecture = readFileSync(`${ROOT}/references/architecture.md`, 'utf8');
 const examples = readdirSync(`${ROOT}/examples`).filter((name) => name.endsWith('.stormlet'));
 
 const frontmatter = (text: string) =>
@@ -77,8 +78,16 @@ describe('Stormlet skill', () => {
     expect(Object.keys(board.connections ?? {})).toHaveLength(file.connections?.length ?? 0);
   });
 
+  it('names only icons and layouts the app has in the architecture guide', () => {
+    const named = [...architecture.matchAll(/`(k8s-[a-z]+)`/g)].map((match) => match[1]);
+    expect(named.length).toBeGreaterThan(5);
+    for (const icon of named) expect(NOTE_ICONS).toContain(icon);
+    for (const layout of architecture.matchAll(/"layout": "([a-z-]+)"/g))
+      expect([...BOARD_LAYOUTS, ...FRAME_LAYOUTS]).toContain(layout[1]);
+  });
+
   it('links every example it names', () => {
-    for (const name of skill.matchAll(/examples\/([\w-]+\.stormlet)/g))
+    for (const name of [skill, architecture].join('\n').matchAll(/examples\/([\w-]+\.stormlet)/g))
       expect(examples).toContain(name[1]);
   });
 });

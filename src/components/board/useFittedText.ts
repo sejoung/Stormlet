@@ -35,14 +35,18 @@ export function useFittedText(
     const inputs = JSON.stringify([text, width, height, chosen, details.bold, details.italic]);
     const fit = () => {
       const availableHeight = height - padding * 2;
+      // With words kept whole a word wider than the line overflows sideways, which shows
+      // the font is too large; the shown text may still break a word that cannot fit.
       const measure = node.clientWidth
-        ? (font: number) => {
+        ? (font: number, wholeWords: boolean) => {
             node.style.fontSize = `${font}px`;
+            node.style.overflowWrap = wholeWords ? 'normal' : '';
             return node.scrollHeight <= availableHeight && node.scrollWidth <= node.clientWidth;
           }
         : undefined;
       const next = fitNoteFont(text, { width, height }, measure, padding);
-      // Measuring leaves its last trial size in the DOM; restore the size actually shown.
+      // Measuring leaves its last trial in the DOM; restore the style actually shown.
+      node.style.overflowWrap = '';
       node.style.fontSize = `${chosen === null ? next : Math.min(chosen, next)}px`;
       measured.current = measure ? `${padding}|${inputs}` : null;
       setFitted(next);

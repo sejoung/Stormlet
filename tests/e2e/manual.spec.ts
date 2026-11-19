@@ -11,13 +11,14 @@ async function checkGuide(guide: Page, contents: string) {
   expect(targets).toHaveLength(14);
   for (const target of targets) await expect(guide.locator(target)).toHaveCount(1);
   const downloads = guide.locator('#examples a[download]');
-  await expect(downloads).toHaveCount(4);
+  await expect(downloads).toHaveCount(5);
   for (const link of await downloads.all()) {
     const url = new URL((await link.getAttribute('href'))!, guide.url()).href;
     const response = await guide.request.get(url);
     expect(response.ok()).toBe(true);
     const board = parseBoard(await response.text());
-    expect(Object.keys(board.frames ?? {}).length).toBeGreaterThanOrEqual(3);
+    // Nested boundaries count: the Kubernetes sample is a cluster frame holding a namespace.
+    expect(Object.keys(board.frames ?? {}).length).toBeGreaterThanOrEqual(2);
     expect(Object.keys(board.stickies).length).toBeGreaterThanOrEqual(6);
   }
   // The AI skill's downloads are built from skills/stormlet (ADR 0017).
@@ -30,7 +31,7 @@ async function checkGuide(guide: Page, contents: string) {
     expect((await response.body()).length).toBeGreaterThan(1000);
   }
   const images = guide.locator('main img');
-  expect(await images.count()).toBe(23);
+  expect(await images.count()).toBe(24);
   for (const image of await images.all()) {
     await image.scrollIntoViewIfNeeded();
     await expect(image).toHaveAttribute('alt', /.+/);

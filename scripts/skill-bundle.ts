@@ -82,7 +82,7 @@ export function zip(files: readonly { path: string; content: Buffer }[]): Buffer
 
 /**
  * The skill as one prompt to paste into a chat: the instructions without their
- * frontmatter, then the format reference and one example.
+ * frontmatter, then the format and architecture references and one example.
  */
 export function skillPrompt(dir = SKILL_DIR): string {
   const read = (path: string) => readFileSync(join(dir, path), 'utf8').trim();
@@ -91,6 +91,7 @@ export function skillPrompt(dir = SKILL_DIR): string {
     '<!-- Paste this whole text into a chat, then ask for the board you want. -->',
     instructions.trim(),
     read('references/format.md'),
+    read('references/architecture.md'),
     '## Example: examples/kpt.stormlet',
     ['```json', read('examples/kpt.stormlet'), '```'].join('\n'),
     '',

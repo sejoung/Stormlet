@@ -5,7 +5,7 @@ import {
   type DraftFrame,
   type DraftSticky,
 } from '../../../../src/domain/layout/auto-layout';
-import { arrange, FLOW_COLUMN_GAP } from '../../../../src/domain/layout/arrange';
+import { arrange, FLOW_RANK_GAP } from '../../../../src/domain/layout/arrange';
 import { contains } from '../../../../src/domain/frames/model';
 import type { Sticky } from '../../../../src/domain/model';
 
@@ -40,8 +40,8 @@ describe('flow arrangement (ADR 0018)', () => {
       { from: 'a', to: 'c' },
     ]);
     expect(at.get('a')!.x).toBe(0);
-    expect(at.get('b')!.x).toBe(100 + FLOW_COLUMN_GAP);
-    expect(at.get('c')!.x).toBe(2 * (100 + FLOW_COLUMN_GAP));
+    expect(at.get('b')!.x).toBe(100 + FLOW_RANK_GAP);
+    expect(at.get('c')!.x).toBe(2 * (100 + FLOW_RANK_GAP));
   });
 
   it('ignores the line that closes a cycle instead of failing', () => {
@@ -137,5 +137,20 @@ describe('nested frames and flows in drafts', () => {
     const at = byId(frames);
     expect(at.outer).toMatchObject({ x: 0, y: 0 });
     expect(contains(at.outer, at.inner)).toBe(true);
+  });
+});
+
+describe('downward flow (ADR 0019)', () => {
+  it('puts each box one row below the boxes linked to it, centred across', () => {
+    const { at, size } = arrange([box('web'), box('api'), box('db'), box('cache')], 'flow-down', [
+      { from: 'web', to: 'api' },
+      { from: 'api', to: 'db' },
+      { from: 'api', to: 'cache' },
+    ]);
+    expect(at.get('web')!.y).toBe(0);
+    expect(at.get('api')!.y).toBe(100 + FLOW_RANK_GAP);
+    expect(at.get('db')!.y).toBe(at.get('cache')!.y);
+    expect(at.get('db')!.x).toBeLessThan(at.get('cache')!.x);
+    expect(at.get('api')!.x + 50).toBe(size.width / 2);
   });
 });

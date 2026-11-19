@@ -41,6 +41,7 @@ describe('skill downloads', () => {
     expect(prompt).not.toMatch(/^---/m);
     expect(prompt).toContain('# Stormlet boards');
     expect(prompt).toContain('# The .stormlet format');
+    expect(prompt).toContain('# Architecture boards');
     expect(prompt).toContain('"format": "stormlet"');
   });
 });

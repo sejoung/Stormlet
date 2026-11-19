@@ -207,3 +207,6 @@
   outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
+.icon-grid + .popover-label {
+  margin-top: 14px;
+}

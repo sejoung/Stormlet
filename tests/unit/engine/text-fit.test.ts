@@ -49,4 +49,18 @@ describe('note text fitting', () => {
     expect(fitNoteFont('메모', size, (font) => font <= 17.7)).toBe(17.5);
     expect(fitNoteFont('메모', size, () => false)).toBe(MIN_FITTED_FONT);
   });
+
+  it('keeps words whole when a smaller font allows it, and breaks only words that never fit', () => {
+    const square = { width: 160, height: 160 };
+    const inner = square.width - NOTE_PADDING * 2;
+    const font = fitNoteFont('PostgreSQL', square);
+    expect(font * 0.6 * 'PostgreSQL'.length).toBeLessThanOrEqual(inner);
+    expect(font).toBeGreaterThan(fitNoteFont('Postgre SQL Postgre SQL', square) - 20);
+    const url = 'https://example.com/'.repeat(8);
+    expect(fitNoteFont(url, square)).toBeGreaterThanOrEqual(MIN_NOTE_FONT);
+    // Real measurements: whole words fit up to 20px, broken words up to 30px.
+    const fits = (size: number, whole: boolean) => size <= (whole ? 20 : 30);
+    expect(fitNoteFont('word', square, fits)).toBe(20);
+    expect(fitNoteFont('word', square, (size, whole) => !whole && size <= 30)).toBe(30);
+  });
 });

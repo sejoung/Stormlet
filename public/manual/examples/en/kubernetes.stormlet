@@ -1,0 +1,183 @@
+{
+  "format": "stormlet",
+  "version": 13,
+  "title": "Shop · Kubernetes",
+  "layout": "flow-down",
+  "frames": [
+    {
+      "id": "cluster",
+      "title": "Kubernetes cluster · production",
+      "layout": "flow-down"
+    },
+    {
+      "id": "ns",
+      "title": "Namespace · shop",
+      "frame": "cluster",
+      "layout": "flow-down",
+      "color": "blue"
+    }
+  ],
+  "stickies": [
+    {
+      "id": "user",
+      "width": 200,
+      "height": 120,
+      "icon": "user",
+      "color": "yellow",
+      "text": "Customer\nBrowser and app"
+    },
+    {
+      "id": "registry",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-registry",
+      "color": "pink",
+      "text": "Image registry"
+    },
+    {
+      "id": "ingress",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-ingress",
+      "color": "sky",
+      "text": "Ingress\nshop.example.com"
+    },
+    {
+      "id": "hpa",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-autoscaler",
+      "color": "gray",
+      "text": "Autoscaler\napi: 2–10 pods"
+    },
+    {
+      "id": "svc-web",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-service",
+      "color": "sky",
+      "text": "Service\nweb"
+    },
+    {
+      "id": "svc-api",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-service",
+      "color": "sky",
+      "text": "Service\napi"
+    },
+    {
+      "id": "web",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-deployment",
+      "color": "blue",
+      "text": "Deployment\nweb · 2 pods"
+    },
+    {
+      "id": "api",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-deployment",
+      "color": "blue",
+      "text": "Deployment\napi · 3 pods"
+    },
+    {
+      "id": "db",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-statefulset",
+      "color": "green",
+      "text": "StatefulSet\nPostgreSQL"
+    },
+    {
+      "id": "config",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-configmap",
+      "color": "gray",
+      "text": "ConfigMap\napi settings"
+    },
+    {
+      "id": "secret",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-secret",
+      "color": "gray",
+      "text": "Secret\nDB password"
+    },
+    {
+      "id": "volume",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-volume",
+      "color": "green",
+      "text": "Volume\n100 GB"
+    }
+  ],
+  "connections": [
+    {
+      "from": "user",
+      "to": "ingress",
+      "label": "HTTPS"
+    },
+    {
+      "from": "ingress",
+      "to": "svc-web",
+      "label": "/"
+    },
+    {
+      "from": "ingress",
+      "to": "svc-api",
+      "label": "/api"
+    },
+    {
+      "from": "svc-web",
+      "to": "web"
+    },
+    {
+      "from": "svc-api",
+      "to": "api"
+    },
+    {
+      "from": "hpa",
+      "to": "api",
+      "dashed": true,
+      "label": "scales"
+    },
+    {
+      "from": "api",
+      "to": "db"
+    },
+    {
+      "from": "api",
+      "to": "config",
+      "dashed": true
+    },
+    {
+      "from": "api",
+      "to": "secret",
+      "dashed": true
+    },
+    {
+      "from": "db",
+      "to": "volume"
+    },
+    {
+      "from": "registry",
+      "to": "api",
+      "dashed": true,
+      "label": "pull"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { boundsOf, type Bounds, type Rect } from '../geometry/bounds';
-import { clampFrameSize, type Frame } from '../frames/model';
+import { clampFrameSize, contains, type Frame } from '../frames/model';
+import { freeSpot } from './free-spot';
 import type { Sticky } from '../model';
 import { NOTE_GAP } from '../note-actions';
 import { isText } from '../text/model';
@@ -16,7 +17,7 @@ export { FRAME_LAYOUTS, type FrameLayout } from './arrange';
  */
 
 /** How the board itself arranges its loose notes and frames; `board` is the default. */
-export const BOARD_LAYOUTS = ['board', 'grid', 'row', 'column', 'flow'] as const;
+export const BOARD_LAYOUTS = ['board', 'grid', 'row', 'column', 'flow', 'flow-down'] as const;
 export type BoardLayout = (typeof BOARD_LAYOUTS)[number];
 
 /** A note whose position and stacking order may be missing; `frame` names its frame. */
@@ -49,6 +50,8 @@ export const FRAME_GAP = 80;
 export const SECTION_GAP = 80;
 /** Where the first object of a board with no positioned objects goes. */
 export const LAYOUT_ORIGIN = { x: 40, y: 40 } as const;
+/** How far a new note goes from the positioned object it is linked with. */
+export const BESIDE_GAP = 80;
 
 const ROOT = 'root';
 const noteKey = (id: string) => `n:${id}`;
@@ -138,6 +141,47 @@ function frameSize(frame: DraftFrame, content: Size): Size {
   });
 }
 
+/**
+ * Loose new notes linked with a positioned object, placed beside it (ADR 0019): after it
+ * when the line comes from it, before it when the line goes to it, in the nearest free spot
+ * outside every frame. This is what keeps an AI's edit of a laid-out board local.
+ */
+function besideLinked(
+  roots: readonly string[],
+  links: readonly DraftLink[],
+  notes: ReadonlyMap<string, DraftSticky>,
+  frames: ReadonlyMap<string, DraftFrame>,
+  placed: readonly Rect[],
+): Map<string, Point> {
+  const rectById = (id?: string) => {
+    if (id === undefined) return undefined;
+    const item = notes.get(id) ?? frames.get(id);
+    return item ? rectOf(item)[0] : undefined;
+  };
+  const taken = [...placed];
+  const spots = new Map<string, Point>();
+  for (const key of roots) {
+    const note = notes.get(key.slice(2));
+    if (!key.startsWith('n:') || !note || isText(note)) continue;
+    const link = links.find(
+      (line) =>
+        (line.to === note.id && rectById(line.from)) ||
+        (line.from === note.id && rectById(line.to)),
+    );
+    if (!link) continue;
+    const after = link.to === note.id;
+    const other = rectById(after ? link.from : link.to)!;
+    const target = {
+      x: after ? other.x + other.width + BESIDE_GAP : other.x - BESIDE_GAP - note.width,
+      y: other.y + (other.height - note.height) / 2,
+    };
+    const at = freeSpot(note, target, taken, NOTE_GAP);
+    spots.set(key, at);
+    taken.push({ ...at, width: note.width, height: note.height });
+  }
+  return spots;
+}
+
 const rectOf = (item: { x?: number; y?: number; width?: number; height?: number }): Rect[] =>
   isPlaced(item) && item.width !== undefined && item.height !== undefined
     ? [{ x: item.x!, y: item.y!, width: item.width, height: item.height }]
@@ -163,6 +207,28 @@ export function layoutDraft(
   const { byId, parent, children } = tree(stickies, frames);
   const notesById = new Map(stickies.map((note) => [note.id, note]));
   const lines = containerLinks(links, new Set(notesById.keys()), new Set(byId.keys()), parent);
+  const placedRects = [...stickies.flatMap(rectOf), ...frames.flatMap(rectOf)];
+  /**
+   * In a positioned frame, new objects go below what the frame already holds, so editing a
+   * laid-out board adds to a frame instead of covering it.
+   */
+  const below = new Map<string, number>();
+  for (const frame of frames) {
+    const [box] = rectOf(frame);
+    if (!box) continue;
+    const held = placedRects.filter((rect) => rect !== box && contains(box, rect));
+    if (held.length)
+      below.set(
+        frameKey(frame.id),
+        largest(
+          held.map((rect) => rect.y + rect.height),
+          0,
+        ) -
+          box.y -
+          FRAME_PADDING +
+          NOTE_GAP,
+      );
+  }
   const sizes = new Map<string, Size>();
   const arranged = new Map<string, ReturnType<typeof arrange>>();
   const sizeOf = (key: string): Size => {
@@ -172,7 +238,8 @@ export function layoutDraft(
       const boxes = children.get(key)!.map((child): Box => ({ key: child, ...sizeOf(child) }));
       const inside = arrange(boxes, frame.layout, lines.get(key));
       arranged.set(key, inside);
-      sizes.set(key, frameSize(frame, inside.size));
+      const offset = boxes.length ? (below.get(key) ?? 0) : 0;
+      sizes.set(key, frameSize(frame, { ...inside.size, height: inside.size.height + offset }));
     }
     return sizes.get(key)!;
   };
@@ -182,15 +249,20 @@ export function layoutDraft(
     positions.set(key, at);
     if (key.startsWith('n:')) return;
     sizeOf(key);
+    const down = below.get(key) ?? 0;
     for (const [child, offset] of arranged.get(key)!.at)
       place(child, {
         x: Math.round(at.x + FRAME_PADDING + offset.x),
-        y: Math.round(at.y + FRAME_PADDING + offset.y),
+        y: Math.round(at.y + FRAME_PADDING + down + offset.y),
       });
   };
 
-  const start = startOf(boundsOf([...stickies.flatMap(rectOf), ...frames.flatMap(rectOf)]));
   const roots = children.get(ROOT)!;
+  const beside = besideLinked(roots, links, notesById, byId, placedRects);
+  for (const [key, at] of beside) positions.set(key, at);
+  const start = startOf(
+    boundsOf([...placedRects, ...[...beside].map(([key, at]) => ({ ...at, ...sizeOf(key) }))]),
+  );
   const headings = roots.filter(
     (key) => key.startsWith('n:') && isText(notesById.get(key.slice(2))!),
   );
@@ -201,7 +273,7 @@ export function layoutDraft(
   }
   const top = headings.length ? y - NOTE_GAP + SECTION_GAP : start.y;
   const heading = new Set(headings);
-  const rest = roots.filter((key) => !heading.has(key));
+  const rest = roots.filter((key) => !heading.has(key) && !beside.has(key));
   const rootFrames = rest.filter((key) => key.startsWith('f:'));
   const looseNotes = rest.filter((key) => key.startsWith('n:'));
   if (layout === 'board') {

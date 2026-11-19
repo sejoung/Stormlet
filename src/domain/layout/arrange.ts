@@ -5,13 +5,13 @@ import { NOTE_GAP } from '../note-actions';
  * (ADR 0017, ADR 0018). Pure geometry on sizes: positions are relative to the container's
  * content box, so frames can be measured from the inside out and placed from the outside in.
  */
-export const FRAME_LAYOUTS = ['grid', 'row', 'column', 'flow'] as const;
+export const FRAME_LAYOUTS = ['grid', 'row', 'column', 'flow', 'flow-down'] as const;
 export type FrameLayout = (typeof FRAME_LAYOUTS)[number];
 
-/** Space between the columns of a flow, wide enough for an arrow and its label. */
-export const FLOW_COLUMN_GAP = 120;
-/** Space between objects stacked in one column of a flow. */
-export const FLOW_ROW_GAP = 48;
+/** Space between the ranks of a flow (its columns, or rows going down), for an arrow and label. */
+export const FLOW_RANK_GAP = 120;
+/** Space between the objects of one rank. */
+export const FLOW_CROSS_GAP = 48;
 
 export interface Box {
   key: string;
@@ -103,48 +103,52 @@ function ranks(boxes: readonly Box[], links: readonly Link[]): Map<string, numbe
 }
 
 /**
- * A left-to-right flow: one column per rank, each ordered by where the boxes it is linked
- * from sit in the column before (file order breaks ties), centred on one another.
+ * A flow: one rank per step along the lines, left to right (`across`) or top to bottom.
+ * Each rank is ordered by where the boxes it is linked from sit in the rank before (file
+ * order breaks ties), and the ranks are centred on one another.
  */
-function flow(boxes: readonly Box[], links: readonly Link[]): Arranged {
+function flow(boxes: readonly Box[], links: readonly Link[], across: boolean): Arranged {
+  // Lay out along a main axis (the flow) and a cross axis (within a rank), then map back.
+  const main = (box: Box) => (across ? box.width : box.height);
+  const cross = (box: Box) => (across ? box.height : box.width);
   const rank = ranks(boxes, links);
-  const columns: Box[][] = [];
-  for (const box of boxes) (columns[rank.get(box.key)!] ??= []).push(box);
-  const filled = columns.filter(Boolean);
-  const row = new Map<string, number>();
-  filled.forEach((column, index) => {
+  const ranked: Box[][] = [];
+  for (const box of boxes) (ranked[rank.get(box.key)!] ??= []).push(box);
+  const filled = ranked.filter(Boolean);
+  const order = new Map<string, number>();
+  filled.forEach((group, index) => {
     if (index > 0) {
       const weight = (box: Box) => {
-        const sources = links.filter((link) => link.to === box.key && row.has(link.from));
+        const sources = links.filter((link) => link.to === box.key && order.has(link.from));
         return sources.length
-          ? sources.reduce((sum, link) => sum + row.get(link.from)!, 0) / sources.length
+          ? sources.reduce((sum, link) => sum + order.get(link.from)!, 0) / sources.length
           : Infinity;
       };
-      const weights = new Map(column.map((box) => [box.key, weight(box)]));
-      column.sort((a, b) => weights.get(a.key)! - weights.get(b.key)!);
+      const weights = new Map(group.map((box) => [box.key, weight(box)]));
+      group.sort((a, b) => weights.get(a.key)! - weights.get(b.key)!);
     }
-    column.forEach((box, position) => row.set(box.key, position));
+    group.forEach((box, position) => order.set(box.key, position));
   });
-  const heights = filled.map(
-    (column) =>
-      column.reduce((sum, box) => sum + box.height, 0) + (column.length - 1) * FLOW_ROW_GAP,
+  const spans = filled.map(
+    (group) =>
+      group.reduce((sum, box) => sum + cross(box), 0) + (group.length - 1) * FLOW_CROSS_GAP,
   );
-  const height = largest(heights, 0);
+  const span = largest(spans, 0);
   const at = new Map<string, { x: number; y: number }>();
-  let x = 0;
-  filled.forEach((column, index) => {
-    const width = largest(
-      column.map((box) => box.width),
-      0,
-    );
-    let y = (height - heights[index]) / 2;
-    for (const box of column) {
-      at.set(box.key, { x: Math.round(x + (width - box.width) / 2), y: Math.round(y) });
-      y += box.height + FLOW_ROW_GAP;
+  let along = 0;
+  filled.forEach((group, index) => {
+    const depth = largest(group.map(main), 0);
+    let offset = (span - spans[index]) / 2;
+    for (const box of group) {
+      const a = Math.round(along + (depth - main(box)) / 2);
+      const c = Math.round(offset);
+      at.set(box.key, across ? { x: a, y: c } : { x: c, y: a });
+      offset += cross(box) + FLOW_CROSS_GAP;
     }
-    x += width + FLOW_COLUMN_GAP;
+    along += depth + FLOW_RANK_GAP;
   });
-  return { size: { width: filled.length ? x - FLOW_COLUMN_GAP : 0, height }, at };
+  const length = filled.length ? along - FLOW_RANK_GAP : 0;
+  return { size: across ? { width: length, height: span } : { width: span, height: length }, at };
 }
 
 /** Positions of `boxes` relative to the content box, and the size they take together. */
@@ -152,4 +156,7 @@ export const arrange = (
   boxes: readonly Box[],
   layout: FrameLayout = 'grid',
   links: readonly Link[] = [],
-): Arranged => (layout === 'flow' ? flow(boxes, links) : cells(boxes, layout));
+): Arranged =>
+  layout === 'flow' || layout === 'flow-down'
+    ? flow(boxes, links, layout === 'flow')
+    : cells(boxes, layout);

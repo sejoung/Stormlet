@@ -1,4 +1,4 @@
-import { fitNoteFont, NOTE_LINE_HEIGHT, contentPadding } from '../../engine/text-fit';
+import { fitNoteFont, NOTE_LINE_HEIGHT, contentPadding, wordsOf } from '../../engine/text-fit';
 import { DEFAULT_NOTE_FONT } from '../../domain/note-details';
 import type { Sticky } from '../../domain/model';
 
@@ -9,9 +9,8 @@ export type MeasureText = (text: string, font: string) => number;
 export const FONT_FAMILY =
   "system-ui, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
 
-/** Hangul, kana and Han characters, which may break anywhere like the browser does. */
-const CJK = /[ᄀ-ᇿ⺀-〿぀-ヿ㄰-㆏㐀-鿿가-힯豈-﫿]/u;
-const TOKENS = new RegExp(`\\s+|${CJK.source}|[^\\s${CJK.source.slice(1, -1)}]+`, 'gu');
+/** Spaces, and the words between them, which `word-break: keep-all` keeps together. */
+const TOKENS = /\s+|[^\s]+/gu;
 
 /**
  * Characters XML 1.0 forbids (C0 controls other than tab and newlines, U+FFFE/U+FFFF and lone
@@ -26,8 +25,8 @@ export const noteFont = (note: Pick<Sticky, 'bold' | 'italic'>, size: number) =>
 
 /**
  * Wraps one paragraph into lines no wider than `width`, like `white-space: pre-wrap` with
- * `overflow-wrap: anywhere`: break at spaces or between CJK characters, and inside a word
- * only when it does not fit on a line of its own.
+ * `word-break: keep-all` and `overflow-wrap: anywhere`: break at spaces, and inside a word
+ * (Korean words included) only when it does not fit on a line of its own.
  */
 function wrapParagraph(text: string, width: number, measure: (text: string) => number) {
   const lines: string[] = [];
@@ -87,8 +86,9 @@ export function layoutNote(note: Sticky, measureAt: ReturnType<typeof scaledMeas
   const padding = contentPadding(note);
   const width = note.width - padding * 2;
   const height = note.height - padding * 2;
-  const fits = (size: number) => {
+  const fits = (size: number, wholeWords: boolean) => {
     const measure = measureAt(note, size);
+    if (wholeWords && wordsOf(text).some((word) => measure(word) > width + 0.5)) return false;
     const lines = wrapText(text, width, measure);
     return (
       lines.length * size * NOTE_LINE_HEIGHT <= height &&

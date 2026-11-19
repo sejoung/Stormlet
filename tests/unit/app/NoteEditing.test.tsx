@@ -23,10 +23,10 @@ describe('note editing experience', () => {
     expect(note().querySelector('p')).toHaveStyle({ fontSize: '32px' });
     await user.dblClick(note());
     fireEvent.change(screen.getByRole('textbox', { name: '스티키 내용' }), {
-      target: { value: '고정 크기 유지' },
+      target: { value: '크기 유지' },
     });
     await user.keyboard('{Enter}');
-    expect(store.board.stickies.a.text).toBe('고정 크기 유지');
+    expect(store.board.stickies.a.text).toBe('크기 유지');
     expect(note().querySelector('p')).toHaveStyle({ fontSize: '32px' });
   });
 

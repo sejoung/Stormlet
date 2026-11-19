@@ -1,6 +1,6 @@
 ---
 name: stormlet
-description: Create Stormlet boards as .stormlet files — KPT and other retrospectives, brainstorming and idea grouping, event storming, user story maps, meeting and workshop boards, and system or server architecture diagrams with icons and nested boundaries — and read existing .stormlet boards to summarize them or turn them into documents, plans or code. Use when the user asks for a board, sticky notes, a retro, a workshop canvas or an editable architecture diagram, or mentions Stormlet or a .stormlet file (포스트잇, 보드, 회고, KPT, 브레인스토밍, 아이디어 정리, 이벤트 스토밍, 아키텍처, 구성도).
+description: Create Stormlet boards as .stormlet files — KPT and other retrospectives, brainstorming and idea grouping, event storming, user story maps, meeting and workshop boards, and system, server, cloud or Kubernetes architecture diagrams with icons and nested boundaries, including diagrams drawn from docker-compose, Kubernetes manifests or Terraform — and read or edit existing .stormlet boards to summarize them or turn them into documents, plans or code. Use when the user asks for a board, sticky notes, a retro, a workshop canvas or an editable architecture diagram, or mentions Stormlet or a .stormlet file (포스트잇, 보드, 회고, KPT, 브레인스토밍, 아이디어 정리, 이벤트 스토밍, 아키텍처, 구성도, 쿠버네티스).
 ---
 
 # Stormlet boards
@@ -49,8 +49,9 @@ You never compute positions. Stormlet places everything when the file is opened:
   - `"column"`: top to bottom
   - `"row"`: left to right
   - `"flow"`: left to right along the lines, so each object sits one column right of the objects whose lines point to it
+  - `"flow-down"`: the same, top to bottom, so each object sits one row below the objects whose lines point to it
 - **Nested frames**: a frame with `"frame": "<id>"` sits inside that frame, and is arranged like a note there.
-- **Board layout**: a top-level `"layout"` (`grid`, `column`, `row` or `flow`) arranges the board's frames and loose notes like a frame does, instead of the row of frames. Use `"layout": "flow"` for architecture and other diagrams that read left to right.
+- **Board layout**: a top-level `"layout"` (`grid`, `column`, `row`, `flow` or `flow-down`) arranges the board's frames and loose notes like a frame does, instead of the row of frames. Use `"layout": "flow"` for architecture and other diagrams that read left to right. Use `\"flow-down\"` for layered diagrams that read top to bottom, such as a Kubernetes cluster from ingress to storage.
 - The order of `stickies` and `frames` in the file is the reading order wherever lines do not decide it.
 
 To control the layout exactly, you can give `x`, `y`, `width` and `height` in board pixels. Objects with a position keep it. Mixing the two works, but leaving positions out is almost always better.
@@ -61,8 +62,8 @@ The full reference is in [references/format.md](references/format.md). The field
 
 - **Note** (`stickies[]`): `id`, `text`, `color`, `frame`, `icon`. Optional: `width`/`height` (default 160×160; 80–1280 wide, 60–960 tall), `bold`, `italic`, `underline`, `textAlign` (`left`|`center`|`right`), `fontSize` (8–144, then also set `"autoFont": false`). With `"objectType": "text"`, it is a text box with no paper (default 320×100) and `textColor` sets its color; text boxes have no icon.
 - **Note colors**: `yellow` (default), `orange`, `blue`, `green`, `purple`, `pink`, `red`, `gold`, `lime`, `teal`, `sky`, `violet`, `rose`, `peach`, `gray`, `white`.
-- **Note icons**: shown above the note's text. `user`, `team`, `web`, `browser`, `mobile`, `desktop`, `server`, `service`, `api`, `gateway`, `load-balancer`, `network`, `database`, `cache`, `queue`, `stream`, `storage`, `files`, `cloud`, `function`, `container`, `cluster`, `auth`, `key`, `lock`, `mail`, `message`, `notification`, `search`, `analytics`, `monitoring`, `logs`, `scheduler`, `worker`, `code`, `config`, `document`, `payment`, `external`, `ai`. Icons are generic: name the product in the text, as in `"Orders DB\nPostgreSQL"`.
-- **Frame** (`frames[]`): `id`, `title` (up to 100 characters), `frame` (the frame it sits in), `layout` (`grid` (default), `column`, `row`, `flow`), `color` (`none` (default), `gray`, `blue`, `green`, `yellow`, `pink`, `purple`).
+- **Note icons**: shown above the note's text. `user`, `team`, `web`, `browser`, `mobile`, `desktop`, `server`, `service`, `api`, `gateway`, `load-balancer`, `network`, `database`, `cache`, `queue`, `stream`, `storage`, `files`, `cloud`, `function`, `container`, `cluster`, `auth`, `key`, `lock`, `mail`, `message`, `notification`, `search`, `analytics`, `monitoring`, `logs`, `scheduler`, `worker`, `code`, `config`, `document`, `payment`, `external`, `ai`. Kubernetes objects: `k8s-pod`, `k8s-deployment`, `k8s-replicaset`, `k8s-statefulset`, `k8s-daemonset`, `k8s-job`, `k8s-cronjob`, `k8s-service`, `k8s-ingress`, `k8s-egress`, `k8s-namespace`, `k8s-node`, `k8s-configmap`, `k8s-secret`, `k8s-volume`, `k8s-autoscaler`, `k8s-helm`, `k8s-registry`, `k8s-operator`. Icons are generic: name the product in the text, as in `"Orders DB\nPostgreSQL"`.
+- **Frame** (`frames[]`): `id`, `title` (up to 100 characters), `frame` (the frame it sits in), `layout` (`grid` (default), `column`, `row`, `flow`, `flow-down`), `color` (`none` (default), `gray`, `blue`, `green`, `yellow`, `pink`, `purple`).
 - **Line** (`connections[]`): `from`, `to` (the `id` of a note or a frame), `label`. Optional: `color` (`slate` (default), `black`, `blue`, `red`, `green`, `purple`), `path` (`elbow` (default), `straight`, `curve`), `dashed`, `startArrow`, `endArrow` (default `true`), `width` (1, 2, 3, 4 or 6).
 
 ## Board patterns
@@ -95,8 +96,24 @@ Pick the pattern closest to the request, then adapt it. Complete example files a
     - `pink`: external systems
     - `red`: risks and open questions
   - Put clients and external systems outside the boundaries, as loose notes.
+  - Use `gray` for configuration, secrets and platform parts such as autoscalers.
+  - For a cluster or any layered stack, use `"flow-down"` instead (`examples/kubernetes.stormlet`): ingress, then services, then workloads, then storage.
+  - Add a legend when colors or icons carry meaning: a `"Legend"` frame with `"layout": "row"`, holding one small note per role.
+  - When the diagram comes from code (docker-compose, Kubernetes manifests, Terraform), or should be split into C4 levels, follow [references/architecture.md](references/architecture.md).
 
 Keep each note short, under about 80 characters: one idea, readable at a glance. Use 3 to 12 notes per frame. Split a frame that would hold more than about 20.
+
+## Edit a board
+
+When the user gives you a board to change:
+
+- **Keep what is there.** Copy every existing note, frame and line with all its fields, including `x`, `y`, `z`, `width` and `height`, so nothing the user arranged moves. Keep their `id`s.
+- **Add new objects without positions.** Stormlet places them as the file opens:
+  - A new note with `frame` set to an existing frame goes below what that frame already holds, and the frame grows.
+  - A new loose note joined by a line to an existing object goes beside it: after it when the line comes from it, before it when the line goes to it.
+  - Anything else goes below the board.
+- **Remove** an object by leaving it out, together with the lines to it.
+- Set `"version"` to the current version (`13`), and return the whole file.
 
 ## Read a board
 

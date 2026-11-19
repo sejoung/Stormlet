@@ -1,0 +1,183 @@
+{
+  "format": "stormlet",
+  "version": 13,
+  "title": "쇼핑몰 · 쿠버네티스",
+  "layout": "flow-down",
+  "frames": [
+    {
+      "id": "cluster",
+      "title": "쿠버네티스 클러스터 · 운영",
+      "layout": "flow-down"
+    },
+    {
+      "id": "ns",
+      "title": "네임스페이스 · shop",
+      "frame": "cluster",
+      "layout": "flow-down",
+      "color": "blue"
+    }
+  ],
+  "stickies": [
+    {
+      "id": "user",
+      "width": 200,
+      "height": 120,
+      "icon": "user",
+      "color": "yellow",
+      "text": "고객\n브라우저 · 앱"
+    },
+    {
+      "id": "registry",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-registry",
+      "color": "pink",
+      "text": "이미지 레지스트리"
+    },
+    {
+      "id": "ingress",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-ingress",
+      "color": "sky",
+      "text": "인그레스\nshop.example.com"
+    },
+    {
+      "id": "hpa",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-autoscaler",
+      "color": "gray",
+      "text": "오토스케일러\napi 파드 2–10개"
+    },
+    {
+      "id": "svc-web",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-service",
+      "color": "sky",
+      "text": "서비스\nweb"
+    },
+    {
+      "id": "svc-api",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-service",
+      "color": "sky",
+      "text": "서비스\napi"
+    },
+    {
+      "id": "web",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-deployment",
+      "color": "blue",
+      "text": "디플로이먼트\nweb · 파드 2개"
+    },
+    {
+      "id": "api",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-deployment",
+      "color": "blue",
+      "text": "디플로이먼트\napi · 파드 3개"
+    },
+    {
+      "id": "db",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-statefulset",
+      "color": "green",
+      "text": "스테이트풀셋\nPostgreSQL"
+    },
+    {
+      "id": "config",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-configmap",
+      "color": "gray",
+      "text": "컨피그맵\napi 설정"
+    },
+    {
+      "id": "secret",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-secret",
+      "color": "gray",
+      "text": "시크릿\nDB 비밀번호"
+    },
+    {
+      "id": "volume",
+      "frame": "ns",
+      "width": 200,
+      "height": 120,
+      "icon": "k8s-volume",
+      "color": "green",
+      "text": "볼륨\n100 GB"
+    }
+  ],
+  "connections": [
+    {
+      "from": "user",
+      "to": "ingress",
+      "label": "HTTPS"
+    },
+    {
+      "from": "ingress",
+      "to": "svc-web",
+      "label": "/"
+    },
+    {
+      "from": "ingress",
+      "to": "svc-api",
+      "label": "/api"
+    },
+    {
+      "from": "svc-web",
+      "to": "web"
+    },
+    {
+      "from": "svc-api",
+      "to": "api"
+    },
+    {
+      "from": "hpa",
+      "to": "api",
+      "dashed": true,
+      "label": "확장"
+    },
+    {
+      "from": "api",
+      "to": "db"
+    },
+    {
+      "from": "api",
+      "to": "config",
+      "dashed": true
+    },
+    {
+      "from": "api",
+      "to": "secret",
+      "dashed": true
+    },
+    {
+      "from": "db",
+      "to": "volume"
+    },
+    {
+      "from": "registry",
+      "to": "api",
+      "dashed": true,
+      "label": "이미지"
+    }
+  ]
+}

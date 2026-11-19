@@ -1,64 +1,22 @@
-import { endpointObject } from '../../domain/connections/endpoints';
-import { isFreeEndpoint } from '../../domain/connections/model';
 import type { Board } from '../../domain/model';
-import type { Connection, ConnectionSide, Endpoint } from '../../domain/connections/model';
+import type { Connection } from '../../domain/connections/model';
+import { stickyOf } from '../../domain/connections/model';
+import { isDrawing } from '../../domain/drawing/model';
+import type { Rect } from '../../domain/geometry/bounds';
 import type { Point } from '../viewport';
 import { roundedPolyline } from './rounded-path';
+import { endpointAnchor, endpointCenter, type Anchor } from './anchors';
+import { portOffsets, type Ports } from './ports';
+import { blocked, routeAround } from './routing';
 
-export interface Anchor extends Point {
-  nx: number;
-  ny: number;
-}
+export { endpointAnchor, endpointCenter, type Anchor } from './anchors';
 
-/** Gap between an object's edge and where its line starts, so arrowheads stay visible. */
-const ANCHOR_GAP = 6;
 /** Length range of the first and last leg that leaves an object perpendicular to its side. */
 const LEG = { min: 32, max: 120 };
 /** Extra drop for an elbow that would otherwise run along a shared row. */
 const SAME_ROW_DETOUR = 48;
 /** Shorter lines than this are treated as a click, not a connection. */
 export const MIN_CONNECTION_LENGTH = 4;
-
-const NORMALS: Record<Exclude<ConnectionSide, 'auto'>, { nx: number; ny: number }> = {
-  top: { nx: 0, ny: -1 },
-  right: { nx: 1, ny: 0 },
-  bottom: { nx: 0, ny: 1 },
-  left: { nx: -1, ny: 0 },
-};
-
-/** The side facing `(dx, dy)`, weighed by the object's proportions. */
-function facingSide(dx: number, dy: number, size: { width: number; height: number }) {
-  const horizontal = Math.abs(dx) / size.width >= Math.abs(dy) / size.height;
-  if (horizontal) return dx >= 0 ? 'right' : 'left';
-  return dy >= 0 ? 'bottom' : 'top';
-}
-
-export function endpointCenter(board: Board, endpoint: Endpoint): Point | null {
-  if (isFreeEndpoint(endpoint)) return endpoint;
-  const item = endpointObject(board, endpoint);
-  return item ? { x: item.x + item.width / 2, y: item.y + item.height / 2 } : null;
-}
-
-export function endpointAnchor(board: Board, endpoint: Endpoint, toward: Point): Anchor | null {
-  if (isFreeEndpoint(endpoint)) {
-    const side = facingSide(toward.x - endpoint.x, toward.y - endpoint.y, { width: 1, height: 1 });
-    return { x: endpoint.x, y: endpoint.y, ...NORMALS[side] };
-  }
-  const item = endpointObject(board, endpoint);
-  if (!item) return null;
-  const center = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
-  const side =
-    endpoint.side === 'auto'
-      ? facingSide(toward.x - center.x, toward.y - center.y, item)
-      : endpoint.side;
-  const { nx, ny } = NORMALS[side];
-  return {
-    x: center.x + nx * (item.width / 2 + ANCHOR_GAP),
-    y: center.y + ny * (item.height / 2 + ANCHOR_GAP),
-    nx,
-    ny,
-  };
-}
 
 function halfway(points: Point[]): Point {
   const lengths = points.slice(1).map((p, i) => Math.hypot(p.x - points[i].x, p.y - points[i].y));
@@ -109,12 +67,77 @@ function pointBounds(points: readonly Point[]) {
   };
 }
 
+/**
+ * What every line of one board shares: where lines sit on shared sides, and the notes a
+ * line should go around. Boards are immutable, so this is worked out once per board.
+ */
+interface BoardRouting {
+  ports: Map<string, Ports>;
+  obstacles: (Rect & { id: string })[];
+  shapes: WeakMap<Connection, Shape | null>;
+}
+const routing = new WeakMap<Board, BoardRouting>();
+function routingOf(board: Board): BoardRouting {
+  let found = routing.get(board);
+  if (!found) {
+    found = {
+      ports: portOffsets(board),
+      // Drawings are marks over the board, not boxes, so lines may cross them.
+      obstacles: Object.values(board.stickies).filter((note) => !isDrawing(note)),
+      shapes: new WeakMap(),
+    };
+    routing.set(board, found);
+  }
+  return found;
+}
+
+type Shape = NonNullable<ReturnType<typeof computeGeometry>>;
+
+/** The first and last legs of a routed line: straight out of each side for this long. */
+const STUB = LEG.min;
+
+/**
+ * Elbow waypoints that go around other notes when the plain elbow would cross one. The
+ * route starts a short leg away from each end, and treats the two ends' own notes as
+ * obstacles too, so it never doubles back along or through them.
+ */
+function avoiding(
+  connection: Connection,
+  points: Point[],
+  from: Anchor,
+  to: Anchor,
+  obstacles: readonly (Rect & { id: string })[],
+): Point[] {
+  const ends = new Set([stickyOf(connection.from), stickyOf(connection.to)]);
+  if (
+    !blocked(
+      points,
+      obstacles.filter((note) => !ends.has(note.id)),
+    )
+  )
+    return points;
+  const start = { x: from.x + from.nx * STUB, y: from.y + from.ny * STUB };
+  const end = { x: to.x + to.nx * STUB, y: to.y + to.ny * STUB };
+  const route = routeAround(start, from, end, to, obstacles);
+  return route ? [from, ...route, to] : points;
+}
+
 export function connectionGeometry(board: Board, connection: Connection) {
+  const { shapes } = routingOf(board);
+  if (!shapes.has(connection)) shapes.set(connection, computeGeometry(board, connection));
+  return shapes.get(connection)!;
+}
+
+function computeGeometry(board: Board, connection: Connection) {
   const a = endpointCenter(board, connection.from);
   const b = endpointCenter(board, connection.to);
   if (!a || !b) return null;
-  const from = endpointAnchor(board, connection.from, b)!;
-  const to = endpointAnchor(board, connection.to, a)!;
+  const { ports, obstacles } = routingOf(board);
+  // A line being drawn or rewired is not on the board yet, so it keeps the middle.
+  const port =
+    board.connections?.[connection.id] === connection ? ports.get(connection.id) : undefined;
+  const from = endpointAnchor(board, connection.from, b, port?.from, stickyOf(connection.to))!;
+  const to = endpointAnchor(board, connection.to, a, port?.to, stickyOf(connection.from))!;
   const length = Math.hypot(to.x - from.x, to.y - from.y);
   if (length < 0.01)
     return {
@@ -141,7 +164,10 @@ export function connectionGeometry(board: Board, connection: Connection) {
       bounds: pointBounds(points),
     };
   }
-  const points = connection.path === 'elbow' ? elbowPoints(from, to, p, q) : [from, to];
+  const points =
+    connection.path === 'elbow'
+      ? avoiding(connection, elbowPoints(from, to, p, q), from, to, obstacles)
+      : [from, to];
   return {
     path: connection.path === 'elbow' ? roundedPolyline(points) : line(from, to),
     from,

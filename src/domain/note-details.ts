@@ -53,8 +53,30 @@ export const NOTE_ICONS = [
   'payment',
   'external',
   'ai',
+  // Kubernetes objects, by kind (ADR 0019).
+  'k8s-pod',
+  'k8s-deployment',
+  'k8s-replicaset',
+  'k8s-statefulset',
+  'k8s-daemonset',
+  'k8s-job',
+  'k8s-cronjob',
+  'k8s-service',
+  'k8s-ingress',
+  'k8s-egress',
+  'k8s-namespace',
+  'k8s-node',
+  'k8s-configmap',
+  'k8s-secret',
+  'k8s-volume',
+  'k8s-autoscaler',
+  'k8s-helm',
+  'k8s-registry',
+  'k8s-operator',
 ] as const;
 export type NoteIcon = (typeof NOTE_ICONS)[number];
+/** Whether `icon` stands for a Kubernetes object; the picker lists those in their own group. */
+export const isKubernetesIcon = (icon: NoteIcon): boolean => icon.startsWith('k8s-');
 export const isNoteIcon = (value: unknown): value is NoteIcon =>
   (NOTE_ICONS as readonly unknown[]).includes(value);
 export interface Reaction {

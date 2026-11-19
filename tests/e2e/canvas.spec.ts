@@ -129,22 +129,34 @@ const xy = (at: { x: number; y: number }) => [at.x, at.y] as const;
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
 
-/** Drop `text` on the page as a file, as the desktop does (ADR 0017). */
+/**
+ * Drop `text` on the page as a file, as the desktop does (ADR 0017). The editor starts once
+ * the tab has picked its board, which can finish after the page has loaded, so the drop is
+ * repeated until the editor takes it (cancels the event) rather than raced against startup.
+ */
 async function dropFile(page: Page, text: string, name: string) {
-  await page.evaluate(
-    ([content, fileName]) => {
-      const data = new DataTransfer();
-      data.items.add(new File([content], fileName, { type: 'application/json' }));
-      for (const type of ['dragenter', 'dragover', 'drop'])
-        document.body.dispatchEvent(
-          new DragEvent(type, { dataTransfer: data, bubbles: true, cancelable: true }),
-        );
-    },
-    [text, name],
-  );
+  await expect
+    .poll(() =>
+      page.evaluate(
+        ([content, fileName]) => {
+          const data = new DataTransfer();
+          data.items.add(new File([content], fileName, { type: 'application/json' }));
+          const send = (type: string) =>
+            document.body.dispatchEvent(
+              new DragEvent(type, { dataTransfer: data, bubbles: true, cancelable: true }),
+            );
+          send('dragenter');
+          send('dragover');
+          // dispatchEvent is false once a listener called preventDefault: the drop was taken.
+          return !send('drop');
+        },
+        [text, name],
+      ),
+    )
+    .toBe(true);
 }
 
-for (const example of ['kpt', 'ideas', 'event-storming', 'architecture']) {
+for (const example of ['kpt', 'ideas', 'event-storming', 'architecture', 'kubernetes']) {
   test(`opens the AI skill's ${example} example dropped on the page`, async ({ page }, info) => {
     const text = readFileSync(`skills/stormlet/examples/${example}.stormlet`, 'utf8');
     await page.goto('/');

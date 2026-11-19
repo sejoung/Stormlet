@@ -37,12 +37,13 @@ describe('standalone text export', () => {
 });
 
 describe('note text layout', () => {
-  it('wraps at spaces, between CJK characters, and inside a word only when it must', () => {
+  it('wraps at spaces, keeps Korean words together, and breaks a word only when it must', () => {
     expect(wrapText('one two three', 70, tenPx)).toEqual(['one two', 'three']);
     expect(wrapText('가나다라마바', 40, tenPx)).toEqual(['가나다라', '마바']);
     expect(wrapText('abcdefghij', 40, tenPx)).toEqual(['abcd', 'efgh', 'ij']);
     expect(wrapText('a\n\nb', 100, tenPx)).toEqual(['a', '', 'b']);
-    expect(wrapText('go 가나다', 50, tenPx)).toEqual(['go 가나', '다']);
+    expect(wrapText('go 가나다', 50, tenPx)).toEqual(['go', '가나다']);
+    expect(wrapText('이미지 레지스트리', 80, tenPx)).toEqual(['이미지', '레지스트리']);
   });
 
   it('fits the font like the editor, keeping a chosen size only while the text fits', () => {
@@ -54,6 +55,11 @@ describe('note text layout', () => {
     expect(layoutNote(chosen, measureAt).size).toBe(18);
     const long = sticky('c', { text: 'word '.repeat(40), autoFont: false, fontSize: 48 });
     expect(layoutNote(long, measureAt).size).toBeLessThan(48);
+    const word = layoutNote(
+      sticky('d', { text: 'Orders DB PostgreSQL', width: 160, height: 160 }),
+      measureAt,
+    );
+    expect(word.lines).toContain('PostgreSQL');
   });
 });
 

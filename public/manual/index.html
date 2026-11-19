@@ -169,6 +169,26 @@
               <a href="examples/ko/architecture.stormlet" download>샘플 내려받기 (.stormlet)</a>
             </p>
           </article>
+          <article>
+            <h3>쿠버네티스 구성도 · 위에서 아래로</h3>
+            <p>클러스터처럼 층으로 쌓인 구성은 위에서 아래로 흐르게 그리면 한눈에 읽힙니다.</p>
+            <figure>
+              <img
+                loading="lazy"
+                src="images/ko/example-kubernetes.png"
+                alt="쿠버네티스 구성도 · 위에서 아래로"
+              />
+            </figure>
+            <p>
+              인그레스에서 서비스, 디플로이먼트, 스테이트풀셋, 볼륨 순서로 내려갑니다. 도구 막대의
+              <b>아이콘 → Kubernetes</b>에서 파드·인그레스·시크릿 같은 아이콘을 고르고, 컨피그맵과
+              시크릿처럼 설정에 해당하는 것은 회색 점선으로 이어 구분합니다. AI에게 매니페스트나
+              docker-compose 파일을 보여 주고 구성도를 부탁해도 이 모양으로 그립니다.
+            </p>
+            <p>
+              <a href="examples/ko/kubernetes.stormlet" download>샘플 내려받기 (.stormlet)</a>
+            </p>
+          </article>
         </section>
 
         <section id="start">
@@ -359,6 +379,10 @@
               제외)을 한 번에 맞춥니다.
             </li>
             <li>끝점을 끌어 다른 대상에 다시 연결합니다.</li>
+            <li>
+              꺾임선은 가는 길에 있는 다른 메모를 돌아갑니다. 한 면에 선이 여럿이면 겹치지 않게
+              나란히 놓이고, 바로 옆에 메모가 붙은 면은 피합니다.
+            </li>
           </ul>
         </section>
 
@@ -783,6 +807,10 @@
               AI가 파일 대신 JSON을 보여 주면 그 내용을 복사해 보드에 붙여 넣습니다
               (<kbd>Ctrl/Cmd</kbd>+<kbd>V</kbd>). 코드 블록의 <code>```json</code> 표시가 같이
               복사되어도 괜찮습니다.
+            </li>
+            <li>
+              이미 만든 보드를 AI에게 주고 고쳐 달라고 해도 됩니다. 옮겨 둔 메모는 그 자리에 있고,
+              새 메모는 연결된 메모 옆이나 넣을 프레임 안에 놓입니다.
             </li>
             <li>
               여는 것은 지금 보드를 바꾸지만 실행 취소하면 이전 보드로 돌아갑니다. 마음에 들지

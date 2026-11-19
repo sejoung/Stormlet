@@ -18,7 +18,7 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 
 ## Example boards
 
-Preview and download [KPT retrospectives, idea organization, event storming and system architecture](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor, or drop them on the board.
+Preview and download [KPT retrospectives, idea organization, event storming, system architecture and Kubernetes](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor, or drop them on the board.
 
 ## Making boards with AI
 
@@ -49,7 +49,8 @@ On Claude Code older than 2.1.275, run `/plugin marketplace add sejoung/Stormlet
 - Guides to notes’ and frames’ edges and centers, equal-spacing snapping and same-size markers while moving or resizing; hold `Ctrl/Cmd` to move freely
 - Align, distribute, match sizes (to the largest) and arrange in a grid from the icon row shown for a selection, the Arrange menu, the context menu or `Alt/Option` shortcuts; group and lock
 - Copy and paste a note’s style (color and text formatting), kept across reloads and tabs; select all notes of a color
-- 40 icons, such as server, database and user, to put above a note's text for architecture diagrams ([ADR 0018](docs/adr/0018-architecture-diagrams.md))
+- 40 general icons, such as server, database and user, and 19 Kubernetes icons, such as pod, ingress and secret, to put above a note's text for architecture diagrams ([ADR 0018](docs/adr/0018-architecture-diagrams.md), [ADR 0019](docs/adr/0019-diagram-polish.md))
+- Fitted text picks the largest size at which no word is split, and Korean wraps between words too
 - Emoji reactions and full-text search
 
 **Text**
@@ -70,6 +71,7 @@ On Claude Code older than 2.1.275, run `/plugin marketplace add sejoung/Stormlet
 
 - Connect notes and frames with `L` or by dragging a side port; lines follow moves and resizing
 - Straight, rounded elbow (default) and curved lines with arrowheads, color (six, black included), width, dashes, labels and locking
+- Elbow lines go around the notes in their way, and lines sharing a side sit side by side ([ADR 0019](docs/adr/0019-diagram-polish.md))
 - A line’s color, width and dashes become the default for the next line, and “Apply this style to all lines” matches the whole board at once
 - Drag an endpoint to reattach it; copying or duplicating a flow keeps its internal lines
 
