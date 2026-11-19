@@ -65,6 +65,10 @@
 .sticky.is-text.is-editing {
   box-shadow: none;
 }
+.sticky.is-text .sticky-content:not(.is-editing) {
+  /* Balance the extra line-space required by fallback fonts after fitting the box. */
+  justify-content: center;
+}
 .sticky.is-text .sticky-text {
   margin: 0;
 }

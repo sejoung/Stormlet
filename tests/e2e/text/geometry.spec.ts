@@ -17,6 +17,8 @@ async function margins(text: import('@playwright/test').Locator) {
       width: box.width,
       height: box.height,
       font: parseFloat(getComputedStyle(paragraph).fontSize),
+      lineHeight: getComputedStyle(paragraph).lineHeight,
+      scrollHeight: paragraph.scrollHeight,
     };
   });
 }
@@ -33,7 +35,10 @@ test('finishes short Auto text with balanced side margins and keeps the fitted w
   const text = page.locator('.is-text');
   const actual = await margins(text);
   expect(actual.width).toBeLessThan(250);
-  expect(Math.abs(actual.left - actual.right)).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs(actual.left - actual.right),
+    JSON.stringify({ ...actual, editorFont: font }),
+  ).toBeLessThanOrEqual(2);
   expect(Math.abs(actual.top - actual.bottom), JSON.stringify(actual)).toBeLessThanOrEqual(2);
   expect(actual.font).toBe(font);
   await screenshot(page, info, 'text-tight-width');
@@ -129,7 +134,7 @@ test('fits multiline text at reduced zoom without shifting left, center or right
     expect(actual.width).toBeLessThan(200);
     expect(actual.height).toBeLessThan(60);
     expect(actual.font).toBe(24);
-    expect(Math.abs(actual.left - actual.right)).toBeLessThanOrEqual(2);
+    expect(Math.abs(actual.left - actual.right), JSON.stringify(actual)).toBeLessThanOrEqual(2);
     expect(Math.abs(actual.top - actual.bottom), JSON.stringify(actual)).toBeLessThanOrEqual(2);
     const anchorAfter = await text.locator('p').evaluate((node, alignment) => {
       const range = document.createRange();

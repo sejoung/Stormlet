@@ -15,6 +15,8 @@ export function fittedTextSize(
   const scale = bounds.width / node.clientWidth;
   if (!scale) return undefined;
   const longest = Math.max(...lines.map((line) => line.width)) / scale;
+  // Fallback fonts can paint beyond the CSS line box. Keep the scroll height used by
+  // useFittedText too, or committing the smaller box shrinks the font a second time.
   // Round outward and leave a pixel for subpixel font metrics, keeping wrapping stable.
   return {
     width: Math.min(
@@ -23,7 +25,10 @@ export function fittedTextSize(
     ),
     height: Math.min(
       size.height,
-      Math.max(MIN_TEXT_SIZE.height, Math.ceil(bounds.height / scale + TEXT_PADDING * 2)),
+      Math.max(
+        MIN_TEXT_SIZE.height,
+        Math.ceil(Math.max(bounds.height / scale, node.scrollHeight) + TEXT_PADDING * 2),
+      ),
     ),
   };
 }
