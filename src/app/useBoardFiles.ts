@@ -60,6 +60,14 @@ export function useBoardFiles({
     change((current) => diffBoards(current, { ...opened, title }));
     reset();
   };
+  /** Read `content` and put it on the board; false when opening was cancelled. */
+  const open = async (content: string, name: string) => {
+    const opened = parseBoard(content);
+    if (beforeOpen && !(await beforeOpen())) return false;
+    // Undoable: the previous Drive file is no longer linked, so nothing is saved back.
+    replace(opened, name, edit);
+    return true;
+  };
   return {
     /**
      * Put a board opened from Drive in place, after `link` links its file, with no undo
@@ -115,14 +123,24 @@ export function useBoardFiles({
         // A huge file would freeze the page while it is read; boards are far smaller.
         if (file.size > MAX_BOARD_FILE_BYTES)
           throw new Error(t('files.tooLarge', { size: MAX_BOARD_FILE_BYTES / 1024 / 1024 }));
-        const opened = parseBoard(await readFileText(file));
-        if (beforeOpen && !(await beforeOpen())) return;
-        // Undoable: the previous Drive file is no longer linked, so nothing is saved back.
-        replace(opened, file.name, edit);
+        if (!(await open(await readFileText(file), file.name))) return;
         log.info('files.opened', { size: file.size });
         onStatus(t('files.opened', { name: file.name }));
       } catch (error) {
         log.warn('files.open-failed', { size: file.size, ...errorDetails(error) });
+        onStatus(t('files.openFailed', { reason: (error as Error).message }));
+      }
+    },
+    /** Open a board file pasted as text, as an AI shows one it cannot attach (ADR 0017). */
+    openText: async (text: string) => {
+      try {
+        if (text.length > MAX_BOARD_FILE_BYTES)
+          throw new Error(t('files.tooLarge', { size: MAX_BOARD_FILE_BYTES / 1024 / 1024 }));
+        if (!(await open(text, ''))) return;
+        log.info('files.opened-pasted', { size: text.length });
+        onStatus(t('files.openedPasted'));
+      } catch (error) {
+        log.warn('files.open-failed', { size: text.length, ...errorDetails(error) });
         onStatus(t('files.openFailed', { reason: (error as Error).message }));
       }
     },

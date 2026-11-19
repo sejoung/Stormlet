@@ -1,0 +1,30 @@
+{
+  "format": "stormlet",
+  "version": 12,
+  "title": "Organize ideas · Getting started",
+  "frames": [
+    { "id": "questions", "title": "Questions and observations", "layout": "column" },
+    { "id": "guidance", "title": "Idea group · Guidance" },
+    { "id": "discovery", "title": "Idea group · Discovery", "layout": "column" },
+    { "id": "next", "title": "First experiments", "layout": "column", "color": "blue" }
+  ],
+  "stickies": [
+    { "id": "q1", "frame": "questions", "color": "green", "text": "Where should a new user start?" },
+    { "id": "q2", "frame": "questions", "color": "green", "text": "An empty board feels hard to begin" },
+    { "id": "q3", "frame": "questions", "color": "red", "text": "Do people know they can paste from a spreadsheet?" },
+    { "id": "g1", "frame": "guidance", "color": "pink", "text": "Show example notes on a new board" },
+    { "id": "g2", "frame": "guidance", "color": "pink", "text": "Add a short introduction" },
+    { "id": "g3", "frame": "guidance", "color": "pink", "text": "Link sample boards from the empty board" },
+    { "id": "g4", "frame": "guidance", "color": "pink", "text": "Highlight the shortcuts once" },
+    { "id": "d1", "frame": "discovery", "color": "violet", "text": "Collect use cases from early users" },
+    { "id": "d2", "frame": "discovery", "color": "violet", "text": "Watch two people start their first board" },
+    { "id": "e1", "frame": "next", "color": "sky", "text": "Offer a KPT sample in the guide" },
+    { "id": "e2", "frame": "next", "color": "sky", "text": "Ask 3 users about getting started next week" }
+  ],
+  "connections": [
+    { "from": "q2", "to": "guidance" },
+    { "from": "q1", "to": "discovery" },
+    { "from": "guidance", "to": "e1" },
+    { "from": "discovery", "to": "e2" }
+  ]
+}

@@ -123,6 +123,8 @@ export const en = {
   'consent.deny': 'Decline',
 
   'files.opened': 'Opened {name}.',
+  'files.dropHint': 'Drop to open the board file',
+  'files.openedPasted': 'Opened the pasted board. Undo returns to the previous one.',
   'files.tooLarge': 'the file is larger than {size} MB',
   'files.openFailed': 'This file cannot be opened: {reason}',
 

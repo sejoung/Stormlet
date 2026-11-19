@@ -1,0 +1,48 @@
+{
+  "format": "stormlet",
+  "version": 12,
+  "title": "KPT retro · Sprint 12",
+  "frames": [
+    { "id": "keep", "title": "Keep · Continue", "layout": "column" },
+    { "id": "problem", "title": "Problem · Difficulties", "layout": "column" },
+    { "id": "try", "title": "Try · Proposals", "layout": "column" },
+    { "id": "actions", "title": "Actions · Agreed commitments", "layout": "column", "color": "green" }
+  ],
+  "stickies": [
+    {
+      "id": "intro",
+      "objectType": "text",
+      "width": 720,
+      "text": "1. Each person keeps one colour  2. Write Keep / Problem / Try  3. Group themes  4. Agree actions"
+    },
+    { "id": "k1", "frame": "keep", "color": "yellow", "text": "Mina\nSmall releases brought fast feedback" },
+    { "id": "k2", "frame": "keep", "color": "sky", "text": "Jun\nPairing helped me get unstuck" },
+    { "id": "k3", "frame": "keep", "color": "pink", "text": "Sera\nShort demos showed our progress" },
+    { "id": "p1", "frame": "problem", "color": "yellow", "text": "Mina\nLate reviews blocked my next task" },
+    { "id": "p2", "frame": "problem", "color": "sky", "text": "Jun\nI sometimes missed review requests" },
+    { "id": "p3", "frame": "problem", "color": "pink", "text": "Sera\nI heard about requirement changes late" },
+    { "id": "t1", "frame": "try", "color": "yellow", "text": "Mina\nReserve a daily review time" },
+    { "id": "t2", "frame": "try", "color": "sky", "text": "Jun\nPut urgent review requests in one channel" },
+    { "id": "t3", "frame": "try", "color": "pink", "text": "Sera\nReview changes together each Monday" },
+    {
+      "id": "a1",
+      "frame": "actions",
+      "color": "green",
+      "width": 240,
+      "text": "Check the review channel daily at 16:00\nOwner: Jun · From next Monday"
+    },
+    {
+      "id": "a2",
+      "frame": "actions",
+      "color": "green",
+      "width": 240,
+      "text": "Review requirement changes in Monday planning\nOwner: Sera · From next sprint"
+    }
+  ],
+  "connections": [
+    { "from": "p1", "to": "t1" },
+    { "from": "p3", "to": "t3" },
+    { "from": "t2", "to": "a1", "dashed": true, "label": "agreed" },
+    { "from": "t3", "to": "a2", "dashed": true, "label": "agreed" }
+  ]
+}

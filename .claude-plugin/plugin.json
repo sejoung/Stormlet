@@ -1,0 +1,13 @@
+{
+  "name": "stormlet",
+  "description": "Create and read Stormlet boards (.stormlet): retros, idea grouping, event storming and more",
+  "version": "0.1.0",
+  "author": {
+    "name": "sejoung",
+    "url": "https://github.com/sejoung"
+  },
+  "homepage": "https://sejoung.github.io/Stormlet/",
+  "repository": "https://github.com/sejoung/Stormlet",
+  "license": "MIT",
+  "skills": ["./skills/stormlet"]
+}

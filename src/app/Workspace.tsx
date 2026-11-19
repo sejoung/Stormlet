@@ -6,7 +6,6 @@ import type { BoardLibrary, BoardStore } from '../domain/store';
 import { isEmptyBoard } from '../domain/model';
 import type { LocalePreference } from '../i18n/messages';
 import { reactionIdentity } from '../adapters/storage/web-storage';
-import { BoardCanvas } from '../components/board/BoardCanvas';
 import type { BoardTool } from '../components/board/kinds';
 import { Toolbar } from '../components/toolbar/Toolbar';
 import { CreationToolbar } from '../components/toolbar/CreationToolbar';
@@ -24,15 +23,13 @@ import { useBoardMenus } from './menus/useBoardMenus';
 import { BoardMenus } from './menus/BoardMenus';
 import { useSelection } from './selection/useSelection';
 import { selectionCommands } from './selection/selection-commands';
-import { NoteSelection } from './selection/NoteSelection';
-import { ObjectToolbars } from './selection/ObjectToolbars';
 import { useBoardSearch } from './panels/useBoardSearch';
+import { CanvasArea } from './panels/CanvasArea';
 import { useStatus } from './panels/useStatus';
 import { useBoardView } from './view/useBoardView';
 import { useNoteEditing } from './notes/useNoteEditing';
 import { useMinimap } from './view/useMinimap';
 import { useGrid } from './view/useGrid';
-import { CanvasPanels } from './panels/CanvasPanels';
 import { diagnostics } from './diagnostics/diagnostics';
 import { useSaveHealth } from './diagnostics/useSaveHealth';
 import { useDrive, type DriveServices } from './drive/useDrive';
@@ -66,7 +63,7 @@ export function Workspace({
   const defaults = useCreationDefaults();
   const pen = usePenSession(defaults.pen, edit, newId);
   const canvas = useBoardView();
-  const { view, viewport } = canvas;
+  const { view } = canvas;
   const minimap = useMinimap();
   const grid = useGrid();
   const [tool, setTool] = useState<BoardTool>('interact');
@@ -165,6 +162,7 @@ export function Workspace({
         ? frames.paste(source, at ?? canvas.boardCenter())
         : actions.pasteNotes(source, at),
     onText: actions.addCells,
+    onBoardText: (text) => void openText(text),
     onCut: commands.cut,
     onStatus: setStatus,
   });
@@ -175,7 +173,7 @@ export function Workspace({
     selectFrame,
     selectConnection: selected.selectConnection,
   });
-  const { save, onOpen, startFrom, newBoard, exportImage } = useBoardFiles({
+  const { save, onOpen, openText, startFrom, newBoard, exportImage } = useBoardFiles({
     store,
     library,
     edit,
@@ -286,76 +284,26 @@ export function Workspace({
                 setDialog('bulk');
               }}
             />
-            <div className="canvas-area">
-              <BoardCanvas
-                board={board}
-                links={links}
-                frames={frames}
-                view={view}
-                pen={pen}
-                viewport={viewport}
-                selection={notes.selection}
-                editing={notes.editing}
-                seed={notes.seed}
-                reactor={reactor}
-                matches={search.matches}
-                element={canvas.element}
-                tool={tool}
-                grid={grid}
-                onViewChange={canvas.setView}
-                onSelect={selected.selectNotes}
-                onMove={notes.move}
-                onResize={notes.place}
-                onContextMenu={menus.onNote}
-                onCanvasMenu={menus.onCanvas}
-                onAdd={notes.add}
-                onAddText={notes.addText}
-                onStartEdit={notes.startEdit}
-                onCommitText={notes.commitText}
-                onDuplicate={actions.duplicate}
-                onReact={(id, emoji) => actions.react(emoji, [id])}
-              />
-              <ObjectToolbars
-                hidden={menus.open}
-                board={board}
-                view={view}
-                frames={frames}
-                links={links}
-                viewport={viewport}
-                onDeleteFrame={frames.remove}
-              />
-              {!!activeIds.length && !menus.open && (
-                <NoteSelection
-                  notes={notes.activeNotes}
-                  ids={activeIds}
-                  view={view}
-                  viewport={viewport}
-                  element={canvas.element}
-                  actions={actions}
-                  edit={edit}
-                  onResize={notes.resize}
-                  flushEditor={flushEditor}
-                  onMenu={menus.onDetails}
-                  onFrame={() => {
-                    flushEditor();
-                    frames.surround(activeIds);
-                  }}
-                />
-              )}
-              <CanvasPanels
-                board={board}
-                canvas={canvas}
-                search={search}
-                minimap={minimap}
-                tool={tool}
-                onFound={(id) => {
-                  selected.selectNotes([id]);
-                  fit([id]);
-                }}
-                onFit={() => fit()}
-                onHelp={() => setDialog('help')}
-              />
-            </div>
+            <CanvasArea
+              board={board}
+              tool={tool}
+              canvas={canvas}
+              notes={notes}
+              links={links}
+              frames={frames}
+              pen={pen}
+              actions={actions}
+              menus={menus}
+              selected={selected}
+              search={search}
+              minimap={minimap}
+              grid={grid}
+              reactor={reactor}
+              edit={edit}
+              flushEditor={flushEditor}
+              onFit={fit}
+              onHelp={() => setDialog('help')}
+            />
           </main>
           <BoardMenus
             menu={menus.menu}

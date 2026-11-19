@@ -1,0 +1,42 @@
+{
+  "format": "stormlet",
+  "version": 12,
+  "title": "Event storming · Order flow",
+  "frames": [
+    { "id": "order", "title": "Order", "layout": "column" },
+    { "id": "payment", "title": "Payment", "layout": "column" },
+    { "id": "shipping", "title": "Shipping", "layout": "column" }
+  ],
+  "stickies": [
+    {
+      "id": "legend",
+      "objectType": "text",
+      "width": 900,
+      "text": "Orange event · Blue command · Yellow actor · Purple policy · Gold aggregate · Pink external system · Red hotspot"
+    },
+    { "id": "o-actor", "frame": "order", "color": "yellow", "text": "Customer" },
+    { "id": "o-cmd", "frame": "order", "color": "blue", "text": "Place order" },
+    { "id": "o-agg", "frame": "order", "color": "gold", "text": "Order" },
+    { "id": "o-evt", "frame": "order", "color": "orange", "text": "Order placed" },
+    { "id": "o-hot", "frame": "order", "color": "red", "text": "What if stock runs out?" },
+    { "id": "p-policy", "frame": "payment", "color": "purple", "text": "Whenever an order is placed, request payment" },
+    { "id": "p-ext", "frame": "payment", "color": "pink", "text": "Payment provider" },
+    { "id": "p-evt", "frame": "payment", "color": "orange", "text": "Payment approved" },
+    { "id": "p-hot", "frame": "payment", "color": "red", "text": "How do failed payments retry?" },
+    { "id": "s-policy", "frame": "shipping", "color": "purple", "text": "Whenever payment is approved, prepare shipment" },
+    { "id": "s-read", "frame": "shipping", "color": "green", "text": "Packing list" },
+    { "id": "s-evt", "frame": "shipping", "color": "orange", "text": "Shipment dispatched" },
+    { "id": "s-hot", "frame": "shipping", "color": "red", "text": "When is cancellation still allowed?" }
+  ],
+  "connections": [
+    { "from": "o-actor", "to": "o-cmd" },
+    { "from": "o-cmd", "to": "o-agg" },
+    { "from": "o-agg", "to": "o-evt" },
+    { "from": "o-evt", "to": "p-policy" },
+    { "from": "p-policy", "to": "p-ext" },
+    { "from": "p-ext", "to": "p-evt" },
+    { "from": "p-evt", "to": "s-policy" },
+    { "from": "s-policy", "to": "s-read" },
+    { "from": "s-read", "to": "s-evt" }
+  ]
+}

@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { MenuButton, MenuItem, MenuSection } from './MenuButton';
 import { useT } from '../common/i18n';
+import { FileDrop } from '../files/FileDrop';
 
 /** Picture formats a board can be exported as. */
 export type ImageFormat = 'png' | 'svg';
@@ -23,7 +24,8 @@ export interface FileMenuDrive {
 
 /**
  * Everything about where the board is kept, in one place: local files, then Google Drive.
- * The hidden file input stays mounted so ⌘/Ctrl+O can open it while the menu is closed.
+ * The hidden file input stays mounted so ⌘/Ctrl+O can open it while the menu is closed,
+ * and a board file dropped on the page opens the same way.
  */
 export function FileMenu({
   fileInput,
@@ -166,6 +168,7 @@ export function FileMenu({
           event.target.value = '';
         }}
       />
+      <FileDrop onOpen={onOpenFile} />
     </>
   );
 }

@@ -121,6 +121,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'consent.deny': '거부',
 
   'files.opened': '{name}을(를) 열었습니다.',
+  'files.dropHint': '놓으면 보드 파일을 엽니다',
+  'files.openedPasted': '붙여넣은 보드를 열었습니다. 실행 취소하면 이전 보드로 돌아갑니다.',
   'files.tooLarge': '파일이 {size}MB보다 큽니다',
   'files.openFailed': '열 수 없는 파일입니다: {reason}',
 

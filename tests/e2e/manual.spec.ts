@@ -8,7 +8,7 @@ async function checkGuide(guide: Page, contents: string) {
     .getByRole('navigation', { name: contents })
     .getByRole('link')
     .evaluateAll((links) => links.map((link) => link.getAttribute('href')!));
-  expect(targets).toHaveLength(13);
+  expect(targets).toHaveLength(14);
   for (const target of targets) await expect(guide.locator(target)).toHaveCount(1);
   const downloads = guide.locator('#examples a[download]');
   await expect(downloads).toHaveCount(3);
@@ -19,6 +19,15 @@ async function checkGuide(guide: Page, contents: string) {
     const board = parseBoard(await response.text());
     expect(Object.keys(board.frames ?? {}).length).toBeGreaterThanOrEqual(3);
     expect(Object.keys(board.stickies).length).toBeGreaterThanOrEqual(6);
+  }
+  // The AI skill's downloads are built from skills/stormlet (ADR 0017).
+  const skill = guide.locator('#ai a[download]');
+  await expect(skill).toHaveCount(3);
+  for (const link of await skill.all()) {
+    const url = new URL((await link.getAttribute('href'))!, guide.url()).href;
+    const response = await guide.request.get(url);
+    expect(response.ok()).toBe(true);
+    expect((await response.body()).length).toBeGreaterThan(1000);
   }
   const images = guide.locator('main img');
   expect(await images.count()).toBe(22);

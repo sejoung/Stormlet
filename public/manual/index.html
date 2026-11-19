@@ -39,6 +39,7 @@
           <li><a href="#drive">Google Drive</a></li>
           <li><a href="#tabs">탭과 보드</a></li>
           <li><a href="#files">파일 열기·내려받기·내보내기</a></li>
+          <li><a href="#ai">AI로 보드 만들기</a></li>
           <li><a href="#shortcuts">단축키</a></li>
           <li><a href="#faq">자주 묻는 질문</a></li>
         </ol>
@@ -666,7 +667,7 @@
             </li>
             <li>
               <b>파일 → 열기…</b>(<kbd>Ctrl/Cmd</kbd>+<kbd>O</kbd>)로 <code>.stormlet</code> 파일을
-              엽니다. 여는 것도 실행 취소할 수 있습니다.
+              엽니다. 파일을 보드 위에 끌어다 놓아도 열립니다. 여는 것도 실행 취소할 수 있습니다.
             </li>
             <li>Drive에 있는 보드는 <b>파일 → Drive에서 열기…</b>로 엽니다.</li>
             <li>
@@ -682,8 +683,74 @@
           </ul>
         </section>
 
+        <section id="ai">
+          <h2>11. AI로 보드 만들기</h2>
+          <p>
+            Claude, ChatGPT, Codex 같은 AI에게 Stormlet 스킬을 한 번 넣어 두면 “지난 스프린트 KPT
+            보드 만들어 줘”처럼 말로 보드를 만들 수 있습니다. AI는 메모와 프레임의 내용만 쓰고,
+            배치는 Stormlet이 파일을 열 때 알아서 합니다. 받은 보드를 AI에게 다시 주면 요약하거나
+            문서·계획으로 정리해 줍니다.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>쓰는 곳</th>
+                <th>스킬 넣는 방법</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Claude Code</td>
+                <td><code>/plugin install stormlet --marketplace sejoung/Stormlet</code></td>
+              </tr>
+              <tr>
+                <td>Codex, Cursor 등 코딩 에이전트</td>
+                <td><code>npx skills add sejoung/Stormlet</code></td>
+              </tr>
+              <tr>
+                <td>claude.ai, Claude 데스크톱</td>
+                <td>
+                  <a href="../skill/stormlet-skill.zip" download>스킬 zip</a>을 받아
+                  <b>Customize → Skills</b>에서 업로드합니다. 설정에서 코드 실행이 켜져 있어야
+                  합니다.
+                </td>
+              </tr>
+              <tr>
+                <td>ChatGPT</td>
+                <td>
+                  <a href="../skill/stormlet-skill.zip" download>스킬 zip</a>을 받아
+                  <b>Skills → Create → Upload from your computer</b>로 올립니다. 스킬을 쓸 수 있는
+                  요금제에서만 보입니다.
+                </td>
+              </tr>
+              <tr>
+                <td>스킬이 없는 채팅</td>
+                <td>
+                  <a href="../skill/stormlet-prompt.md" download>프롬프트 파일</a>의 내용을 대화
+                  처음에 붙여 넣고, 만들 보드를 부탁합니다.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ul>
+            <li>
+              AI가 준 <code>.stormlet</code> 파일을 보드 위에 <b>끌어다 놓으면</b> 바로 열립니다.
+              <b>파일 → 열기…</b>로 열어도 됩니다.
+            </li>
+            <li>
+              AI가 파일 대신 JSON을 보여 주면 그 내용을 복사해 보드에 붙여 넣습니다
+              (<kbd>Ctrl/Cmd</kbd>+<kbd>V</kbd>). 코드 블록의 <code>```json</code> 표시가 같이
+              복사되어도 괜찮습니다.
+            </li>
+            <li>
+              여는 것은 지금 보드를 바꾸지만 실행 취소하면 이전 보드로 돌아갑니다. 마음에 들지
+              않으면 AI에게 고쳐 달라고 한 뒤 다시 여세요.
+            </li>
+          </ul>
+        </section>
+
         <section id="shortcuts">
-          <h2>11. 단축키</h2>
+          <h2>12. 단축키</h2>
           <div class="split">
             <figure>
               <img src="images/ko/dialog-help.png" alt="단축키 도움말 대화상자" />
@@ -790,7 +857,7 @@
         </section>
 
         <section id="faq">
-          <h2>12. 자주 묻는 질문</h2>
+          <h2>13. 자주 묻는 질문</h2>
           <details>
             <summary>보드 이름 옆에 ‘저장되지 않음’이 떠요.</summary>
             <p>

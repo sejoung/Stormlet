@@ -1,0 +1,31 @@
+/* Shown only while a file is dragged over the page; events pass through to the window. */
+.file-drop {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border: 3px dashed var(--accent);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  pointer-events: none;
+}
+.file-drop-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 14px 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  word-break: keep-all;
+}
+.file-drop-hint .app-icon {
+  flex: none;
+  color: var(--accent);
+}

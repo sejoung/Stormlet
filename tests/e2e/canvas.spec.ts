@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import type { Page } from '@playwright/test';
 import {
   test,
   expect,
@@ -126,3 +128,32 @@ test('moves the view from the minimap and remembers it is open', async ({ page }
 const xy = (at: { x: number; y: number }) => [at.x, at.y] as const;
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.hypot(a.x - b.x, a.y - b.y);
+
+/** Drop `text` on the page as a file, as the desktop does (ADR 0017). */
+async function dropFile(page: Page, text: string, name: string) {
+  await page.evaluate(
+    ([content, fileName]) => {
+      const data = new DataTransfer();
+      data.items.add(new File([content], fileName, { type: 'application/json' }));
+      for (const type of ['dragenter', 'dragover', 'drop'])
+        document.body.dispatchEvent(
+          new DragEvent(type, { dataTransfer: data, bubbles: true, cancelable: true }),
+        );
+    },
+    [text, name],
+  );
+}
+
+for (const example of ['kpt', 'ideas', 'event-storming']) {
+  test(`opens the AI skill's ${example} example dropped on the page`, async ({ page }, info) => {
+    const text = readFileSync(`skills/stormlet/examples/${example}.stormlet`, 'utf8');
+    await page.goto('/');
+    await dropFile(page, text, `${example}.stormlet`);
+    await expect(page.getByText(`${example}.stormlet을(를) 열었습니다.`)).toBeVisible();
+    await page.getByRole('button', { name: '보기', exact: true }).click();
+    await page.getByRole('menuitem', { name: '모든 메모 보기', exact: true }).click();
+    for (const note of JSON.parse(text).stickies as { text: string }[])
+      await expect(page.getByText(note.text.split('\n')[1] ?? note.text).first()).toBeVisible();
+    await screenshot(page, info, `skill-${example}`);
+  });
+}

@@ -1,6 +1,7 @@
 import { isStickyId } from '../../domain/ids';
-import { isStickySize } from '../../domain/sticky-size';
+import { DEFAULT_STICKY_SIZE, isStickySize } from '../../domain/sticky-size';
 import {
+  DEFAULT_STICKY_APPEARANCE,
   isStickyKind,
   isStickyColor,
   KIND_COLORS,
@@ -16,6 +17,8 @@ import type { Connection } from '../../domain/connections/model';
 import { readFrames } from './frames';
 import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
 import { readInk } from './drawing/ink';
+import { DEFAULT_TEXT_SIZE } from '../../domain/text/model';
+import { layoutDraft, type DraftSticky } from '../../domain/layout/auto-layout';
 
 /**
  * The `.stormlet` file: readable JSON with stickies listed bottom to top. Unknown fields
@@ -23,7 +26,10 @@ import { readInk } from './drawing/ink';
  */
 export const FORMAT = 'stormlet';
 // Version 11 adds pen drawings; older builds refuse it rather than lose their ink.
-export const FORMAT_VERSION = 11;
+// Version 12 lets a file leave out positions, sizes and styles (ADR 0017).
+export const FORMAT_VERSION = 12;
+/** From this version a file may be a draft: positions and defaults are filled in on read. */
+export const DRAFT_VERSION = 12;
 export const FILE_EXTENSION = '.stormlet';
 /**
  * The media type board files carry in Google Drive, so Drive and the Picker can tell them
@@ -77,13 +83,34 @@ const isSupportedVersion = (version: unknown): version is number =>
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value);
 
-function readSticky(value: unknown, index: number, version: number): Sticky {
+/** Size a draft note takes when it gives none: a square note, or a text box. */
+const draftSize = (objectType: unknown) =>
+  objectType === 'text' ? DEFAULT_TEXT_SIZE : DEFAULT_STICKY_SIZE;
+
+/**
+ * One note of a file. A draft note (ADR 0017) may leave out its position, size, kind,
+ * color and text, and may name its frame for the layout step; a drawing keeps its box,
+ * since its ink is relative to it.
+ */
+function readSticky(value: unknown, index: number, version: number): DraftSticky {
   const item = (value ?? {}) as Record<string, unknown>;
-  const { id, kind, text, x, y, z } = item;
-  const color = version === 1 && isStickyKind(kind) ? KIND_COLORS[kind] : item.color;
-  const width = version < 3 ? LEGACY_STICKY_SIZE.width : item.width;
-  const height = version < 3 ? LEGACY_STICKY_SIZE.height : item.height;
   const objectType = item.objectType;
+  const draft = version >= DRAFT_VERSION;
+  const loose = draft && objectType !== 'drawing';
+  const or = (given: unknown, fallback: unknown) =>
+    draft && given === undefined ? fallback : given;
+  const { id, x, y, z } = item;
+  // Older files drop unknown keys, so only a draft reads its frame hint.
+  const frame = draft ? item.frame : undefined;
+  const kind = or(item.kind, null);
+  const text = or(item.text, '');
+  const color =
+    version === 1 && isStickyKind(kind)
+      ? KIND_COLORS[kind]
+      : or(item.color, DEFAULT_STICKY_APPEARANCE.color);
+  const fallback = loose ? draftSize(objectType) : { width: undefined, height: undefined };
+  const width = version < 3 ? LEGACY_STICKY_SIZE.width : (item.width ?? fallback.width);
+  const height = version < 3 ? LEGACY_STICKY_SIZE.height : (item.height ?? fallback.height);
   if (
     !isStickyId(id) ||
     !(isStickyKind(kind) || (version >= 2 && kind === null)) ||
@@ -94,12 +121,11 @@ function readSticky(value: unknown, index: number, version: number): Sticky {
       (version >= 11 && objectType === 'drawing')
     ) ||
     typeof text !== 'string' ||
-    !isFiniteNumber(x) ||
-    !isFiniteNumber(y) ||
-    !isFiniteNumber(z) ||
+    ![x, y, z].every((v) => isFiniteNumber(v) || (loose && v === undefined)) ||
     !isFiniteNumber(width) ||
     !isFiniteNumber(height) ||
-    !isStickySize({ width, height }, objectType)
+    !isStickySize({ width, height }, objectType) ||
+    !(frame === undefined || isStickyId(frame))
   )
     throw new FormatError(`Sticky ${index} is malformed.`);
   try {
@@ -110,16 +136,32 @@ function readSticky(value: unknown, index: number, version: number): Sticky {
       kind,
       color,
       text,
-      x,
-      y,
-      z,
+      ...(x === undefined ? {} : { x }),
+      ...(y === undefined ? {} : { y }),
+      ...(z === undefined ? {} : { z }),
       width,
       height,
       ...(version >= 4 ? readDetails(item) : {}),
-    };
+      ...(frame === undefined ? {} : { frame }),
+    } as DraftSticky;
   } catch {
     throw new FormatError(`Sticky ${index} has malformed details.`);
   }
+}
+
+/**
+ * The board file in pasted text, or null when the text is not one. An AI that cannot
+ * attach files shows the file as a code block, so its Markdown fence is accepted too.
+ * Only the opening is checked here; opening the board validates the rest.
+ */
+export function boardFileText(text: string): string | null {
+  const body = text
+    .trim()
+    .replace(/^```[\w-]*\n/, '')
+    .replace(/\n```$/, '')
+    .trim();
+  const object = body.startsWith('{') && body.endsWith('}');
+  return object && /"format"\s*:\s*"stormlet"/.test(body) ? body : null;
 }
 
 /** Larger files are refused before reading them; boards are far smaller. */
@@ -141,22 +183,27 @@ export function parseBoard(content: string): Board {
   const title = version >= 5 ? file.title : undefined;
   if (title !== undefined && (typeof title !== 'string' || normalizeBoardTitle(title) !== title))
     throw new FormatError('The board title is malformed.');
-  const stickies: Record<string, Sticky> = {};
+  const draft = version >= DRAFT_VERSION;
+  const notes = new Map<string, DraftSticky>();
   file.stickies.forEach((value, index) => {
     const sticky = readSticky(value, index, version);
-    if (Object.hasOwn(stickies, sticky.id))
-      throw new FormatError(`Sticky ID ${sticky.id} appears twice.`);
-    stickies[sticky.id] = sticky;
+    if (notes.has(sticky.id)) throw new FormatError(`Sticky ID ${sticky.id} appears twice.`);
+    notes.set(sticky.id, sticky);
   });
-  const board: Board = { ...(title === undefined ? {} : { title }), stickies };
+  let drafts;
   try {
-    const frames = version >= 7 ? readFrames(file.frames, version < 8) : {};
-    if (Object.keys(frames).length) board.frames = frames;
+    drafts = Object.values(version >= 7 ? readFrames(file.frames, version < 8, draft) : {});
   } catch {
     throw new FormatError('The frames are malformed.');
   }
+  // Positioned objects keep their place; a draft's other objects are placed now.
+  const placed = layoutDraft([...notes.values()], drafts);
+  const stickies = Object.fromEntries(placed.stickies.map((note) => [note.id, note]));
+  const board: Board = { ...(title === undefined ? {} : { title }), stickies };
+  if (placed.frames.length)
+    board.frames = Object.fromEntries(placed.frames.map((frame) => [frame.id, frame]));
   try {
-    const connections = version >= 6 ? readConnections(file.connections, board) : {};
+    const connections = version >= 6 ? readConnections(file.connections, board, draft) : {};
     if (Object.keys(connections).length) board.connections = connections;
   } catch {
     throw new FormatError('The connections are malformed.');

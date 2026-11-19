@@ -42,6 +42,7 @@
           <li><a href="#drive">Google Drive</a></li>
           <li><a href="#tabs">Tabs and boards</a></li>
           <li><a href="#files">Opening, downloading and exporting files</a></li>
+          <li><a href="#ai">Making boards with AI</a></li>
           <li><a href="#shortcuts">Keyboard shortcuts</a></li>
           <li><a href="#faq">Questions</a></li>
         </ol>
@@ -695,7 +696,7 @@
             </li>
             <li>
               <b>File → Open…</b> (<kbd>Ctrl/Cmd</kbd>+<kbd>O</kbd>) opens a <code>.stormlet</code>
-              file; opening can be undone.
+              file, and so does dropping the file on the board; opening can be undone.
             </li>
             <li>Boards in Drive open with <b>File → Open from Drive…</b>.</li>
             <li>
@@ -712,8 +713,73 @@
           </ul>
         </section>
 
+        <section id="ai">
+          <h2>11. Making boards with AI</h2>
+          <p>
+            Give an AI such as Claude, ChatGPT or Codex the Stormlet skill once, and you can make
+            boards by asking, as in “Make a KPT board for last sprint”. The AI writes the notes and
+            frames; Stormlet lays them out when it opens the file. Hand a board back to the AI to
+            have it summarized or turned into a document or plan.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Where</th>
+                <th>How to add the skill</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Claude Code</td>
+                <td><code>/plugin install stormlet --marketplace sejoung/Stormlet</code></td>
+              </tr>
+              <tr>
+                <td>Codex, Cursor and other coding agents</td>
+                <td><code>npx skills add sejoung/Stormlet</code></td>
+              </tr>
+              <tr>
+                <td>claude.ai, Claude desktop</td>
+                <td>
+                  Download the <a href="../../skill/stormlet-skill.zip" download>skill zip</a> and
+                  upload it in <b>Customize → Skills</b>. Code execution must be on in the settings.
+                </td>
+              </tr>
+              <tr>
+                <td>ChatGPT</td>
+                <td>
+                  Download the <a href="../../skill/stormlet-skill.zip" download>skill zip</a> and
+                  upload it with <b>Skills → Create → Upload from your computer</b>. Skills appear
+                  only on plans that offer them.
+                </td>
+              </tr>
+              <tr>
+                <td>Chats without skills</td>
+                <td>
+                  Paste the <a href="../../skill/stormlet-prompt.md" download>prompt file</a> at the
+                  start of the chat, then ask for the board you want.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ul>
+            <li>
+              <b>Drag</b> the <code>.stormlet</code> file the AI gives you <b>onto the board</b> to
+              open it. <b>File → Open…</b> works too.
+            </li>
+            <li>
+              If the AI shows JSON instead of a file, copy it and paste it on the board
+              (<kbd>Ctrl/Cmd</kbd>+<kbd>V</kbd>). It is fine if the code block’s
+              <code>```json</code> line comes along.
+            </li>
+            <li>
+              Opening replaces the current board, and Undo brings the previous one back. If the
+              result is not right, ask the AI to change it and open it again.
+            </li>
+          </ul>
+        </section>
+
         <section id="shortcuts">
-          <h2>11. Keyboard shortcuts</h2>
+          <h2>12. Keyboard shortcuts</h2>
           <div class="split">
             <figure>
               <img src="../images/en/dialog-help.png" alt="The keyboard shortcuts dialog" />
@@ -820,7 +886,7 @@
         </section>
 
         <section id="faq">
-          <h2>12. Questions</h2>
+          <h2>13. Questions</h2>
           <details>
             <summary>“Not saved” shows next to the board name.</summary>
             <p>

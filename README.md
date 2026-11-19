@@ -18,7 +18,21 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 
 ## Example boards
 
-Preview and download [KPT retrospectives, idea organization and event storming](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor.
+Preview and download [KPT retrospectives, idea organization and event storming](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor, or drop them on the board.
+
+## Making boards with AI
+
+Add the Stormlet skill to an AI such as Claude, ChatGPT or Codex, and you can make boards by asking: "Make a KPT board for last sprint". The AI writes the notes and frames; Stormlet lays them out when it opens the file. Drop the `.stormlet` file it gives you on the board to open it, or, when the AI only shows JSON, copy it and paste it on the board ([guide](https://sejoung.github.io/Stormlet/manual/en/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
+
+| Where                                 | How to add the skill                                                                                                  |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Claude Code                           | `/plugin install stormlet --marketplace sejoung/Stormlet`                                                             |
+| Codex, Cursor and other coding agents | `npx skills add sejoung/Stormlet`                                                                                     |
+| claude.ai, Claude desktop             | Upload the [skill zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip) in **Customize → Skills**         |
+| ChatGPT                               | Upload the [skill zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip) with **Skills → Create → Upload** |
+| Chats without skills                  | Paste the [prompt file](https://sejoung.github.io/Stormlet/skill/stormlet-prompt.md) at the start of the chat         |
+
+On Claude Code older than 2.1.275, run `/plugin marketplace add sejoung/Stormlet`, then `/plugin install stormlet@stormlet`. The skill's source is [`skills/stormlet`](skills/stormlet).
 
 ## Features
 
@@ -77,6 +91,7 @@ Preview and download [KPT retrospectives, idea organization and event storming](
 - Autosave in the browser, a board for each tab: a new board opens in a new tab, coming back resumes the last board, and boards of closed tabs stay under File → Recent boards ([ADR 0011](docs/adr/0011-board-per-tab.md))
 - Optional Google Drive sync, the main place for boards once connected: a Drive button in the toolbar connects and saves, the chosen folder is shared by every tab so new boards go there with their first edit, and `Ctrl/Cmd+S` saves to Drive; edits are saved automatically and changes made elsewhere are merged, with a choice only for real conflicts ([setup](docs/google-drive.md))
 - Export the whole board from the File menu as a PNG (at 2× resolution) or SVG picture, drawn in the light theme on white so it is ready to post elsewhere
+- Drop a `.stormlet` file anywhere on the page to open it, or paste a board file’s JSON on the board, as an AI shows one it cannot attach; files written without coordinates are laid out as they open ([ADR 0017](docs/adr/0017-ai-authored-boards.md))
 - Rename the board by double-clicking its title; the title becomes the download filename
 - A menu bar under the title, listing each command with its shortcut: File (new board, recent boards, open, download, PNG/SVG export, Google Drive), Edit (undo, clipboard, duplicate, delete, select all, group, lock, search), Arrange (align, distribute, grid, match size), View (zoom, fit, minimap, grid) and Settings (language, usage statistics, keyboard help, user guide, troubleshooting); the user guide is also one click away in the toolbar
 - Keyboard help (`F1` or `?`), responsive layout and dark mode
@@ -170,7 +185,7 @@ Stormlet needs no backend: boards stay in the browser, and the browser reads and
 
 | Layer             | Responsibility                                                                                                         |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `src/domain`      | Board model, patches, commands, frames, connections, `BoardStore` interface                                            |
+| `src/domain`      | Board model, patches, commands, frames, connections, draft layout, `BoardStore` interface                              |
 | `src/application` | Editing session, undo/redo built on inverse patches, Google Drive sync                                                 |
 | `src/engine`      | Viewport, text fitting, snapping, line geometry, paste parsing, fit to view                                            |
 | `src/adapters`    | `.stormlet` file format, localStorage store, Google Drive, clipboard, file download, diagnostics log, usage statistics |
@@ -184,7 +199,7 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 
 ### File format
 
-`.stormlet` files are JSON with a `format` and `version` field. The current version is 11 and stores the title, notes, standalone text, pen drawings, connections, frames and their styles. Files from versions 1–10 can still be opened.
+`.stormlet` files are JSON with a `format` and `version` field. The current version is 12 and stores the title, notes, standalone text, pen drawings, connections, frames and their styles. From version 12, a draft file may leave out coordinates and defaults, as an AI writes it, and is laid out when it is opened ([ADR 0017](docs/adr/0017-ai-authored-boards.md)). Files from versions 1–11 can still be opened.
 
 ### Translations
 

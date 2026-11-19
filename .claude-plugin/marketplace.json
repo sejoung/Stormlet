@@ -1,0 +1,12 @@
+{
+  "name": "stormlet",
+  "description": "Stormlet sticky-note boards for AI agents",
+  "owner": { "name": "Stormlet" },
+  "plugins": [
+    {
+      "name": "stormlet",
+      "source": "./",
+      "description": "Create and read Stormlet boards (.stormlet): retros, idea grouping, event storming and more"
+    }
+  ]
+}

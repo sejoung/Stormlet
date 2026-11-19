@@ -5,7 +5,7 @@ import { stackOrder, type Board } from '../domain/model';
 import { internalConnections } from '../domain/connections/commands';
 import { frameContents, type BoardSlice } from '../domain/frames/commands';
 import { MAX_NOTE_LENGTH } from '../domain/note-details';
-import { serializeBoard, parseBoard } from '../adapters/files/stormlet-format';
+import { boardFileText, serializeBoard, parseBoard } from '../adapters/files/stormlet-format';
 import { errorDetails, log } from '../adapters/diagnostics/log';
 import {
   canReadCustomFormat,
@@ -36,6 +36,8 @@ interface Options {
   frameId?: string | null;
   onPaste(board: BoardSlice, at?: Point): void;
   onText(cells: TextCell[], at?: Point): void;
+  /** A whole board file pasted as text, which opens like a dropped file (ADR 0017). */
+  onBoardText?(text: string): void;
   onCut(): void;
   onStatus(message: string): void;
 }
@@ -92,7 +94,10 @@ const tooLarge = (board: Board) =>
   Object.keys(board.stickies).length > MAX_PASTE_NOTES ||
   Object.keys(board.frames ?? {}).length > MAX_PASTE_FRAMES;
 
-/** Paste board content when there is some, plain text as notes otherwise. */
+/**
+ * Paste board content when there is some, open a board file pasted as text, and add
+ * other plain text as notes.
+ */
 function accept(
   options: Options,
   content: ClipboardContent,
@@ -109,6 +114,8 @@ function accept(
       if (tooLarge(board)) throw new Error('Too many objects');
       return options.onPaste(board, at);
     }
+    const file = options.onBoardText && boardFileText(content.plain);
+    if (file) return options.onBoardText!(file);
     options.onText(textCells(content.plain), at);
     if (exceedsPasteLimits(content.plain))
       options.onStatus(

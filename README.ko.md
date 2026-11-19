@@ -18,7 +18,21 @@
 
 ## 활용 샘플
 
-[KPT 회고·아이디어 정리·이벤트 스토밍](https://sejoung.github.io/Stormlet/manual/#examples) 예시를 미리 보고 `.stormlet` 파일로 내려받아 수정해 보세요. 보드의 **파일 → 열기**에서 열 수 있습니다.
+[KPT 회고·아이디어 정리·이벤트 스토밍](https://sejoung.github.io/Stormlet/manual/#examples) 예시를 미리 보고 `.stormlet` 파일로 내려받아 수정해 보세요. 보드의 **파일 → 열기**나 보드에 끌어다 놓아서 열 수 있습니다.
+
+## AI로 보드 만들기
+
+Claude, ChatGPT, Codex 같은 AI에 Stormlet 스킬을 넣으면 "지난 스프린트 KPT 보드 만들어 줘"처럼 말로 보드를 만들 수 있다. AI는 메모와 프레임의 내용만 쓰고, 배치는 Stormlet이 파일을 열 때 한다. 받은 `.stormlet` 파일은 보드에 끌어다 놓으면 열린다. AI가 JSON만 보여 주면 복사해서 보드에 붙여 넣으면 된다([설명서](https://sejoung.github.io/Stormlet/manual/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
+
+| 쓰는 곳                        | 스킬 넣는 방법                                                                                                  |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Claude Code                    | `/plugin install stormlet --marketplace sejoung/Stormlet`                                                       |
+| Codex, Cursor 등 코딩 에이전트 | `npx skills add sejoung/Stormlet`                                                                               |
+| claude.ai, Claude 데스크톱     | [스킬 zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip)을 **Customize → Skills**에 업로드       |
+| ChatGPT                        | [스킬 zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip)을 **Skills → Create → Upload**로 업로드 |
+| 스킬이 없는 채팅               | [프롬프트 파일](https://sejoung.github.io/Stormlet/skill/stormlet-prompt.md)을 대화 처음에 붙여 넣기            |
+
+Claude Code 2.1.275보다 오래된 버전에서는 `/plugin marketplace add sejoung/Stormlet` 다음에 `/plugin install stormlet@stormlet`을 실행한다. 스킬 원본은 [`skills/stormlet`](skills/stormlet)에 있다.
 
 ## 기능
 
@@ -77,6 +91,7 @@
 - 브라우저 자동 저장, 탭마다 자기 보드. 새 보드는 새 탭에서 열리고, 다시 열면 마지막 보드로 시작하며, 닫은 탭의 보드는 `파일 → 최근 보드`에 남음 ([ADR 0011](docs/adr/0011-board-per-tab.md))
 - 선택 기능인 Google Drive 동기화. 연결하면 Drive가 기본 저장 위치가 됨: 툴바의 Drive 버튼으로 연결·저장하고, 고른 폴더는 모든 탭이 함께 써서 새 보드는 첫 편집 때 그 폴더에 저장되며, `Ctrl/Cmd+S`는 Drive에 저장. 보드를 Drive 폴더에 저장하거나 Drive에서 열기. 편집은 자동 저장되고 다른 곳의 변경은 합쳐지며, 실제 충돌만 선택을 묻는다 ([설정](docs/google-drive.md))
 - `파일` 메뉴에서 보드 전체를 PNG(2배 해상도)나 SVG 이미지로 내보내기. 문서·메신저에 바로 올릴 수 있도록 흰 배경의 밝은 테마로 그림
+- `.stormlet` 파일을 페이지 어디에든 끌어다 놓거나, 보드 파일 JSON을 보드에 붙여 넣어 열기. 파일을 첨부하지 못하는 AI가 보여 준 JSON도 열 수 있고, 좌표 없이 쓴 파일은 열 때 배치됨 ([ADR 0017](docs/adr/0017-ai-authored-boards.md))
 - 상단 보드 제목을 더블클릭하거나 Enter/F2로 이름 수정. 이름은 다운로드 파일명에 반영
 - 제목 아래 메뉴 막대. 명령마다 단축키를 함께 보여 줌: `파일`(새 보드, 최근 보드, 열기, 내려받기, PNG·SVG 내보내기, Google Drive), `편집`(실행 취소, 잘라내기·복사·붙여넣기, 복제, 삭제, 모두 선택, 그룹, 잠금, 검색), `정렬`(정렬·간격 맞춤·격자 정리·크기 맞춤), `보기`(확대·축소, 맞춰 보기, 미니맵, 격자), `설정`(언어, 사용 통계, 단축키 도움말, 사용 설명서, 문제 해결). 사용 설명서는 툴바에서도 바로 열 수 있음
 - 단축키 도움말(`F1`, `?`), 작은 화면과 다크 모드 지원
@@ -170,7 +185,7 @@ npm run test:e2e:ui       # Playwright UI에서 실행·디버깅
 
 | 계층              | 역할                                                                                                    |
 | ----------------- | ------------------------------------------------------------------------------------------------------- |
-| `src/domain`      | 보드 모델, 패치, 명령, 프레임, 연결선, `BoardStore` 인터페이스                                          |
+| `src/domain`      | 보드 모델, 패치, 명령, 프레임, 연결선, 초안 배치, `BoardStore` 인터페이스                               |
 | `src/application` | 편집 세션, 역패치 기반 실행 취소, Google Drive 동기화                                                   |
 | `src/engine`      | 뷰포트, 글자 크기 맞춤, 스냅, 연결선 경로, 붙여넣기 해석, 화면 맞춤                                     |
 | `src/adapters`    | `.stormlet` 파일 포맷, localStorage 저장소, Google Drive, 클립보드, 파일 다운로드, 진단 로그, 사용 통계 |
@@ -184,7 +199,7 @@ npm run test:e2e:ui       # Playwright UI에서 실행·디버깅
 
 ### 파일 포맷
 
-`.stormlet` 파일은 `format`과 `version` 필드가 있는 JSON이다. 현재 버전 11에는 제목, 메모, 독립 텍스트, 펜 그림, 연결선, 프레임과 그 서식이 저장된다. 버전 1–10 파일도 열 수 있다.
+`.stormlet` 파일은 `format`과 `version` 필드가 있는 JSON이다. 현재 버전 12에는 제목, 메모, 독립 텍스트, 펜 그림, 연결선, 프레임과 그 서식이 저장된다. 버전 12부터는 AI가 쓰기 쉽도록 좌표와 기본값을 생략한 초안 파일도 열고, 열 때 배치한다([ADR 0017](docs/adr/0017-ai-authored-boards.md)). 버전 1–11 파일도 열 수 있다.
 
 ### 번역
 
