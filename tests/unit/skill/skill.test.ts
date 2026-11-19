@@ -91,3 +91,28 @@ describe('Stormlet skill', () => {
       expect(examples).toContain(name[1]);
   });
 });
+
+// The guide publishes its own localized files, independently of the skill bundle.
+// Exercise them here so a malformed download fails before the browser suite starts.
+for (const locale of ['ko', 'en']) {
+  const dir = `public/manual/examples/${locale}`;
+  describe(`${locale} guide downloads`, () => {
+    it.each(readdirSync(dir).filter((name) => name.endsWith('.stormlet')))(
+      'opens %s without dropping any notes or connections',
+      (name) => {
+        const text = readFileSync(`${dir}/${name}`, 'utf8');
+        const raw = JSON.parse(text);
+        const board = parseBoard(text);
+        expect(Object.keys(board.stickies)).toHaveLength(raw.stickies.length);
+        expect(Object.keys(board.connections ?? {})).toHaveLength(raw.connections?.length ?? 0);
+        if (name === 'event-storming.stormlet') {
+          const legend = board.frames!.notation;
+          for (const frame of Object.values(board.frames!))
+            if (frame.id !== legend.id) expect(frame.y).toBeGreaterThan(legend.y + legend.height);
+          expect(board.stickies['key-actor'].color).toBe('yellow');
+          expect(board.stickies['key-aggregate'].color).toBe('gold');
+        }
+      },
+    );
+  });
+}
