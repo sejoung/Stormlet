@@ -4,7 +4,8 @@ import { FORMAT_VERSION, parseBoard } from '../../../src/adapters/files/stormlet
 import { STICKY_COLORS, type Sticky } from '../../../src/domain/model';
 import { FRAME_COLORS, contains } from '../../../src/domain/frames/model';
 import { CONNECTION_COLORS, CONNECTION_PATHS } from '../../../src/domain/connections/model';
-import { FRAME_LAYOUTS } from '../../../src/domain/layout/auto-layout';
+import { BOARD_LAYOUTS, FRAME_LAYOUTS } from '../../../src/domain/layout/auto-layout';
+import { NOTE_ICONS } from '../../../src/domain/note-details';
 
 /**
  * The AI skill (skills/stormlet, ADR 0017) teaches the file format from text. These checks
@@ -28,7 +29,7 @@ const overlaps = (a: Sticky, b: Sticky) =>
   a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 /** Backticked words on the line of SKILL.md that starts with `label`. */
 const listed = (label: string) =>
-  [...(skill.split('\n').find((line) => line.includes(label)) ?? '').matchAll(/`(\w+)`/g)].map(
+  [...(skill.split('\n').find((line) => line.includes(label)) ?? '').matchAll(/`([\w-]+)`/g)].map(
     (match) => match[1],
   );
 
@@ -48,6 +49,11 @@ describe('Stormlet skill', () => {
 
   it('lists exactly the values the app accepts', () => {
     expect(new Set(listed('**Note colors**'))).toEqual(new Set(STICKY_COLORS));
+    expect(listed('**Note icons**')).toEqual([...NOTE_ICONS]);
+    expect(listed('**Board layout**')).toEqual(
+      expect.arrayContaining(BOARD_LAYOUTS.filter((layout) => layout !== 'board')),
+    );
+    for (const icon of NOTE_ICONS) expect(reference).toContain(`\`${icon}\``);
     expect(listed('**Frame** (`frames[]`)')).toEqual(
       expect.arrayContaining([...FRAME_COLORS, ...FRAME_LAYOUTS]),
     );
@@ -66,6 +72,8 @@ describe('Stormlet skill', () => {
     for (const raw of file.stickies.filter((note: { frame?: string }) => note.frame))
       expect(contains(board.frames![raw.frame], board.stickies[raw.id])).toBe(true);
     for (const a of notes) for (const b of notes) if (a !== b) expect(overlaps(a, b)).toBe(false);
+    for (const raw of file.frames?.filter((frame: { frame?: string }) => frame.frame) ?? [])
+      expect(contains(board.frames![raw.frame], board.frames![raw.id])).toBe(true);
     expect(Object.keys(board.connections ?? {})).toHaveLength(file.connections?.length ?? 0);
   });
 

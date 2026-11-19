@@ -144,7 +144,7 @@ async function dropFile(page: Page, text: string, name: string) {
   );
 }
 
-for (const example of ['kpt', 'ideas', 'event-storming']) {
+for (const example of ['kpt', 'ideas', 'event-storming', 'architecture']) {
   test(`opens the AI skill's ${example} example dropped on the page`, async ({ page }, info) => {
     const text = readFileSync(`skills/stormlet/examples/${example}.stormlet`, 'utf8');
     await page.goto('/');

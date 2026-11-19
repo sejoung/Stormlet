@@ -1,0 +1,46 @@
+{
+  "format": "stormlet",
+  "version": 13,
+  "title": "Shop · System architecture",
+  "layout": "flow",
+  "frames": [
+    { "id": "cloud", "width": 200, "height": 120, "title": "Cloud · Seoul region", "layout": "flow" },
+    { "id": "edge", "width": 200, "height": 120, "title": "Public subnet", "frame": "cloud", "layout": "column", "color": "blue" },
+    { "id": "app", "width": 200, "height": 120, "title": "Private subnet · Services", "frame": "cloud", "layout": "column", "color": "blue" },
+    { "id": "data", "width": 200, "height": 120, "title": "Private subnet · Data", "frame": "cloud", "layout": "column", "color": "green" }
+  ],
+  "stickies": [
+    {
+      "id": "heading",
+      "objectType": "text",
+      "width": 900,
+      "height": 60,
+      "autoFont": false,
+      "fontSize": 20,
+      "text": "Online shop · requests flow left to right, from customers to data and partners"
+    },
+    { "id": "customer", "width": 200, "height": 120, "icon": "user", "color": "yellow", "text": "Customer\nWeb and mobile" },
+    { "id": "cdn", "width": 200, "height": 120, "frame": "edge", "icon": "web", "color": "sky", "text": "CDN\nStatic assets" },
+    { "id": "lb", "width": 200, "height": 120, "frame": "edge", "icon": "load-balancer", "color": "sky", "text": "Load balancer" },
+    { "id": "api", "width": 200, "height": 120, "frame": "app", "icon": "server", "color": "blue", "text": "API service" },
+    { "id": "auth", "width": 200, "height": 120, "frame": "app", "icon": "auth", "color": "blue", "text": "Auth service" },
+    { "id": "worker", "width": 200, "height": 120, "frame": "app", "icon": "worker", "color": "blue", "text": "Order worker" },
+    { "id": "db", "width": 200, "height": 120, "frame": "data", "icon": "database", "color": "green", "text": "Orders DB\nPostgreSQL" },
+    { "id": "cache", "width": 200, "height": 120, "frame": "data", "icon": "cache", "color": "green", "text": "Session cache\nRedis" },
+    { "id": "queue", "width": 200, "height": 120, "frame": "data", "icon": "queue", "color": "purple", "text": "Order queue" },
+    { "id": "payment", "width": 200, "height": 120, "icon": "payment", "color": "pink", "text": "Payment provider" },
+    { "id": "mail", "width": 200, "height": 120, "icon": "mail", "color": "pink", "text": "Email service" }
+  ],
+  "connections": [
+    { "from": "customer", "to": "cdn", "label": "HTTPS" },
+    { "from": "cdn", "to": "lb" },
+    { "from": "lb", "to": "api" },
+    { "from": "api", "to": "auth" },
+    { "from": "api", "to": "db" },
+    { "from": "api", "to": "cache" },
+    { "from": "api", "to": "queue", "label": "publish" },
+    { "from": "queue", "to": "worker", "dashed": true, "label": "consume" },
+    { "from": "worker", "to": "payment" },
+    { "from": "worker", "to": "mail", "dashed": true }
+  ]
+}

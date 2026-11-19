@@ -1,0 +1,46 @@
+{
+  "format": "stormlet",
+  "version": 13,
+  "title": "쇼핑몰 · 시스템 구성도",
+  "layout": "flow",
+  "frames": [
+    { "id": "cloud", "title": "클라우드 · 서울 리전", "layout": "flow" },
+    { "id": "edge", "title": "퍼블릭 서브넷", "frame": "cloud", "layout": "column", "color": "blue" },
+    { "id": "app", "title": "프라이빗 서브넷 · 서비스", "frame": "cloud", "layout": "column", "color": "blue" },
+    { "id": "data", "title": "프라이빗 서브넷 · 데이터", "frame": "cloud", "layout": "column", "color": "green" }
+  ],
+  "stickies": [
+    {
+      "id": "heading",
+      "objectType": "text",
+      "width": 900,
+      "height": 60,
+      "autoFont": false,
+      "fontSize": 20,
+      "text": "온라인 쇼핑몰 · 요청은 왼쪽 고객에서 오른쪽 데이터와 외부 서비스로 흐릅니다"
+    },
+    { "id": "customer", "width": 200, "height": 120, "icon": "user", "color": "yellow", "text": "고객\n웹 · 모바일" },
+    { "id": "cdn", "width": 200, "height": 120, "frame": "edge", "icon": "web", "color": "sky", "text": "CDN\n정적 파일" },
+    { "id": "lb", "width": 200, "height": 120, "frame": "edge", "icon": "load-balancer", "color": "sky", "text": "로드 밸런서" },
+    { "id": "api", "width": 200, "height": 120, "frame": "app", "icon": "server", "color": "blue", "text": "API 서비스" },
+    { "id": "auth", "width": 200, "height": 120, "frame": "app", "icon": "auth", "color": "blue", "text": "인증 서비스" },
+    { "id": "worker", "width": 200, "height": 120, "frame": "app", "icon": "worker", "color": "blue", "text": "주문 처리 워커" },
+    { "id": "db", "width": 200, "height": 120, "frame": "data", "icon": "database", "color": "green", "text": "주문 DB\nPostgreSQL" },
+    { "id": "cache", "width": 200, "height": 120, "frame": "data", "icon": "cache", "color": "green", "text": "세션 캐시\nRedis" },
+    { "id": "queue", "width": 200, "height": 120, "frame": "data", "icon": "queue", "color": "purple", "text": "주문 큐" },
+    { "id": "payment", "width": 200, "height": 120, "icon": "payment", "color": "pink", "text": "결제 대행사" },
+    { "id": "mail", "width": 200, "height": 120, "icon": "mail", "color": "pink", "text": "메일 서비스" }
+  ],
+  "connections": [
+    { "from": "customer", "to": "cdn", "label": "HTTPS" },
+    { "from": "cdn", "to": "lb" },
+    { "from": "lb", "to": "api" },
+    { "from": "api", "to": "auth" },
+    { "from": "api", "to": "db" },
+    { "from": "api", "to": "cache" },
+    { "from": "api", "to": "queue", "label": "발행" },
+    { "from": "queue", "to": "worker", "dashed": true, "label": "구독" },
+    { "from": "worker", "to": "payment" },
+    { "from": "worker", "to": "mail", "dashed": true }
+  ]
+}

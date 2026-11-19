@@ -4,13 +4,14 @@ import { parseBoard } from '../../src/adapters/files/stormlet-format';
 import { ko } from '../../src/i18n/locales/ko';
 import { en } from '../../src/i18n/locales/en';
 
-for (const slug of ['kpt', 'ideas', 'event-storming']) {
+for (const slug of ['kpt', 'ideas', 'event-storming', 'architecture']) {
   test(`captures downloadable ${slug} example`, async ({ page }, info) => {
     const lang = info.project.name as 'ko' | 'en';
     const messages = lang === 'ko' ? ko : en;
     const path = `public/manual/examples/${lang}/${slug}.stormlet`;
     const board = parseBoard(readFileSync(path, 'utf8'));
     if (slug === 'kpt') await page.setViewportSize({ width: 1600, height: 1300 });
+    if (slug === 'architecture') await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/');
     await page.locator('input[type="file"]').setInputFiles(path);
     for (const note of Object.values(board.stickies)) {

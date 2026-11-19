@@ -146,6 +146,49 @@
               >
             </p>
           </article>
+          <article>
+            <h3>System architecture · Online shop</h3>
+            <p>
+              Draw how services and data connect on one board, and change it as the system does.
+            </p>
+            <figure>
+              <img
+                loading="lazy"
+                src="../images/en/example-architecture.png"
+                alt="System architecture · Online shop"
+              />
+            </figure>
+            <ol>
+              <li>
+                <b>Components.</b> Give each deployable part, such as a server, database or queue,
+                one note, and pick its kind from <b>Icon</b> on the toolbar. Write its role on the
+                first line and its technology on the second.
+              </li>
+              <li>
+                <b>Boundaries.</b> Wrap clouds, regions and subnets in frames, and put frames inside
+                frames for each level.
+              </li>
+              <li>
+                <b>Flow.</b> Draw connectors from caller to callee and label them, such as HTTPS or
+                publish. Make asynchronous flows dashed.
+              </li>
+              <li>
+                <b>Colors.</b> Give each role a color: yellow for people, sky for the network, blue
+                for services, green for data, purple for queues and pink for external services.
+              </li>
+            </ol>
+            <p>
+              Ask an AI to “draw our system architecture” and it is laid out the same way (<a
+                href="#ai"
+                >Making boards with AI</a
+              >).
+            </p>
+            <p>
+              <a href="../examples/en/architecture.stormlet" download
+                >Download sample (.stormlet)</a
+              >
+            </p>
+          </article>
         </section>
 
         <section id="start">
@@ -231,6 +274,10 @@
             </figure>
             <ul>
               <li>Choose from 16 colors, bold, italic, underline and text alignment.</li>
+              <li>
+                <b>Icon</b> puts an icon such as a server, database or person above the text, for
+                drawing system diagrams.
+              </li>
               <li>
                 The text size follows the note’s size and text. A size you pick stays while the text
                 fits.
@@ -717,7 +764,8 @@
           <h2>11. Making boards with AI</h2>
           <p>
             Give an AI such as Claude, ChatGPT or Codex the Stormlet skill once, and you can make
-            boards by asking, as in “Make a KPT board for last sprint”. The AI writes the notes and
+            boards by asking, as in “Make a KPT board for last sprint”, including server
+            architecture diagrams with icons and nested boundaries. The AI writes the notes and
             frames; Stormlet lays them out when it opens the file. Hand a board back to the AI to
             have it summarized or turned into a document or plan.
           </p>

@@ -84,3 +84,47 @@ describe('draft board files (ADR 0017)', () => {
     expect(parseBoard(old([{ ...sticky('a'), frame: 'f' }])).stickies.a).toEqual(sticky('a'));
   });
 });
+
+describe('icons and nested drafts (ADR 0018)', () => {
+  const v13 = (body: object) => JSON.stringify({ format: 'stormlet', version: 13, ...body });
+
+  it('keeps a note icon, and drops one from files older than version 13', () => {
+    const board = parseBoard(v13({ stickies: [{ id: 'db', icon: 'database' }] }));
+    expect(board.stickies.db.icon).toBe('database');
+    expect(parseBoard(serializeBoard(board))).toEqual(board);
+    const old = parseBoard(draft({ stickies: [{ id: 'db', icon: 'database' }] }));
+    expect(old.stickies.db.icon).toBeUndefined();
+  });
+
+  it('refuses an unknown icon or board layout', () => {
+    expect(() => parseBoard(v13({ stickies: [{ id: 'a', icon: 'aws-lambda' }] }))).toThrow(
+      FormatError,
+    );
+    expect(() => parseBoard(v13({ layout: 'spiral', stickies: [] }))).toThrow(FormatError);
+  });
+
+  it('lays out nested frames along the lines of a flow board', () => {
+    const board = parseBoard(
+      v13({
+        layout: 'flow',
+        frames: [
+          { id: 'cloud', title: 'Cloud' },
+          { id: 'private', title: 'Private subnet', frame: 'cloud', layout: 'column' },
+        ],
+        stickies: [
+          { id: 'user', icon: 'user', text: 'User' },
+          { id: 'api', frame: 'private', icon: 'server', text: 'API' },
+          { id: 'db', frame: 'private', icon: 'database', text: 'DB' },
+        ],
+        connections: [
+          { from: 'user', to: 'api' },
+          { from: { stickyId: 'api' }, to: 'db' },
+        ],
+      }),
+    );
+    const { cloud, private: subnet } = board.frames!;
+    expect(contains(cloud, subnet)).toBe(true);
+    expect(contains(subnet, board.stickies.db)).toBe(true);
+    expect(board.stickies.user.x + board.stickies.user.width).toBeLessThan(cloud.x);
+  });
+});

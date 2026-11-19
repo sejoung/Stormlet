@@ -105,3 +105,15 @@ describe('board SVG', () => {
     expect(boardSvg(boardOf(), measure)).toBeNull();
   });
 });
+
+describe('note icon export (ADR 0018)', () => {
+  it('draws the icon centred at the top and fits the text below it', () => {
+    const plain = sticky('a', { kind: null, text: 'Orders DB', width: 160, height: 160 });
+    const withIcon = { ...plain, icon: 'database' as const };
+    const svg = boardSvg(boardOf(withIcon), measure)!.svg;
+    expect(svg).toContain('<ellipse cx="12" cy="5" rx="9" ry="3"/>');
+    expect(svg).toMatch(/translate\(62\.5 12\) scale\(1\.46\)/);
+    const textY = (markup: string) => Number(/<text x="[\d.]+" y="([\d.]+)"/.exec(markup)![1]);
+    expect(textY(svg)).toBeGreaterThan(textY(boardSvg(boardOf(plain), measure)!.svg));
+  });
+});

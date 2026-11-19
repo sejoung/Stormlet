@@ -182,3 +182,28 @@
   max-width: 100%;
   margin-top: 6px;
 }
+.panel-icon {
+  width: 320px;
+}
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+.icon-grid button {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+}
+.icon-grid button:hover {
+  background: var(--selected);
+}
+.icon-grid button[aria-pressed='true'] {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}

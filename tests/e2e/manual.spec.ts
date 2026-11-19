@@ -11,7 +11,7 @@ async function checkGuide(guide: Page, contents: string) {
   expect(targets).toHaveLength(14);
   for (const target of targets) await expect(guide.locator(target)).toHaveCount(1);
   const downloads = guide.locator('#examples a[download]');
-  await expect(downloads).toHaveCount(3);
+  await expect(downloads).toHaveCount(4);
   for (const link of await downloads.all()) {
     const url = new URL((await link.getAttribute('href'))!, guide.url()).href;
     const response = await guide.request.get(url);
@@ -30,7 +30,7 @@ async function checkGuide(guide: Page, contents: string) {
     expect((await response.body()).length).toBeGreaterThan(1000);
   }
   const images = guide.locator('main img');
-  expect(await images.count()).toBe(22);
+  expect(await images.count()).toBe(23);
   for (const image of await images.all()) {
     await image.scrollIntoViewIfNeeded();
     await expect(image).toHaveAttribute('alt', /.+/);

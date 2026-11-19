@@ -1,6 +1,6 @@
 {
   "format": "stormlet",
-  "version": 12,
+  "version": 13,
   "title": "Event storming · Order flow",
   "frames": [
     { "id": "order", "title": "Order", "layout": "column" },

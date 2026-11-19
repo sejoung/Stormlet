@@ -20,6 +20,8 @@ import { isText } from '../../domain/text/model';
 import { TextColorPicker } from '../text/TextColorPicker';
 import { textInk } from '../text/colors';
 import type { MessageKey } from '../../i18n/messages';
+import { NoteIconPicker } from '../icons/NoteIconPicker';
+import { NoteIconGlyph } from '../icons/NoteIconGlyph';
 
 interface Props {
   notes: readonly Sticky[];
@@ -74,14 +76,14 @@ const FONT_SIZES = [8, 10, 12, 14, 16, 18, 24, 32, 48, 64];
 /** Rectangle notes keep their width and take this share of it as height. */
 const RECTANGLE_RATIO = 0.75;
 /** Toolbar footprint and gaps used to keep it on screen above or below the selection. */
-const PANEL = { width: 660, height: 360, margin: 12, above: 68, below: 24, minTop: 64 };
+const PANEL = { width: 700, height: 360, margin: 12, above: 68, below: 24, minTop: 64 };
 /** The arrange bar under the toolbar for a multi-note selection: its height and gap. */
 const ARRANGE_ROW = 56;
 
 /** Screen-space controls stay readable at every board zoom level. */
 export function SelectionToolbar(props: Props) {
   const t = useT();
-  const [panel, setPanel] = useState<'color' | 'align' | 'emoji' | null>(null);
+  const [panel, setPanel] = useState<'color' | 'icon' | 'align' | 'emoji' | null>(null);
   const note = props.notes[0];
   const onlyText = props.notes.every(isText);
   const textNotes = props.notes.filter(isText);
@@ -151,6 +153,16 @@ export function SelectionToolbar(props: Props) {
             }}
           />
         </Tool>
+        {!onlyText && (
+          <Tool
+            label={t('selection.icon')}
+            disabled={locked}
+            active={panel === 'icon'}
+            onClick={() => toggle('icon')}
+          >
+            <NoteIconGlyph icon={note.icon ?? 'service'} size={18} />
+          </Tool>
+        )}
         <span className="selection-divider" />
         <Tool
           label={t('selection.bold')}
@@ -299,6 +311,15 @@ export function SelectionToolbar(props: Props) {
                 </>
               )}
             </>
+          )}
+          {panel === 'icon' && (
+            <NoteIconPicker
+              icons={props.notes.filter((s) => !isText(s)).map((s) => s.icon)}
+              onChange={(icon) => {
+                props.onFormat({ icon });
+                setPanel(null);
+              }}
+            />
           )}
           {panel === 'align' && (
             <>

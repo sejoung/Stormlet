@@ -1,6 +1,6 @@
 {
   "format": "stormlet",
-  "version": 12,
+  "version": 13,
   "title": "Organize ideas · Getting started",
   "frames": [
     { "id": "questions", "title": "Questions and observations", "layout": "column" },

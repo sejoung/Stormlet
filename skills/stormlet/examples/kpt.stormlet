@@ -1,6 +1,6 @@
 {
   "format": "stormlet",
-  "version": 12,
+  "version": 13,
   "title": "KPT retro · Sprint 12",
   "frames": [
     { "id": "keep", "title": "Keep · Continue", "layout": "column" },

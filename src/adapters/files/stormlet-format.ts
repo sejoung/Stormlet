@@ -18,7 +18,12 @@ import { readFrames } from './frames';
 import { FRAME_FIELDS, type Frame } from '../../domain/frames/model';
 import { readInk } from './drawing/ink';
 import { DEFAULT_TEXT_SIZE } from '../../domain/text/model';
-import { layoutDraft, type DraftSticky } from '../../domain/layout/auto-layout';
+import {
+  BOARD_LAYOUTS,
+  layoutDraft,
+  type DraftLink,
+  type DraftSticky,
+} from '../../domain/layout/auto-layout';
 
 /**
  * The `.stormlet` file: readable JSON with stickies listed bottom to top. Unknown fields
@@ -27,7 +32,8 @@ import { layoutDraft, type DraftSticky } from '../../domain/layout/auto-layout';
 export const FORMAT = 'stormlet';
 // Version 11 adds pen drawings; older builds refuse it rather than lose their ink.
 // Version 12 lets a file leave out positions, sizes and styles (ADR 0017).
-export const FORMAT_VERSION = 12;
+// Version 13 adds note icons and, for drafts, nested frames and flows (ADR 0018).
+export const FORMAT_VERSION = 13;
 /** From this version a file may be a draft: positions and defaults are filled in on read. */
 export const DRAFT_VERSION = 12;
 export const FILE_EXTENSION = '.stormlet';
@@ -44,6 +50,8 @@ export class FormatError extends Error {}
 interface StormletFile {
   format: typeof FORMAT;
   version: number;
+  /** How a draft board arranges its frames and loose notes (ADR 0018). */
+  layout?: string;
   stickies: Sticky[];
   title?: string;
   connections?: Connection[];
@@ -141,7 +149,7 @@ function readSticky(value: unknown, index: number, version: number): DraftSticky
       ...(z === undefined ? {} : { z }),
       width,
       height,
-      ...(version >= 4 ? readDetails(item) : {}),
+      ...(version >= 4 ? readDetails(item, version) : {}),
       ...(frame === undefined ? {} : { frame }),
     } as DraftSticky;
   } catch {
@@ -164,6 +172,21 @@ export function boardFileText(text: string): string | null {
   return object && /"format"\s*:\s*"stormlet"/.test(body) ? body : null;
 }
 
+/** The note or frame a draft line's end names, for flows to follow; read leniently. */
+function linkEnd(end: unknown): string | undefined {
+  if (typeof end === 'string') return end;
+  const attached = (end ?? {}) as { stickyId?: unknown; frameId?: unknown };
+  const id = attached.stickyId ?? attached.frameId;
+  return typeof id === 'string' ? id : undefined;
+}
+const draftLinks = (raw: unknown): DraftLink[] =>
+  Array.isArray(raw)
+    ? raw.map((line) => ({
+        from: linkEnd((line as { from?: unknown } | null)?.from),
+        to: linkEnd((line as { to?: unknown } | null)?.to),
+      }))
+    : [];
+
 /** Larger files are refused before reading them; boards are far smaller. */
 export const MAX_BOARD_FILE_BYTES = 20 * 1024 * 1024;
 
@@ -184,6 +207,9 @@ export function parseBoard(content: string): Board {
   if (title !== undefined && (typeof title !== 'string' || normalizeBoardTitle(title) !== title))
     throw new FormatError('The board title is malformed.');
   const draft = version >= DRAFT_VERSION;
+  const layout = draft ? (file.layout ?? 'board') : 'board';
+  if (!(BOARD_LAYOUTS as readonly unknown[]).includes(layout))
+    throw new FormatError('The board layout is malformed.');
   const notes = new Map<string, DraftSticky>();
   file.stickies.forEach((value, index) => {
     const sticky = readSticky(value, index, version);
@@ -197,7 +223,12 @@ export function parseBoard(content: string): Board {
     throw new FormatError('The frames are malformed.');
   }
   // Positioned objects keep their place; a draft's other objects are placed now.
-  const placed = layoutDraft([...notes.values()], drafts);
+  const placed = layoutDraft(
+    [...notes.values()],
+    drafts,
+    draft ? draftLinks(file.connections) : [],
+    layout as (typeof BOARD_LAYOUTS)[number],
+  );
   const stickies = Object.fromEntries(placed.stickies.map((note) => [note.id, note]));
   const board: Board = { ...(title === undefined ? {} : { title }), stickies };
   if (placed.frames.length)

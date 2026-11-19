@@ -21,6 +21,8 @@ import { cx } from '../common/cx';
 import { useT } from '../common/i18n';
 import { isDrawing } from '../../domain/drawing/model';
 import { Ink } from '../drawing/Ink';
+import { NoteIconGlyph } from '../icons/NoteIconGlyph';
+import { noteIconSize, noteTextSize, showsIcon } from '../../engine/note-icon';
 
 interface Props {
   sticky: Sticky;
@@ -146,17 +148,20 @@ export const StickyNote = memo(function StickyNote(props: Props) {
         }
       }}
     >
+      {showsIcon(sticky) && (
+        <NoteIconGlyph className="sticky-icon" icon={sticky.icon!} size={noteIconSize(size)} />
+      )}
       {drawing ? (
         <Ink note={sticky} width={size.width} height={size.height} />
       ) : editing ? (
         <StickyEditor
           note={sticky}
           initial={props.seed ?? sticky.text}
-          size={size}
+          size={noteTextSize(sticky, size)}
           onDone={(text, next, size) => props.onCommitText(sticky.id, text, next, size)}
         />
       ) : (
-        <StickyText note={sticky} size={size} live={props.resized !== null} />
+        <StickyText note={sticky} size={noteTextSize(sticky, size)} live={props.resized !== null} />
       )}
       {props.showPorts && !drawing && (
         <ConnectionPorts

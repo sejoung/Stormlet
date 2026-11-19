@@ -14,8 +14,9 @@ const isNumber = (value: unknown) => typeof value === 'number' && Number.isFinit
 
 /**
  * Frames of a file. In a draft (version 12, ADR 0017) position, size, style and title may
- * be left out and `layout` may say how notes are placed into the frame; the layout step
- * fills in the rest, so every frame still ends up with all its fields.
+ * be left out, `layout` may say how the frame arranges what is placed into it and `frame`
+ * may name the frame it sits in (ADR 0018); the layout step fills in the rest, so every
+ * frame still ends up with all its fields.
  */
 export function readFrames(
   raw: unknown,
@@ -30,6 +31,8 @@ export function readFrames(
     const or = <T>(given: unknown, fallback: T) =>
       draft && given === undefined ? fallback : given;
     const { id, x, y, width, height, layout } = item;
+    // The frame a draft frame sits in; only drafts read it, as older files never had it.
+    const parent = draft ? item.frame : undefined;
     const title = or(item.title, DEFAULT_FRAME_TITLE);
     const color = or(item.color, 'none');
     const locked = or(item.locked, false);
@@ -48,7 +51,11 @@ export function readFrames(
       !(FRAME_COLORS as readonly unknown[]).includes(color) ||
       !isFrameBorderWidth(borderWidth) ||
       typeof locked !== 'boolean' ||
-      !(layout === undefined || (draft && (FRAME_LAYOUTS as readonly unknown[]).includes(layout)))
+      !(
+        layout === undefined ||
+        (draft && (FRAME_LAYOUTS as readonly unknown[]).includes(layout))
+      ) ||
+      !(parent === undefined || isStickyId(parent))
     )
       throw new Error('Malformed frame.');
     const size = clampFrameSize({
@@ -68,6 +75,7 @@ export function readFrames(
       borderWidth,
       locked,
       ...(layout === undefined ? {} : { layout }),
+      ...(parent === undefined ? {} : { frame: parent }),
     } as DraftFrame;
   }
   return frames;

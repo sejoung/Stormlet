@@ -18,11 +18,11 @@
 
 ## 활용 샘플
 
-[KPT 회고·아이디어 정리·이벤트 스토밍](https://sejoung.github.io/Stormlet/manual/#examples) 예시를 미리 보고 `.stormlet` 파일로 내려받아 수정해 보세요. 보드의 **파일 → 열기**나 보드에 끌어다 놓아서 열 수 있습니다.
+[KPT 회고·아이디어 정리·이벤트 스토밍·시스템 구성도](https://sejoung.github.io/Stormlet/manual/#examples) 예시를 미리 보고 `.stormlet` 파일로 내려받아 수정해 보세요. 보드의 **파일 → 열기**나 보드에 끌어다 놓아서 열 수 있습니다.
 
 ## AI로 보드 만들기
 
-Claude, ChatGPT, Codex 같은 AI에 Stormlet 스킬을 넣으면 "지난 스프린트 KPT 보드 만들어 줘"처럼 말로 보드를 만들 수 있다. AI는 메모와 프레임의 내용만 쓰고, 배치는 Stormlet이 파일을 열 때 한다. 받은 `.stormlet` 파일은 보드에 끌어다 놓으면 열린다. AI가 JSON만 보여 주면 복사해서 보드에 붙여 넣으면 된다([설명서](https://sejoung.github.io/Stormlet/manual/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
+Claude, ChatGPT, Codex 같은 AI에 Stormlet 스킬을 넣으면 "지난 스프린트 KPT 보드 만들어 줘"나 "우리 서비스 구성도 그려 줘"처럼 말로 보드를 만들 수 있다. AI는 메모와 프레임의 내용만 쓰고, 배치는 Stormlet이 파일을 열 때 한다. 받은 `.stormlet` 파일은 보드에 끌어다 놓으면 열린다. AI가 JSON만 보여 주면 복사해서 보드에 붙여 넣으면 된다([설명서](https://sejoung.github.io/Stormlet/manual/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
 
 | 쓰는 곳                        | 스킬 넣는 방법                                                                                                  |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
@@ -49,6 +49,7 @@ Claude Code 2.1.275보다 오래된 버전에서는 `/plugin marketplace add sej
 - 이동·크기 조절 중 포스트잇·프레임의 가장자리·가운데 맞춤 가이드, 같은 간격 스냅, 같은 크기 표시. `Ctrl/Cmd`를 누르면 스냅 없이 이동
 - 여러 메모 정렬·간격 맞춤·크기 맞춤(가장 큰 값 기준)·격자 배치를 선택 시 나타나는 아이콘 줄·`정렬` 메뉴·우클릭 메뉴·`Alt/Option` 단축키로 실행, 그룹·잠금
 - 스타일(색·글자 서식) 복사·붙여넣기는 새로고침과 탭을 넘어 유지, 같은 색 메모 모두 선택
+- 서버·DB·사용자 같은 아이콘 40가지를 글 위에 붙여 구성도 그리기 ([ADR 0018](docs/adr/0018-architecture-diagrams.md))
 - 이모지 반응 추가·취소, 메모 내용 검색
 
 **텍스트**
@@ -199,7 +200,7 @@ npm run test:e2e:ui       # Playwright UI에서 실행·디버깅
 
 ### 파일 포맷
 
-`.stormlet` 파일은 `format`과 `version` 필드가 있는 JSON이다. 현재 버전 12에는 제목, 메모, 독립 텍스트, 펜 그림, 연결선, 프레임과 그 서식이 저장된다. 버전 12부터는 AI가 쓰기 쉽도록 좌표와 기본값을 생략한 초안 파일도 열고, 열 때 배치한다([ADR 0017](docs/adr/0017-ai-authored-boards.md)). 버전 1–11 파일도 열 수 있다.
+`.stormlet` 파일은 `format`과 `version` 필드가 있는 JSON이다. 현재 버전 13에는 제목, 메모와 아이콘, 독립 텍스트, 펜 그림, 연결선, 프레임과 그 서식이 저장된다. 버전 12부터는 AI가 쓰기 쉽도록 좌표와 기본값을 생략한 초안 파일도 열고, 열 때 배치한다. 초안에서는 프레임을 겹쳐 넣고 연결선 방향대로 배치할 수 있다([ADR 0017](docs/adr/0017-ai-authored-boards.md), [ADR 0018](docs/adr/0018-architecture-diagrams.md)). 버전 1–12 파일도 열 수 있다.
 
 ### 번역
 

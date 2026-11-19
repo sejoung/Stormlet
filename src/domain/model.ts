@@ -94,6 +94,7 @@ export const STICKY_FIELDS: readonly StickyField[] = [
   'underline',
   'textAlign',
   'textColor',
+  'icon',
   'autoFont',
   'fontSize',
   'groupId',

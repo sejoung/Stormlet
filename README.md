@@ -18,11 +18,11 @@ New to Stormlet? Read the [user guide](https://sejoung.github.io/Stormlet/manual
 
 ## Example boards
 
-Preview and download [KPT retrospectives, idea organization and event storming](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor, or drop them on the board.
+Preview and download [KPT retrospectives, idea organization, event storming and system architecture](https://sejoung.github.io/Stormlet/manual/en/#examples) as editable `.stormlet` files. Open them with **File → Open** in the editor, or drop them on the board.
 
 ## Making boards with AI
 
-Add the Stormlet skill to an AI such as Claude, ChatGPT or Codex, and you can make boards by asking: "Make a KPT board for last sprint". The AI writes the notes and frames; Stormlet lays them out when it opens the file. Drop the `.stormlet` file it gives you on the board to open it, or, when the AI only shows JSON, copy it and paste it on the board ([guide](https://sejoung.github.io/Stormlet/manual/en/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
+Add the Stormlet skill to an AI such as Claude, ChatGPT or Codex, and you can make boards by asking: "Make a KPT board for last sprint" or "Draw our system architecture". The AI writes the notes and frames; Stormlet lays them out when it opens the file. Drop the `.stormlet` file it gives you on the board to open it, or, when the AI only shows JSON, copy it and paste it on the board ([guide](https://sejoung.github.io/Stormlet/manual/en/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
 
 | Where                                 | How to add the skill                                                                                                  |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -49,6 +49,7 @@ On Claude Code older than 2.1.275, run `/plugin marketplace add sejoung/Stormlet
 - Guides to notes’ and frames’ edges and centers, equal-spacing snapping and same-size markers while moving or resizing; hold `Ctrl/Cmd` to move freely
 - Align, distribute, match sizes (to the largest) and arrange in a grid from the icon row shown for a selection, the Arrange menu, the context menu or `Alt/Option` shortcuts; group and lock
 - Copy and paste a note’s style (color and text formatting), kept across reloads and tabs; select all notes of a color
+- 40 icons, such as server, database and user, to put above a note's text for architecture diagrams ([ADR 0018](docs/adr/0018-architecture-diagrams.md))
 - Emoji reactions and full-text search
 
 **Text**
@@ -199,7 +200,7 @@ Design decisions are recorded in [docs/adr](docs/adr). The model is designed so 
 
 ### File format
 
-`.stormlet` files are JSON with a `format` and `version` field. The current version is 12 and stores the title, notes, standalone text, pen drawings, connections, frames and their styles. From version 12, a draft file may leave out coordinates and defaults, as an AI writes it, and is laid out when it is opened ([ADR 0017](docs/adr/0017-ai-authored-boards.md)). Files from versions 1–11 can still be opened.
+`.stormlet` files are JSON with a `format` and `version` field. The current version is 13 and stores the title, notes and their icons, standalone text, pen drawings, connections, frames and their styles. From version 12, a draft file may leave out coordinates and defaults, as an AI writes it, and is laid out when it is opened; a draft can nest frames and lay objects out along their connections ([ADR 0017](docs/adr/0017-ai-authored-boards.md), [ADR 0018](docs/adr/0018-architecture-diagrams.md)). Files from versions 1–12 can still be opened.
 
 ### Translations
 

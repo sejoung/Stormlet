@@ -12,6 +12,8 @@ import { FRAME_STYLES } from '../frames/colors';
 import { FONT_FAMILY, layoutNote, scaledMeasure, xmlText, type MeasureText } from './text-layout';
 import { isDrawing } from '../../domain/drawing/model';
 import { inkPath } from '../../domain/drawing/geometry';
+import { NOTE_ICON_GAP, noteIconSize, noteTextSize, showsIcon } from '../../engine/note-icon';
+import { GLYPHS } from '../icons/glyphs';
 
 /** The light theme's colours: an export looks the same whichever theme the editor is in. */
 const THEME = { background: '#ffffff', text: '#232436', muted: '#737485', border: '#e6e6ee' };
@@ -86,6 +88,25 @@ function connectionSvg(board: Board, line: Connection) {
   };
 }
 
+/** A note's icon centred at the top of its padded box, as `.sticky-icon` is on screen. */
+function iconSvg(note: Sticky, ink: string) {
+  const size = noteIconSize(note);
+  const x = note.x + (note.width - size) / 2;
+  const y = note.y + contentPadding(note);
+  const shapes = GLYPHS[note.icon!]
+    .map(
+      ([tag, attributes]) =>
+        `<${tag}${Object.entries(attributes)
+          .map(([name, value]) => ` ${name}="${escape(value)}"`)
+          .join('')}/>`,
+    )
+    .join('');
+  return [
+    `<g transform="translate(${n(x)} ${n(y)}) scale(${n(size / 24)})" fill="none" stroke="${ink}"`,
+    ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${shapes}</g>`,
+  ].join('');
+}
+
 function noteSvg(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>, measure: MeasureText) {
   if (isDrawing(note)) {
     const pad = (note.strokeWidth ?? 3) / 2;
@@ -107,11 +128,18 @@ function noteSvg(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>, meas
       ? textInk(note.textColor)
       : THEME.text
     : style.ink;
-  const { size, lines } = layoutNote(note, measureAt);
+  // An icon takes the top of the note; the text is fitted to the box below it.
+  const icon = showsIcon(note);
+  const area = noteTextSize(note, note);
+  const { size, lines } = layoutNote({ ...note, ...area }, measureAt);
   const lineHeight = size * NOTE_LINE_HEIGHT;
+  const iconBand = icon ? noteIconSize(note) + NOTE_ICON_GAP : 0;
   // Text is centred vertically in the padded box, as `margin: auto 0` does on screen.
   const top =
-    note.y + padding + (freeText ? 0 : (note.height - padding * 2 - lines.length * lineHeight) / 2);
+    note.y +
+    iconBand +
+    padding +
+    (freeText ? 0 : (area.height - padding * 2 - lines.length * lineHeight) / 2);
   const align = note.textAlign ?? (freeText ? 'left' : 'center');
   const x =
     align === 'left'
@@ -132,6 +160,7 @@ function noteSvg(note: Sticky, measureAt: ReturnType<typeof scaledMeasure>, meas
       : [
           `<rect x="${n(note.x)}" y="${n(note.y)}" width="${n(note.width)}" height="${n(note.height)}" rx="2" fill="${style.paper}" filter="url(#note-shadow)"/>`,
         ]),
+    ...(icon ? [iconSvg(note, ink)] : []),
     `<g font-size="${n(size)}" fill="${ink}" text-anchor="${anchor}"`,
     note.bold ? ' font-weight="700"' : '',
     note.italic ? ' font-style="italic"' : '',

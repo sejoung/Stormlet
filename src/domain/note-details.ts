@@ -8,6 +8,55 @@ export const DEFAULT_NOTE_FONT = 24;
 export const TEXT_ALIGNS = ['left', 'center', 'right'] as const;
 export const REACTION_EMOJI = ['👍', '❤️', '🎉', '💡', '✅', '👀'] as const;
 export type TextAlign = (typeof TEXT_ALIGNS)[number];
+/**
+ * Icons a note can show above its text, for diagrams such as system architecture
+ * (ADR 0018). Generic names only: products are named in the note's text.
+ */
+export const NOTE_ICONS = [
+  'user',
+  'team',
+  'web',
+  'browser',
+  'mobile',
+  'desktop',
+  'server',
+  'service',
+  'api',
+  'gateway',
+  'load-balancer',
+  'network',
+  'database',
+  'cache',
+  'queue',
+  'stream',
+  'storage',
+  'files',
+  'cloud',
+  'function',
+  'container',
+  'cluster',
+  'auth',
+  'key',
+  'lock',
+  'mail',
+  'message',
+  'notification',
+  'search',
+  'analytics',
+  'monitoring',
+  'logs',
+  'scheduler',
+  'worker',
+  'code',
+  'config',
+  'document',
+  'payment',
+  'external',
+  'ai',
+] as const;
+export type NoteIcon = (typeof NOTE_ICONS)[number];
+export const isNoteIcon = (value: unknown): value is NoteIcon =>
+  (NOTE_ICONS as readonly unknown[]).includes(value);
 export interface Reaction {
   emoji: string;
   people: readonly string[];
@@ -20,6 +69,8 @@ export interface NoteDetails {
   underline?: boolean;
   textAlign?: TextAlign;
   textColor?: TextColor;
+  /** An icon above a sticky note's text; `null` once removed. */
+  icon?: NoteIcon | null;
   autoFont?: boolean;
   fontSize?: number;
   groupId?: string | null;

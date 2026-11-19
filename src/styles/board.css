@@ -72,6 +72,11 @@
   /* Keep a final empty line in the displayed paragraph, just as the editor measures it. */
   content: '\200b';
 }
+.sticky-icon {
+  /* Sized by engine/note-icon.ts; the note's 6px gap separates it from the text. */
+  flex: none;
+  align-self: center;
+}
 .sticky-content {
   position: relative;
   display: flex;
