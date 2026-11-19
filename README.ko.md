@@ -24,15 +24,53 @@
 
 Claude, ChatGPT, Codex 같은 AI에 Stormlet 스킬을 넣으면 "지난 스프린트 KPT 보드 만들어 줘"나 "우리 서비스 구성도 그려 줘"처럼 말로 보드를 만들 수 있다. AI는 메모와 프레임의 내용만 쓰고, 배치는 Stormlet이 파일을 열 때 한다. 받은 `.stormlet` 파일은 보드에 끌어다 놓으면 열린다. AI가 JSON만 보여 주면 복사해서 보드에 붙여 넣으면 된다([설명서](https://sejoung.github.io/Stormlet/manual/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
 
-| 쓰는 곳                        | 스킬 넣는 방법                                                                                                  |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Claude Code                    | `/plugin install stormlet --marketplace sejoung/Stormlet`                                                       |
-| Codex, Cursor 등 코딩 에이전트 | `npx skills add sejoung/Stormlet`                                                                               |
-| claude.ai, Claude 데스크톱     | [스킬 zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip)을 **Customize → Skills**에 업로드       |
-| ChatGPT                        | [스킬 zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip)을 **Skills → Create → Upload**로 업로드 |
-| 스킬이 없는 채팅               | [프롬프트 파일](https://sejoung.github.io/Stormlet/skill/stormlet-prompt.md)을 대화 처음에 붙여 넣기            |
+| 쓰는 곳                                              | 스킬 넣는 방법                                                                                                                                |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code                                          | `/plugin install stormlet --marketplace sejoung/Stormlet`                                                                                     |
+| Codex, Cursor 등 코딩 에이전트                       | `npx skills add sejoung/Stormlet`                                                                                                             |
+| claude.ai, Claude 데스크톱                           | [스킬 zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip)을 **Customize → Skills**에 업로드                                     |
+| ChatGPT Business·Enterprise·Edu                      | [스킬 zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip)을 **Skills → Create → Upload**로 업로드 (관리자가 스킬을 허용해야 함) |
+| ChatGPT 개인 요금제(Free·Plus·Pro), 스킬이 없는 채팅 | 스킬 업로드가 없으므로 [프롬프트 파일](https://sejoung.github.io/Stormlet/skill/stormlet-prompt.md)을 대화마다 처음에 붙여 넣기               |
 
 Claude Code 2.1.275보다 오래된 버전에서는 `/plugin marketplace add sejoung/Stormlet` 다음에 `/plugin install stormlet@stormlet`을 실행한다. 스킬 원본은 [`skills/stormlet`](skills/stormlet)에 있다.
+
+### Node 없이 직접 설치하기
+
+Node나 Claude Code 플러그인 없이 설치하려면 스킬 zip을 스킬 폴더에 푼다. 같은 명령을 다시 실행하면 새 버전으로 바뀐다. Claude Code는 새 세션에서, Codex는 자동으로 스킬을 인식한다(보이지 않으면 Codex를 다시 시작).
+
+<details>
+<summary>macOS · Linux</summary>
+
+```bash
+# Claude Code
+mkdir -p ~/.claude/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.claude/skills
+
+# Codex
+mkdir -p ~/.agents/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.agents/skills
+```
+
+</details>
+
+<details>
+<summary>Windows (PowerShell)</summary>
+
+```powershell
+# Claude Code
+$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.claude\skills" -Force
+
+# Codex
+$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.agents\skills" -Force
+```
+
+</details>
 
 ## 기능
 

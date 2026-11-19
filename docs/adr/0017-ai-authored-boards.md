@@ -20,8 +20,8 @@
 - **스킬은 한 원본.** `skills/stormlet/`이 Agent Skills 표준의 스킬이다. `SKILL.md`, 형식 레퍼런스, 좌표 없는 예시 보드 세 개가 들어 있다. 스크립트 없이 지침과 예시만 담아 어느 에이전트에서나 같은 내용을 쓴다. 배포 경로는 다음과 같다.
   - Claude Code: 저장소 루트의 `.claude-plugin/` 마켓플레이스와 플러그인
   - Codex, Cursor 등: `npx skills add sejoung/Stormlet`이나 각 에이전트의 스킬 폴더
-  - claude.ai, ChatGPT: 빌드가 만드는 `skill/stormlet-skill.zip`
-  - 스킬이 없는 채팅: 같은 원본에서 만드는 `skill/stormlet-prompt.md`
+  - claude.ai, ChatGPT Business·Enterprise·Edu: 빌드가 만드는 `skill/stormlet-skill.zip`
+  - ChatGPT 개인 요금제처럼 스킬 업로드가 없는 채팅: 같은 원본에서 만드는 `skill/stormlet-prompt.md`
 - **원본과 코드가 어긋나지 않게.** 단위 테스트가 다음을 확인한다.
   - 스킬 예시가 파서를 통과하고 겹침 없이 프레임 안에 배치되는지
   - 스킬이 가르치는 버전, 색상, 레이아웃, 연결선 값이 코드의 목록과 같은지

@@ -30,6 +30,13 @@ async function checkGuide(guide: Page, contents: string) {
     expect(response.ok()).toBe(true);
     expect((await response.body()).length).toBeGreaterThan(1000);
   }
+  // Install commands sit in CSS-only tabs: one operating system shows at a time.
+  const tabs = guide.locator('#ai .os-tabs');
+  await expect(tabs.getByText(/unzip -o/).first()).toBeVisible();
+  await expect(tabs.getByText(/Expand-Archive/).first()).toBeHidden();
+  await tabs.locator('label[for="os-windows"]').click();
+  await expect(tabs.getByText(/Expand-Archive/).first()).toBeVisible();
+  await expect(tabs.getByText(/unzip -o/).first()).toBeHidden();
   const images = guide.locator('main img');
   expect(await images.count()).toBe(24);
   for (const image of await images.all()) {

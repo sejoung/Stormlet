@@ -24,15 +24,53 @@ Preview and download [KPT retrospectives, idea organization, event storming, sys
 
 Add the Stormlet skill to an AI such as Claude, ChatGPT or Codex, and you can make boards by asking: "Make a KPT board for last sprint" or "Draw our system architecture". The AI writes the notes and frames; Stormlet lays them out when it opens the file. Drop the `.stormlet` file it gives you on the board to open it, or, when the AI only shows JSON, copy it and paste it on the board ([guide](https://sejoung.github.io/Stormlet/manual/en/#ai), [ADR 0017](docs/adr/0017-ai-authored-boards.md)).
 
-| Where                                 | How to add the skill                                                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Claude Code                           | `/plugin install stormlet --marketplace sejoung/Stormlet`                                                             |
-| Codex, Cursor and other coding agents | `npx skills add sejoung/Stormlet`                                                                                     |
-| claude.ai, Claude desktop             | Upload the [skill zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip) in **Customize → Skills**         |
-| ChatGPT                               | Upload the [skill zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip) with **Skills → Create → Upload** |
-| Chats without skills                  | Paste the [prompt file](https://sejoung.github.io/Stormlet/skill/stormlet-prompt.md) at the start of the chat         |
+| Where                                                                   | How to add the skill                                                                                                                                |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code                                                             | `/plugin install stormlet --marketplace sejoung/Stormlet`                                                                                           |
+| Codex, Cursor and other coding agents                                   | `npx skills add sejoung/Stormlet`                                                                                                                   |
+| claude.ai, Claude desktop                                               | Upload the [skill zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip) in **Customize → Skills**                                       |
+| ChatGPT Business, Enterprise and Edu                                    | Upload the [skill zip](https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip) with **Skills → Create → Upload**, once the admin allows skills |
+| ChatGPT personal plans (Free, Plus, Pro) and other chats without skills | These cannot upload skills: paste the [prompt file](https://sejoung.github.io/Stormlet/skill/stormlet-prompt.md) at the start of each chat          |
 
 On Claude Code older than 2.1.275, run `/plugin marketplace add sejoung/Stormlet`, then `/plugin install stormlet@stormlet`. The skill's source is [`skills/stormlet`](skills/stormlet).
+
+### Installing without Node
+
+To install without Node or the Claude Code plugin, unpack the skill zip into the skills folder. Running the same commands again updates it. Claude Code picks the skill up in a new session; Codex picks it up on its own (restart Codex if it does not appear).
+
+<details>
+<summary>macOS · Linux</summary>
+
+```bash
+# Claude Code
+mkdir -p ~/.claude/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.claude/skills
+
+# Codex
+mkdir -p ~/.agents/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.agents/skills
+```
+
+</details>
+
+<details>
+<summary>Windows (PowerShell)</summary>
+
+```powershell
+# Claude Code
+$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.claude\skills" -Force
+
+# Codex
+$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.agents\skills" -Force
+```
+
+</details>
 
 ## Features
 

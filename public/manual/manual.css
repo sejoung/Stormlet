@@ -338,3 +338,55 @@ details p {
     font-size: 25px;
   }
 }
+
+/* Install commands per operating system: CSS-only tabs, as the guide runs no scripts. */
+.os-tabs {
+  margin-bottom: 16px;
+}
+.os-tabs input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.os-tabs label {
+  display: inline-block;
+  padding: 6px 14px;
+  border-bottom: 2px solid var(--border);
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.os-tabs input:checked + label {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+.os-tabs input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.os-panel {
+  display: none;
+  padding-top: 8px;
+}
+#os-unix:checked ~ .os-panel-unix,
+#os-windows:checked ~ .os-panel-windows {
+  display: block;
+}
+.os-panel h4 {
+  margin: 12px 0 6px;
+  font-size: 14px;
+}
+pre {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+pre code {
+  padding: 0;
+  background: none;
+}

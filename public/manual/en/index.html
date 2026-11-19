@@ -820,22 +820,60 @@
                 </td>
               </tr>
               <tr>
-                <td>ChatGPT</td>
+                <td>ChatGPT Business, Enterprise and Edu</td>
                 <td>
                   Download the <a href="../../skill/stormlet-skill.zip" download>skill zip</a> and
-                  upload it with <b>Skills → Create → Upload from your computer</b>. Skills appear
-                  only on plans that offer them.
+                  upload it with <b>Skills → Create → Upload from your computer</b>. It appears once
+                  the workspace admin allows skills.
                 </td>
               </tr>
               <tr>
-                <td>Chats without skills</td>
+                <td>ChatGPT personal plans (Free, Plus, Pro) and other chats without skills</td>
                 <td>
-                  Paste the <a href="../../skill/stormlet-prompt.md" download>prompt file</a> at the
-                  start of the chat, then ask for the board you want.
+                  These cannot upload skills, so paste the
+                  <a href="../../skill/stormlet-prompt.md" download>prompt file</a> at the start of
+                  the chat, then ask for the board you want. Paste it again in each new chat.
                 </td>
               </tr>
             </tbody>
           </table>
+          <p>
+            To install without Node or the Claude Code plugin, download the skill zip and unpack it
+            into the skills folder. Running the same commands again updates it.
+          </p>
+          <div class="os-tabs" role="group" aria-label="Operating system">
+            <input type="radio" name="os-install" id="os-unix" checked />
+            <label for="os-unix">macOS · Linux</label>
+            <input type="radio" name="os-install" id="os-windows" />
+            <label for="os-windows">Windows</label>
+            <div class="os-panel os-panel-unix">
+              <p>Run in a terminal.</p>
+              <h4>Claude Code</h4>
+              <pre><code>mkdir -p ~/.claude/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.claude/skills</code></pre>
+              <h4>Codex</h4>
+              <pre><code>mkdir -p ~/.agents/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.agents/skills</code></pre>
+            </div>
+            <div class="os-panel os-panel-windows">
+              <p>Run in PowerShell.</p>
+              <h4>Claude Code</h4>
+              <pre><code>$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.claude\skills" -Force</code></pre>
+              <h4>Codex</h4>
+              <pre><code>$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.agents\skills" -Force</code></pre>
+            </div>
+          </div>
+          <p>
+            Claude Code picks the skill up in a new session; Codex picks it up on its own (restart
+            Codex if it does not appear). If you already downloaded the zip, skip the download line
+            and use that file instead.
+          </p>
           <ul>
             <li>
               <b>Drag</b> the <code>.stormlet</code> file the AI gives you <b>onto the board</b> to

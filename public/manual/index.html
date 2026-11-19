@@ -782,22 +782,60 @@
                 </td>
               </tr>
               <tr>
-                <td>ChatGPT</td>
+                <td>ChatGPT Business·Enterprise·Edu</td>
                 <td>
                   <a href="../skill/stormlet-skill.zip" download>스킬 zip</a>을 받아
-                  <b>Skills → Create → Upload from your computer</b>로 올립니다. 스킬을 쓸 수 있는
-                  요금제에서만 보입니다.
+                  <b>Skills → Create → Upload from your computer</b>로 올립니다. 워크스페이스
+                  관리자가 스킬을 허용해야 보입니다.
                 </td>
               </tr>
               <tr>
-                <td>스킬이 없는 채팅</td>
+                <td>ChatGPT 개인 요금제(Free·Plus·Pro), 스킬이 없는 다른 채팅</td>
                 <td>
+                  스킬 업로드 기능이 없으므로
                   <a href="../skill/stormlet-prompt.md" download>프롬프트 파일</a>의 내용을 대화
-                  처음에 붙여 넣고, 만들 보드를 부탁합니다.
+                  처음에 붙여 넣고, 만들 보드를 부탁합니다. 새 대화마다 다시 붙여 넣습니다.
                 </td>
               </tr>
             </tbody>
           </table>
+          <p>
+            Node나 Claude Code 플러그인 없이 설치하려면, 스킬 zip을 받아 스킬 폴더에 풉니다. 같은
+            명령을 다시 실행하면 새 버전으로 바뀝니다.
+          </p>
+          <div class="os-tabs" role="group" aria-label="설치할 운영체제">
+            <input type="radio" name="os-install" id="os-unix" checked />
+            <label for="os-unix">macOS · Linux</label>
+            <input type="radio" name="os-install" id="os-windows" />
+            <label for="os-windows">Windows</label>
+            <div class="os-panel os-panel-unix">
+              <p>터미널에서 실행합니다.</p>
+              <h4>Claude Code</h4>
+              <pre><code>mkdir -p ~/.claude/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.claude/skills</code></pre>
+              <h4>Codex</h4>
+              <pre><code>mkdir -p ~/.agents/skills
+curl -fsSL https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -o /tmp/stormlet-skill.zip
+unzip -o /tmp/stormlet-skill.zip -d ~/.agents/skills</code></pre>
+            </div>
+            <div class="os-panel os-panel-windows">
+              <p>PowerShell에서 실행합니다.</p>
+              <h4>Claude Code</h4>
+              <pre><code>$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.claude\skills" -Force</code></pre>
+              <h4>Codex</h4>
+              <pre><code>$zip = "$env:TEMP\stormlet-skill.zip"
+Invoke-WebRequest https://sejoung.github.io/Stormlet/skill/stormlet-skill.zip -OutFile $zip
+Expand-Archive $zip -DestinationPath "$HOME\.agents\skills" -Force</code></pre>
+            </div>
+          </div>
+          <p>
+            Claude Code는 새 세션을 시작하면 스킬을 인식하고, Codex는 자동으로 인식합니다(보이지
+            않으면 Codex를 다시 시작하세요). zip을 이미 받았다면 다운로드 줄은 건너뛰고 그 파일
+            경로를 쓰세요.
+          </p>
           <ul>
             <li>
               AI가 준 <code>.stormlet</code> 파일을 보드 위에 <b>끌어다 놓으면</b> 바로 열립니다.
