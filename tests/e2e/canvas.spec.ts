@@ -169,3 +169,68 @@ for (const example of ['kpt', 'ideas', 'event-storming', 'architecture', 'kubern
     await screenshot(page, info, `skill-${example}`);
   });
 }
+
+test('rearranges selected notes by connections and undoes the change', async ({ page }) => {
+  await openBoard(page, {
+    stickies: { c: note('c', 200, 200), a: note('a', 400, 200), b: note('b', 600, 200) },
+    connections: {
+      ab: {
+        id: 'ab',
+        from: { stickyId: 'a', side: 'auto' },
+        to: { stickyId: 'b', side: 'auto' },
+        path: 'elbow',
+        color: 'slate',
+        width: 2,
+        startArrow: false,
+        endArrow: true,
+        dashed: false,
+        label: '',
+      },
+      bc: {
+        id: 'bc',
+        from: { stickyId: 'b', side: 'auto' },
+        to: { stickyId: 'c', side: 'auto' },
+        path: 'elbow',
+        color: 'slate',
+        width: 2,
+        startArrow: false,
+        endArrow: true,
+        dashed: false,
+        label: '',
+      },
+    },
+  });
+  await canvas(page).click({ position: { x: 900, y: 500 } });
+  await page.keyboard.press('ControlOrMeta+a');
+  await page.getByRole('button', { name: '정렬', exact: true }).click();
+  await page.getByRole('menuitem', { name: '연결 흐름으로 정리 (가로)', exact: true }).click();
+  await expect
+    .poll(async () => {
+      const notes = (await saved(page)).stickies;
+      const x = (id: string) => notes.find((n) => n.id === id)!.x;
+      return x('a') < x('b') && x('b') < x('c');
+    })
+    .toBe(true);
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect
+    .poll(async () => (await saved(page)).stickies.find((n) => n.id === 'a')!.x)
+    .toBe(400);
+});
+
+test('opens the YouTube workflow with a top legend and separated validation branches', async ({
+  page,
+}, info) => {
+  const text = readFileSync('skills/stormlet/examples/youtube-content.stormlet', 'utf8');
+  await dropFile(page, text, 'youtube.stormlet');
+  await expect(page.getByText('youtube.stormlet을(를) 열었습니다.')).toBeVisible();
+  await page.getByRole('button', { name: '보기', exact: true }).click();
+  await page.getByRole('menuitem', { name: '모든 메모 보기', exact: true }).click();
+  await expect.poll(async () => (await saved(page)).frames?.length).toBe(7);
+  const board = await saved(page);
+  const legend = board.frames!.find((f) => f.id === 'notation')!;
+  const main = board.frames!.filter((f) => f.id !== 'notation');
+  expect(main.every((f) => f.y > legend.y + legend.height)).toBe(true);
+  expect(board.stickies.find((n) => n.id === 'actor')!.color).toBe('yellow');
+  expect(board.stickies.find((n) => n.id === 'content')!.color).toBe('gold');
+  await screenshot(page, info, 'youtube-workflow');
+});

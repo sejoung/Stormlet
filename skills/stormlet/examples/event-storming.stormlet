@@ -3,40 +3,287 @@
   "version": 13,
   "title": "Event storming · Order flow",
   "frames": [
-    { "id": "order", "title": "Order", "layout": "column" },
-    { "id": "payment", "title": "Payment", "layout": "column" },
-    { "id": "shipping", "title": "Shipping", "layout": "column" }
+    {
+      "id": "notation",
+      "title": "Event storming legend",
+      "role": "legend",
+      "layout": "row",
+      "spacing": {
+        "gap": 32,
+        "padding": 40
+      }
+    },
+    {
+      "id": "order",
+      "title": "Order",
+      "layout": "flow"
+    },
+    {
+      "id": "payment",
+      "title": "Payment",
+      "layout": "flow"
+    },
+    {
+      "id": "shipping",
+      "title": "Shipping",
+      "layout": "flow"
+    }
   ],
   "stickies": [
     {
-      "id": "legend",
-      "objectType": "text",
-      "width": 900,
-      "text": "Orange event · Blue command · Yellow actor · Purple policy · Gold aggregate · Pink external system · Red hotspot"
+      "id": "key-event",
+      "frame": "notation",
+      "text": "Event",
+      "color": "orange",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
     },
-    { "id": "o-actor", "frame": "order", "color": "yellow", "text": "Customer" },
-    { "id": "o-cmd", "frame": "order", "color": "blue", "text": "Place order" },
-    { "id": "o-agg", "frame": "order", "color": "gold", "text": "Order" },
-    { "id": "o-evt", "frame": "order", "color": "orange", "text": "Order placed" },
-    { "id": "o-hot", "frame": "order", "color": "red", "text": "What if stock runs out?" },
-    { "id": "p-policy", "frame": "payment", "color": "purple", "text": "Whenever an order is placed, request payment" },
-    { "id": "p-ext", "frame": "payment", "color": "pink", "text": "Payment provider" },
-    { "id": "p-evt", "frame": "payment", "color": "orange", "text": "Payment approved" },
-    { "id": "p-hot", "frame": "payment", "color": "red", "text": "How do failed payments retry?" },
-    { "id": "s-policy", "frame": "shipping", "color": "purple", "text": "Whenever payment is approved, prepare shipment" },
-    { "id": "s-read", "frame": "shipping", "color": "green", "text": "Packing list" },
-    { "id": "s-evt", "frame": "shipping", "color": "orange", "text": "Shipment dispatched" },
-    { "id": "s-hot", "frame": "shipping", "color": "red", "text": "When is cancellation still allowed?" }
+    {
+      "id": "key-command",
+      "frame": "notation",
+      "text": "Command",
+      "color": "blue",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-actor",
+      "frame": "notation",
+      "text": "Actor",
+      "color": "yellow",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-policy",
+      "frame": "notation",
+      "text": "Policy",
+      "color": "purple",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-aggregate",
+      "frame": "notation",
+      "text": "Aggregate",
+      "color": "gold",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-read",
+      "frame": "notation",
+      "text": "Read model",
+      "color": "green",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-external",
+      "frame": "notation",
+      "text": "External system",
+      "color": "pink",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-hotspot",
+      "frame": "notation",
+      "text": "Hotspot",
+      "color": "red",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "o-actor",
+      "frame": "order",
+      "color": "yellow",
+      "text": "Customer",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "o-cmd",
+      "frame": "order",
+      "color": "blue",
+      "text": "Place order",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "o-agg",
+      "frame": "order",
+      "color": "gold",
+      "text": "Order",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "o-evt",
+      "frame": "order",
+      "color": "orange",
+      "text": "Order placed",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "o-hot",
+      "frame": "order",
+      "color": "red",
+      "text": "What if stock runs out?",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "p-policy",
+      "frame": "payment",
+      "color": "purple",
+      "text": "Whenever an order is placed, request payment",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "p-ext",
+      "frame": "payment",
+      "color": "pink",
+      "text": "Payment provider",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "p-evt",
+      "frame": "payment",
+      "color": "orange",
+      "text": "Payment approved",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "p-hot",
+      "frame": "payment",
+      "color": "red",
+      "text": "How do failed payments retry?",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "s-policy",
+      "frame": "shipping",
+      "color": "purple",
+      "text": "Whenever payment is approved, prepare shipment",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "s-read",
+      "frame": "shipping",
+      "color": "green",
+      "text": "Packing list",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "s-evt",
+      "frame": "shipping",
+      "color": "orange",
+      "text": "Shipment dispatched",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "s-hot",
+      "frame": "shipping",
+      "color": "red",
+      "text": "When is cancellation still allowed?",
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
+    }
   ],
   "connections": [
-    { "from": "o-actor", "to": "o-cmd" },
-    { "from": "o-cmd", "to": "o-agg" },
-    { "from": "o-agg", "to": "o-evt" },
-    { "from": "o-evt", "to": "p-policy" },
-    { "from": "p-policy", "to": "p-ext" },
-    { "from": "p-ext", "to": "p-evt" },
-    { "from": "p-evt", "to": "s-policy" },
-    { "from": "s-policy", "to": "s-read" },
-    { "from": "s-read", "to": "s-evt" }
-  ]
+    {
+      "from": "o-actor",
+      "to": "o-cmd"
+    },
+    {
+      "from": "o-cmd",
+      "to": "o-agg"
+    },
+    {
+      "from": "o-agg",
+      "to": "o-evt"
+    },
+    {
+      "from": "o-evt",
+      "to": "p-policy"
+    },
+    {
+      "from": "p-policy",
+      "to": "p-ext"
+    },
+    {
+      "from": "p-ext",
+      "to": "p-evt"
+    },
+    {
+      "from": "p-evt",
+      "to": "s-policy"
+    },
+    {
+      "from": "s-policy",
+      "to": "s-read"
+    },
+    {
+      "from": "s-read",
+      "to": "s-evt"
+    }
+  ],
+  "layout": "flow",
+  "spacing": {
+    "gap": 80,
+    "rankGap": 180,
+    "crossGap": 100,
+    "padding": 60
+  }
 }

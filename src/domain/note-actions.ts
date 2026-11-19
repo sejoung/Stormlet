@@ -1,3 +1,4 @@
+import { arrange, DEFAULT_LAYOUT_GAP } from './layout/arrange';
 import { own } from './ids';
 import { byStackOrder, topZ, type Board, type Sticky, type StickyField } from './model';
 import type { NoteDetails } from './note-details';
@@ -6,7 +7,7 @@ import { joinsStickies, type Connection, type Endpoint } from './connections/mod
 import { boundsOf, boundsHeight, boundsWidth, rectOf, type Bounds } from './geometry/bounds';
 
 /** Space between notes that an arrangement or a duplicate lays out side by side. */
-export const NOTE_GAP = 24;
+export const NOTE_GAP = DEFAULT_LAYOUT_GAP;
 
 /** Fields a locked note still accepts: unlocking it, and reacting to it. */
 const LOCK_EXEMPT: ReadonlySet<string> = new Set(['locked', 'reactions']);
@@ -99,7 +100,17 @@ export function reactToNotes(
 }
 
 export type Arrangement =
-  'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom' | 'horizontal' | 'vertical' | 'grid';
+  | 'left'
+  | 'center'
+  | 'right'
+  | 'top'
+  | 'middle'
+  | 'bottom'
+  | 'horizontal'
+  | 'vertical'
+  | 'grid'
+  | 'flow'
+  | 'flow-down';
 
 /** A group or a single note, moved as one block. */
 interface Unit extends Bounds {
@@ -126,7 +137,7 @@ type Place = (
   y: number;
 };
 
-const PLACEMENTS: Record<Arrangement, Place> = {
+const PLACEMENTS: Record<Exclude<Arrangement, 'flow' | 'flow-down'>, Place> = {
   left: (u, _, { area }) => ({ x: area.left, y: u.top }),
   center: (u, _, { area }) => ({ x: (area.left + area.right - boundsWidth(u)) / 2, y: u.top }),
   right: (u, _, { area }) => ({ x: area.right - boundsWidth(u), y: u.top }),
@@ -170,6 +181,44 @@ export function arrangeNotes(board: Board, ids: readonly string[], action: Arran
   const units: Unit[] = [...grouped.values()].map((items) => ({ items, ...boundsOf(items)! }));
   const area = boundsOf(units.map(rectOf));
   if (units.length < 2 || !area) return [];
+  if (action === 'flow' || action === 'flow-down') {
+    const keyByNote = new Map(
+      units.flatMap((unit, i) => unit.items.map((n) => [n.id, String(i)] as const)),
+    );
+    const links = Object.values(board.connections ?? {}).flatMap((line) => {
+      if (!('stickyId' in line.from) || !('stickyId' in line.to)) return [];
+      const from = keyByNote.get(line.from.stickyId);
+      const to = keyByNote.get(line.to.stickyId);
+      return from !== undefined && to !== undefined ? [{ from, to }] : [];
+    });
+    const placed = arrange(
+      units.map((unit, i) => ({
+        key: String(i),
+        width: boundsWidth(unit),
+        height: boundsHeight(unit),
+      })),
+      action,
+      links,
+      { rankGap: 180, crossGap: 100 },
+    );
+    return units.flatMap((unit, i) => {
+      const at = placed.at.get(String(i))!;
+      return unit.items.flatMap((note): Patch[] => [
+        {
+          op: 'set',
+          id: note.id,
+          field: 'x',
+          value: Math.round(note.x + area.left + at.x - unit.left),
+        },
+        {
+          op: 'set',
+          id: note.id,
+          field: 'y',
+          value: Math.round(note.y + area.top + at.y - unit.top),
+        },
+      ]);
+    });
+  }
   const order = ORDER[action];
   if (order) units.sort(order);
   const sum = (size: (u: Unit) => number) => units.reduce((total, u) => total + size(u), 0);

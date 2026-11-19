@@ -4,6 +4,86 @@
   "title": "Event storming · Order flow",
   "stickies": [
     {
+      "id": "key-event",
+      "frame": "notation",
+      "text": "Event",
+      "color": "orange",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-command",
+      "frame": "notation",
+      "text": "Command",
+      "color": "blue",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-actor",
+      "frame": "notation",
+      "text": "Actor",
+      "color": "yellow",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-policy",
+      "frame": "notation",
+      "text": "Policy",
+      "color": "purple",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-aggregate",
+      "frame": "notation",
+      "text": "Aggregate",
+      "color": "gold",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-read",
+      "frame": "notation",
+      "text": "Read model",
+      "color": "green",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-external",
+      "frame": "notation",
+      "text": "External system",
+      "color": "pink",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
+      "id": "key-hotspot",
+      "frame": "notation",
+      "text": "Hotspot",
+      "color": "red",
+      "width": 220,
+      "height": 120,
+      "fontSize": 20,
+      "autoFont": false
+    },
+    {
       "id": "n00",
       "kind": null,
       "color": "orange",
@@ -11,8 +91,10 @@
       "x": 75,
       "y": 110,
       "z": 0,
-      "width": 280,
-      "height": 160
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
     },
     {
       "id": "n01",
@@ -22,8 +104,10 @@
       "x": 75,
       "y": 305,
       "z": 1,
-      "width": 280,
-      "height": 160
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
     },
     {
       "id": "n10",
@@ -33,8 +117,10 @@
       "x": 455,
       "y": 110,
       "z": 4,
-      "width": 280,
-      "height": 160
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
     },
     {
       "id": "n11",
@@ -44,8 +130,10 @@
       "x": 455,
       "y": 305,
       "z": 5,
-      "width": 280,
-      "height": 160
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
     },
     {
       "id": "n20",
@@ -55,8 +143,10 @@
       "x": 835,
       "y": 110,
       "z": 8,
-      "width": 280,
-      "height": 160
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
     },
     {
       "id": "n21",
@@ -66,11 +156,23 @@
       "x": 835,
       "y": 305,
       "z": 9,
-      "width": 280,
-      "height": 160
+      "width": 220,
+      "height": 160,
+      "fontSize": 20,
+      "autoFont": false
     }
   ],
   "frames": [
+    {
+      "id": "notation",
+      "title": "Event storming legend",
+      "role": "legend",
+      "layout": "row",
+      "spacing": {
+        "gap": 32,
+        "padding": 40
+      }
+    },
     {
       "id": "f0",
       "title": "Order",
@@ -80,7 +182,8 @@
       "height": 690,
       "color": "none",
       "borderWidth": 2,
-      "locked": false
+      "locked": false,
+      "layout": "flow"
     },
     {
       "id": "f1",
@@ -91,7 +194,8 @@
       "height": 690,
       "color": "none",
       "borderWidth": 2,
-      "locked": false
+      "locked": false,
+      "layout": "flow"
     },
     {
       "id": "f2",
@@ -102,7 +206,8 @@
       "height": 690,
       "color": "none",
       "borderWidth": 2,
-      "locked": false
+      "locked": false,
+      "layout": "flow"
     }
   ],
   "connections": [
@@ -142,5 +247,12 @@
       "dashed": false,
       "label": ""
     }
-  ]
+  ],
+  "layout": "flow",
+  "spacing": {
+    "gap": 80,
+    "rankGap": 180,
+    "crossGap": 100,
+    "padding": 60
+  }
 }

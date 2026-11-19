@@ -4,7 +4,15 @@ import { freeSpot } from './free-spot';
 import type { Sticky } from '../model';
 import { NOTE_GAP } from '../note-actions';
 import { isText } from '../text/model';
-import { arrange, largest, type Box, type FrameLayout, type Link, type Size } from './arrange';
+import {
+  arrange,
+  largest,
+  type Box,
+  type FrameLayout,
+  type Link,
+  type Size,
+  type LayoutSpacing,
+} from './arrange';
 
 export { FRAME_LAYOUTS, type FrameLayout } from './arrange';
 
@@ -34,6 +42,8 @@ export interface DraftFrame extends Omit<Frame, 'x' | 'y' | 'width' | 'height'> 
   width?: number;
   height?: number;
   layout?: FrameLayout;
+  spacing?: LayoutSpacing;
+  role?: 'legend';
   frame?: string;
 }
 /** The ends of a line, by the ID of a note or frame, for flows to follow. */
@@ -132,9 +142,9 @@ function containerLinks(
 }
 
 /** A frame large enough for its contents plus padding, never smaller than the size it gave. */
-function frameSize(frame: DraftFrame, content: Size): Size {
+function frameSize(frame: DraftFrame, content: Size, padding: number): Size {
   const fit = (given: number | undefined, needed: number) =>
-    Math.max(given ?? 0, needed ? needed + 2 * FRAME_PADDING : 0);
+    Math.max(given ?? 0, needed ? needed + 2 * padding : 0);
   return clampFrameSize({
     width: fit(frame.width, content.width),
     height: fit(frame.height, content.height),
@@ -203,6 +213,7 @@ export function layoutDraft(
   frames: readonly DraftFrame[],
   links: readonly DraftLink[] = [],
   layout: BoardLayout = 'board',
+  spacing: LayoutSpacing = {},
 ): { stickies: Sticky[]; frames: Frame[] } {
   const { byId, parent, children } = tree(stickies, frames);
   const notesById = new Map(stickies.map((note) => [note.id, note]));
@@ -225,10 +236,12 @@ export function layoutDraft(
           0,
         ) -
           box.y -
-          FRAME_PADDING +
-          NOTE_GAP,
+          (frame.spacing?.padding ?? spacing.padding ?? FRAME_PADDING) +
+          (frame.spacing?.gap ?? spacing.gap ?? NOTE_GAP),
       );
   }
+  const spacingOf = (frame: DraftFrame): LayoutSpacing => ({ ...spacing, ...frame.spacing });
+  const paddingOf = (frame: DraftFrame) => spacingOf(frame).padding ?? FRAME_PADDING;
   const sizes = new Map<string, Size>();
   const arranged = new Map<string, ReturnType<typeof arrange>>();
   const sizeOf = (key: string): Size => {
@@ -236,10 +249,13 @@ export function layoutDraft(
     if (!sizes.has(key)) {
       const frame = byId.get(key.slice(2))!;
       const boxes = children.get(key)!.map((child): Box => ({ key: child, ...sizeOf(child) }));
-      const inside = arrange(boxes, frame.layout, lines.get(key));
+      const inside = arrange(boxes, frame.layout, lines.get(key), spacingOf(frame));
       arranged.set(key, inside);
       const offset = boxes.length ? (below.get(key) ?? 0) : 0;
-      sizes.set(key, frameSize(frame, { ...inside.size, height: inside.size.height + offset }));
+      sizes.set(
+        key,
+        frameSize(frame, { ...inside.size, height: inside.size.height + offset }, paddingOf(frame)),
+      );
     }
     return sizes.get(key)!;
   };
@@ -250,10 +266,11 @@ export function layoutDraft(
     if (key.startsWith('n:')) return;
     sizeOf(key);
     const down = below.get(key) ?? 0;
+    const padding = paddingOf(byId.get(key.slice(2))!);
     for (const [child, offset] of arranged.get(key)!.at)
       place(child, {
-        x: Math.round(at.x + FRAME_PADDING + offset.x),
-        y: Math.round(at.y + FRAME_PADDING + down + offset.y),
+        x: Math.round(at.x + padding + offset.x),
+        y: Math.round(at.y + padding + down + offset.y),
       });
   };
 
@@ -273,7 +290,16 @@ export function layoutDraft(
   }
   const top = headings.length ? y - NOTE_GAP + SECTION_GAP : start.y;
   const heading = new Set(headings);
-  const rest = roots.filter((key) => !heading.has(key) && !beside.has(key));
+  const legends = roots.filter(
+    (key) => key.startsWith('f:') && byId.get(key.slice(2))!.role === 'legend',
+  );
+  let contentTop = top;
+  for (const key of legends) {
+    place(key, { x: start.x, y: contentTop });
+    contentTop += sizeOf(key).height + SECTION_GAP;
+  }
+  const legend = new Set(legends);
+  const rest = roots.filter((key) => !heading.has(key) && !beside.has(key) && !legend.has(key));
   const rootFrames = rest.filter((key) => key.startsWith('f:'));
   const looseNotes = rest.filter((key) => key.startsWith('n:'));
   if (layout === 'board') {
@@ -286,19 +312,21 @@ export function layoutDraft(
     for (const key of rootFrames) {
       if (byId.get(key.slice(2))!.height === undefined)
         sizes.set(key, { ...sizeOf(key), height: shared });
-      place(key, { x, y: top });
-      x += sizeOf(key).width + FRAME_GAP;
+      place(key, { x, y: contentTop });
+      x += sizeOf(key).width + (spacing.gap ?? FRAME_GAP);
     }
-    const below = rootFrames.length ? top + shared + SECTION_GAP : top;
+    const below = rootFrames.length ? contentTop + shared + SECTION_GAP : contentTop;
     const grid = arrange(
       looseNotes.map((key) => ({ key, ...sizeOf(key) })),
       'grid',
+      [],
+      spacing,
     );
     for (const [key, offset] of grid.at) place(key, { x: start.x + offset.x, y: below + offset.y });
   } else {
     const boxes = [...looseNotes, ...rootFrames].map((key) => ({ key, ...sizeOf(key) }));
-    for (const [key, offset] of arrange(boxes, layout, lines.get(ROOT)).at)
-      place(key, { x: start.x + offset.x, y: top + offset.y });
+    for (const [key, offset] of arrange(boxes, layout, lines.get(ROOT), spacing).at)
+      place(key, { x: start.x + offset.x, y: contentTop + offset.y });
   }
   // Positioned frames keep their place and take in the objects placed into them.
   for (const frame of frames) if (isPlaced(frame)) place(frameKey(frame.id), frame as Point);

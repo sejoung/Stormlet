@@ -5,13 +5,13 @@ description: Create Stormlet boards as .stormlet files — KPT and other retrosp
 
 # Stormlet boards
 
-[Stormlet](https://sejoung.github.io/Stormlet/) is a free sticky-note board that runs in the browser. A board is a `.stormlet` file: readable JSON. You write the **content and structure** — frames, notes, lines — and leave out coordinates. When the user opens the file, Stormlet lays the board out.
+[Stormlet](https://sejoung.github.io/Stormlet/) is a free sticky-note board that runs in the browser. A board is a `.stormlet` file: readable JSON. You write the **content and structure** — frames, notes, lines — and usually leave out coordinates. When the user opens a draft, Stormlet lays it out.
 
 ## Make a board
 
 1. **Plan the structure.** Each frame is one group, column or stage. Each note holds one idea. Lines show a flow or a dependency. Use the user's language for all text.
-2. **Write the file** in the format below, with `"version": 13` and no `x`/`y`. Give every note and frame a short unique `id`, such as `k1` or `keep`, and set `frame` on each note that belongs to a frame (and on each frame that sits inside another frame).
-3. **Check it** against the checklist at the end of this file.
+2. **Write the file** in the format below, with `"version": 13` and normally no `x`/`y`. Give every note and frame a short unique `id`, such as `k1` or `keep`, and set `frame` on each note that belongs to a frame (and on each frame that sits inside another frame).
+3. **Check it** against the checklist at the end of this file. For complex connected boards, open/render in Stormlet when possible and inspect a readable zoom: labels, branches and arrowheads should be clear. Widen the layout or separate supporting notes when lines become hard to follow; do not merely shrink text.
 4. **Deliver it.**
    - If you can create files, save it as `<board title>.stormlet` and give the user that file.
    - Otherwise, show the whole file in one ```json code block.
@@ -39,7 +39,7 @@ description: Create Stormlet boards as .stormlet files — KPT and other retrosp
 
 ## How Stormlet lays out a file
 
-You never compute positions. Stormlet places everything when the file is opened:
+Prefer automatic flow layouts with generous spacing. Use explicit positions for a deliberate event timeline or lanes when automatic placement obscures branches. Stormlet places unpositioned objects when the file is opened:
 
 - **Loose text** (`"objectType": "text"` with no `frame`) is stacked at the top, as headings.
 - **Frames** form one row below the headings, in file order. Frames in the row share the same height and grow to fit what they hold.
@@ -50,6 +50,8 @@ You never compute positions. Stormlet places everything when the file is opened:
   - `"row"`: left to right
   - `"flow"`: left to right along the lines, so each object sits one column right of the objects whose lines point to it
   - `"flow-down"`: the same, top to bottom, so each object sits one row below the objects whose lines point to it
+- **Spacing**: the board and each frame accept `"spacing": { "gap": 80, "rankGap": 180, "crossGap": 100, "padding": 60 }`. Board values are inherited; frame values override them. `gap` controls row/grid/column spacing; `rankGap` and `crossGap` control flow spacing. Values are pixels, 0–2000. Prefer readable labels and clear arrow corridors over fitting everything on one screen.
+- **Top legend**: give a root frame `"role": "legend", "layout": "row"`. It is placed above the main diagram regardless of file order, and excluded from flow ranking. Put one actual colored sticky per role in it (for example 220×120 with `fontSize: 20, autoFont: false`); never replace the swatches with a paragraph.
 - **Nested frames**: a frame with `"frame": "<id>"` sits inside that frame, and is arranged like a note there.
 - **Board layout**: a top-level `"layout"` (`grid`, `column`, `row`, `flow` or `flow-down`) arranges the board's frames and loose notes like a frame does, instead of the row of frames. Use `"layout": "flow"` for architecture and other diagrams that read left to right. Use `\"flow-down\"` for layered diagrams that read top to bottom, such as a Kubernetes cluster from ingress to storage.
 - The order of `stickies` and `frames` in the file is the reading order wherever lines do not decide it.
@@ -72,7 +74,7 @@ Pick the pattern closest to the request, then adapt it. Complete example files a
 
 - **KPT retrospective** (`examples/kpt.stormlet`): frames Keep, Problem and Try with `"layout": "column"`. One color per participant, or green, pink and sky for the three columns. Add an "Actions" frame for agreed actions, each with an owner and a date.
 - **Idea grouping** (`examples/ideas.stormlet`): one frame per theme, named after what its notes have in common. Add a "Next experiments" frame for what to try first.
-- **Event storming** (`examples/event-storming.stormlet`): one frame per stage of the flow, with `"layout": "column"`. Lines join events in time order. Follow the notation's colors:
+- **Event storming** (`examples/event-storming.stormlet`; `examples/youtube-content.stormlet` for parallel collection and validation branches): use board `"layout": "flow"` and stage frames with `"layout": "flow"`, with generous spacing as above. Do not stack every stage into a narrow column. Events and their commands should read left to right, with success/failure branches separated. Keep reference notes and hotspots outside the causal chain. For large flows use explicit lanes/positions, keeping existing IDs when revising a board. Include a top `role: "legend"` frame with eight colored stickies, each named for its role. Use text prefixes such as “Actor / 액터” and “Aggregate / 애그리게이트” when useful; color alone must not carry the distinction. Follow the notation's colors:
   - `orange`: domain event, in the past tense
   - `blue`: command
   - `yellow`: actor
@@ -134,4 +136,5 @@ Summarize by frame, keep the user's wording, and point out hotspots (red notes) 
 - Every `from` and `to` names an existing note or frame.
 - Colors, icons, layouts and other values come from the lists above. Do not invent new ones.
 - Do not set `kind`, and do not add fields that are not documented.
+- Event storming has a top sticky-note legend: orange event, blue command, yellow actor, purple policy, gold aggregate, green read model, pink external system, red hotspot. Actor and aggregate use different colors.
 - The JSON is valid: double quotes, no comments, no trailing commas.

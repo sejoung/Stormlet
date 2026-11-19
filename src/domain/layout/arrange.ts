@@ -1,4 +1,5 @@
-import { NOTE_GAP } from '../note-actions';
+/** Shared default for grid layouts and note duplication. */
+export const DEFAULT_LAYOUT_GAP = 24;
 
 /**
  * How one container (a frame, or the board) arranges the objects laid out into it
@@ -12,6 +13,27 @@ export type FrameLayout = (typeof FRAME_LAYOUTS)[number];
 export const FLOW_RANK_GAP = 120;
 /** Space between the objects of one rank. */
 export const FLOW_CROSS_GAP = 48;
+
+/** Draft-only spacing overrides, in board pixels. Omitted values retain existing layouts. */
+export interface LayoutSpacing {
+  gap?: number;
+  rankGap?: number;
+  crossGap?: number;
+  padding?: number;
+}
+
+export function isLayoutSpacing(value: unknown): value is LayoutSpacing | undefined {
+  if (value === undefined) return true;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.entries(value).every(
+    ([key, n]) =>
+      ['gap', 'rankGap', 'crossGap', 'padding'].includes(key) &&
+      typeof n === 'number' &&
+      Number.isFinite(n) &&
+      n >= 0 &&
+      n <= 2000,
+  );
+}
 
 export interface Box {
   key: string;
@@ -43,7 +65,7 @@ const columnsFor = (count: number, layout: FrameLayout) =>
   layout === 'row' ? count : layout === 'column' ? 1 : Math.ceil(Math.sqrt(count));
 
 /** Uniform cells as large as the largest box, so rows and columns line up. */
-function cells(boxes: readonly Box[], layout: FrameLayout): Arranged {
+function cells(boxes: readonly Box[], layout: FrameLayout, gap: number): Arranged {
   const cell = {
     width: largest(
       boxes.map((box) => box.width),
@@ -60,14 +82,14 @@ function cells(boxes: readonly Box[], layout: FrameLayout): Arranged {
     boxes.map((box, index) => [
       box.key,
       {
-        x: (index % columns) * (cell.width + NOTE_GAP),
-        y: Math.floor(index / columns) * (cell.height + NOTE_GAP),
+        x: (index % columns) * (cell.width + gap),
+        y: Math.floor(index / columns) * (cell.height + gap),
       },
     ]),
   );
   const size = {
-    width: boxes.length ? columns * cell.width + (columns - 1) * NOTE_GAP : 0,
-    height: boxes.length ? rows * cell.height + (rows - 1) * NOTE_GAP : 0,
+    width: boxes.length ? columns * cell.width + (columns - 1) * gap : 0,
+    height: boxes.length ? rows * cell.height + (rows - 1) * gap : 0,
   };
   return { size, at };
 }
@@ -107,7 +129,14 @@ function ranks(boxes: readonly Box[], links: readonly Link[]): Map<string, numbe
  * Each rank is ordered by where the boxes it is linked from sit in the rank before (file
  * order breaks ties), and the ranks are centred on one another.
  */
-function flow(boxes: readonly Box[], links: readonly Link[], across: boolean): Arranged {
+function flow(
+  boxes: readonly Box[],
+  links: readonly Link[],
+  across: boolean,
+  spacing: LayoutSpacing,
+): Arranged {
+  const rankGap = spacing.rankGap ?? FLOW_RANK_GAP;
+  const crossGap = spacing.crossGap ?? FLOW_CROSS_GAP;
   // Lay out along a main axis (the flow) and a cross axis (within a rank), then map back.
   const main = (box: Box) => (across ? box.width : box.height);
   const cross = (box: Box) => (across ? box.height : box.width);
@@ -130,8 +159,7 @@ function flow(boxes: readonly Box[], links: readonly Link[], across: boolean): A
     group.forEach((box, position) => order.set(box.key, position));
   });
   const spans = filled.map(
-    (group) =>
-      group.reduce((sum, box) => sum + cross(box), 0) + (group.length - 1) * FLOW_CROSS_GAP,
+    (group) => group.reduce((sum, box) => sum + cross(box), 0) + (group.length - 1) * crossGap,
   );
   const span = largest(spans, 0);
   const at = new Map<string, { x: number; y: number }>();
@@ -143,11 +171,11 @@ function flow(boxes: readonly Box[], links: readonly Link[], across: boolean): A
       const a = Math.round(along + (depth - main(box)) / 2);
       const c = Math.round(offset);
       at.set(box.key, across ? { x: a, y: c } : { x: c, y: a });
-      offset += cross(box) + FLOW_CROSS_GAP;
+      offset += cross(box) + crossGap;
     }
-    along += depth + FLOW_RANK_GAP;
+    along += depth + rankGap;
   });
-  const length = filled.length ? along - FLOW_RANK_GAP : 0;
+  const length = filled.length ? along - rankGap : 0;
   return { size: across ? { width: length, height: span } : { width: span, height: length }, at };
 }
 
@@ -156,7 +184,8 @@ export const arrange = (
   boxes: readonly Box[],
   layout: FrameLayout = 'grid',
   links: readonly Link[] = [],
+  spacing: LayoutSpacing = {},
 ): Arranged =>
   layout === 'flow' || layout === 'flow-down'
-    ? flow(boxes, links, layout === 'flow')
-    : cells(boxes, layout);
+    ? flow(boxes, links, layout === 'flow', spacing)
+    : cells(boxes, layout, spacing.gap ?? DEFAULT_LAYOUT_GAP);

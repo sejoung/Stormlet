@@ -1,3 +1,4 @@
+import { isLayoutSpacing } from '../../domain/layout/arrange';
 import { isStickyId } from '../../domain/ids';
 import {
   FRAME_COLORS,
@@ -55,7 +56,9 @@ export function readFrames(
         layout === undefined ||
         (draft && (FRAME_LAYOUTS as readonly unknown[]).includes(layout))
       ) ||
-      !(parent === undefined || isStickyId(parent))
+      !(parent === undefined || isStickyId(parent)) ||
+      (draft &&
+        (!isLayoutSpacing(item.spacing) || !(item.role === undefined || item.role === 'legend')))
     )
       throw new Error('Malformed frame.');
     const size = clampFrameSize({
@@ -75,6 +78,8 @@ export function readFrames(
       borderWidth,
       locked,
       ...(layout === undefined ? {} : { layout }),
+      ...(draft && item.spacing !== undefined ? { spacing: item.spacing } : {}),
+      ...(draft && item.role !== undefined ? { role: item.role } : {}),
       ...(parent === undefined ? {} : { frame: parent }),
     } as DraftFrame;
   }

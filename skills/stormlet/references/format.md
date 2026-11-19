@@ -115,3 +115,28 @@ When a file mixes objects with positions and objects without, the ones without a
 ## Lines
 
 Stormlet draws an elbow line around the notes in its way. When several lines leave one side of an object, they are spread along that side in the order of their other ends. An `auto` end avoids a side that another note crowds, so it is rarely worth fixing `side` by hand.
+
+## Readable draft layouts
+
+The board and each frame accept optional `spacing` with numeric fields `gap`, `rankGap`,
+`crossGap`, and `padding` (0–2000 px, finite numbers). Board values are inherited by all
+frames; a frame overrides individual fields. Defaults remain 24, 120, 48, and 40 px.
+The default board row uses 80 px between frames unless `gap` is supplied.
+
+A root frame with `"role": "legend"` is placed after loose headings and before the main
+flow. Multiple legends stack in file order. Nested frames do not become board legends.
+Use `"layout": "row"` and a separate colored sticky for each notation role. Positioned
+frames retain their coordinates, including positioned legends. These hints are consumed
+on import; saved files keep the resulting geometry rather than the layout settings.
+
+Example draft settings:
+
+```json
+{
+  "layout": "flow",
+  "spacing": { "gap": 80, "rankGap": 180, "crossGap": 100, "padding": 60 }
+}
+```
+
+Spacing and legend hints are optional version-13 extensions. Older builds may ignore
+these hints; use explicit positions when distributing to an older build.

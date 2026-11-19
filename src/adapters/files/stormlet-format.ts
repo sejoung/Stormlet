@@ -1,3 +1,4 @@
+import { isLayoutSpacing, type LayoutSpacing } from '../../domain/layout/arrange';
 import { isStickyId } from '../../domain/ids';
 import { DEFAULT_STICKY_SIZE, isStickySize } from '../../domain/sticky-size';
 import {
@@ -52,6 +53,7 @@ interface StormletFile {
   version: number;
   /** How a draft board arranges its frames and loose notes (ADR 0018). */
   layout?: string;
+  spacing?: LayoutSpacing;
   stickies: Sticky[];
   title?: string;
   connections?: Connection[];
@@ -210,6 +212,8 @@ export function parseBoard(content: string): Board {
   const layout = draft ? (file.layout ?? 'board') : 'board';
   if (!(BOARD_LAYOUTS as readonly unknown[]).includes(layout))
     throw new FormatError('The board layout is malformed.');
+  if (draft && !isLayoutSpacing(file.spacing))
+    throw new FormatError('The board spacing is malformed.');
   const notes = new Map<string, DraftSticky>();
   file.stickies.forEach((value, index) => {
     const sticky = readSticky(value, index, version);
@@ -228,6 +232,7 @@ export function parseBoard(content: string): Board {
     drafts,
     draft ? draftLinks(file.connections) : [],
     layout as (typeof BOARD_LAYOUTS)[number],
+    draft ? file.spacing : undefined,
   );
   const stickies = Object.fromEntries(placed.stickies.map((note) => [note.id, note]));
   const board: Board = { ...(title === undefined ? {} : { title }), stickies };

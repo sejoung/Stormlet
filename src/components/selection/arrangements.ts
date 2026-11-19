@@ -65,6 +65,10 @@ export const ARRANGEMENTS: readonly ArrangeCommand<Arrangement>[][] = [
     },
     { action: 'grid', label: 'selection.arrangeGrid', icon: 'arrangeGrid' },
   ],
+  [
+    { action: 'flow', label: 'selection.arrangeFlow', icon: 'distributeHorizontal' },
+    { action: 'flow-down', label: 'selection.arrangeFlowDown', icon: 'distributeVertical' },
+  ],
 ];
 
 export const SIZE_MATCHES: readonly ArrangeCommand<SizeMatch>[] = [

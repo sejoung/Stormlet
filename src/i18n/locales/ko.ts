@@ -172,6 +172,8 @@ export const ko: Readonly<Record<keyof typeof en, string>> = {
   'selection.arrangeBottom': '아래쪽 맞춤',
   'selection.arrangeHorizontal': '가로 간격 맞춤',
   'selection.arrangeVertical': '세로 간격 맞춤',
+  'selection.arrangeFlow': '연결 흐름으로 정리 (가로)',
+  'selection.arrangeFlowDown': '연결 흐름으로 정리 (세로)',
   'selection.arrangeGrid': '격자로 정리',
   'selection.resize': '선택한 메모 크기 조절',
   'selection.matchHeading': '크기 맞춤',

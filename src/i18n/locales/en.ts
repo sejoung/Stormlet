@@ -174,6 +174,8 @@ export const en = {
   'selection.arrangeBottom': 'Align bottom',
   'selection.arrangeHorizontal': 'Distribute horizontally',
   'selection.arrangeVertical': 'Distribute vertically',
+  'selection.arrangeFlow': 'Arrange by connections (horizontal)',
+  'selection.arrangeFlowDown': 'Arrange by connections (vertical)',
   'selection.arrangeGrid': 'Arrange in a grid',
   'selection.resize': 'Resize the selected notes',
   'selection.matchHeading': 'Match size',
